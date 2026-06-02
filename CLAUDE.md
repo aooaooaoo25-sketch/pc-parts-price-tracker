@@ -114,7 +114,7 @@ pc_price_tracker/
 
 ### 🟢 低優先（體驗優化）
 
-9. **缺少 `.gitignore` 與 `requirements.txt`**
+9. ~~**缺少 `.gitignore` 與 `requirements.txt`**~~ ✅ 已完成（2026-06-03，commit `e58cfe5`）：新增 `.gitignore`、`requirements.txt`、`.env.example`
 10. **前端無法持久化自訂追蹤零件**（重整後消失）
 11. **圖表只有折線，缺少最高/最低價區間陰影**
 12. **行動裝置版面未優化**（detail panel 在小螢幕會溢出）
