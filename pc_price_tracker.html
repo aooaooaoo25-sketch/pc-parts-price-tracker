@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PC 零件二手行情追蹤</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0b0d12;--bg2:#111318;--bg3:#181b23;--bg4:#1e2230;
+  --border:#252836;--border2:#2e3347;--border3:#3a4060;
+  --text:#dde3f4;--text2:#7e88a8;--text3:#454e66;
+  --accent:#5b8cff;--accent2:#3f6de8;--ag:rgba(91,140,255,.15);
+  --green:#1fd17a;--red:#f04e60;--amber:#f5a623;--teal:#22d3c8;
+  --font:'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh;overflow:hidden}
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;z-index:200;position:relative}
+.logo{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;letter-spacing:-.3px}
+.logo-ico{width:26px;height:26px;border-radius:6px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px}
+.hdr-r{display:flex;align-items:center;gap:10px}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.htag{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--accent);color:var(--accent);background:var(--ag)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{background:var(--accent2)}
+.btn.warn{background:rgba(240,78,96,.12);border-color:var(--red);color:var(--red)}
+.layout{display:flex;height:calc(100vh - 52px);overflow:hidden}
+.sidebar{width:210px;min-width:210px;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:10px 0;flex-shrink:0}
+.sbt{padding:10px 14px 4px;font-size:9.5px;font-weight:700;letter-spacing:1.1px;color:var(--text3);text-transform:uppercase}
+.sbi{padding:7px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);font-size:12.5px;transition:all .15s;border-left:2px solid transparent}
+.sbi:hover{background:var(--bg3);color:var(--text)}
+.sbi.on{background:rgba(91,140,255,.08);color:var(--accent);border-left-color:var(--accent)}
+.sbi .cnt{margin-left:auto;font-size:10px;background:var(--bg3);color:var(--text3);border-radius:10px;padding:1px 6px;min-width:22px;text-align:center}
+.sbi.on .cnt{background:rgba(91,140,255,.18);color:var(--accent)}
+.sdiv{height:1px;background:var(--border);margin:6px 14px}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:10px 18px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:7px;background:var(--bg2);flex-shrink:0}
+.srow{display:flex;align-items:center;gap:8px}
+.swrap{flex:1;display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:0 12px;height:34px;transition:border-color .2s}
+.swrap:focus-within{border-color:var(--accent)}
+.swrap input{flex:1;background:none;border:none;color:var(--text);font-size:13px;outline:none}
+.swrap input::placeholder{color:var(--text3)}
+.schips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{padding:3px 10px;border-radius:14px;border:1px solid var(--border2);background:var(--bg3);color:var(--text3);font-size:11px;cursor:pointer;transition:all .15s}
+.chip:hover,.chip.on{background:rgba(91,140,255,.12);border-color:var(--accent);color:var(--accent)}
+.ubanner{margin:0 18px 4px;padding:9px 12px;background:rgba(245,166,35,.06);border:1px solid rgba(245,166,35,.25);border-radius:8px;display:none;align-items:center;gap:9px}
+.ubanner.show{display:flex}
+.ubt{flex:1;font-size:12px;color:var(--amber);line-height:1.5}
+.ubt strong{display:block;font-size:13px;margin-bottom:1px}
+.colhdr{display:grid;grid-template-columns:1fr 100px 100px 85px 65px 65px;gap:8px;padding:6px 18px;font-size:10px;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.plist{flex:1;overflow-y:auto;padding:6px 18px 16px}
+.prow{display:grid;grid-template-columns:1fr 100px 100px 85px 65px 65px;gap:8px;align-items:center;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:3px;cursor:pointer;transition:all .15s}
+.prow:hover{border-color:var(--border2);background:var(--bg3)}
+.prow.sel{border-color:var(--accent);background:rgba(91,140,255,.06)}
+.prow.cust{border-style:dashed;border-color:var(--amber);background:rgba(245,166,35,.04)}
+.pname{font-weight:600;font-size:13px;line-height:1.3}
+.pspec{font-size:10.5px;color:var(--text3);margin-top:2px;line-height:1.4}
+.badge{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;margin-right:3px;font-weight:700;letter-spacing:.4px}
+.badge.nb{background:rgba(34,211,200,.12);color:var(--teal)}
+.badge.cb{background:rgba(245,166,35,.15);color:var(--amber)}
+.badge.hb{background:rgba(91,140,255,.15);color:var(--accent)}
+.pnew{font-size:12.5px;color:var(--text2)}
+.pused{font-size:13px;font-weight:700}
+.diff{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:2px 7px;border-radius:12px}
+.diff.dn{background:rgba(31,209,122,.1);color:var(--green)}
+.diff.up{background:rgba(240,78,96,.1);color:var(--red)}
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty .ei{font-size:40px;margin-bottom:12px}
+.detail{width:460px;min-width:460px;background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;transition:width .28s,min-width .28s;flex-shrink:0}
+.detail.closed{width:0;min-width:0;overflow:hidden}
+.dphead{padding:15px 18px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:10}
+.dpname{font-size:14px;font-weight:700;line-height:1.4}
+.dpspec{font-size:11px;color:var(--text3);margin-top:3px}
+.dpcls{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:2px 4px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 18px}
+.scard{background:var(--bg3);border-radius:8px;padding:11px 13px;border:1px solid var(--border)}
+.slb{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px}
+.sv{font-size:19px;font-weight:700;letter-spacing:-.4px}
+.sv.g{color:var(--green)}.sv.r{color:var(--red)}.sv.a{color:var(--amber)}.sv.d{color:var(--text2);font-size:15px}
+.ssub{font-size:10.5px;color:var(--text3);margin-top:2px}
+.csec{padding:0 18px 14px}
+.chead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.clb{font-size:11px;font-weight:700;color:var(--text2)}
+.rtabs{display:flex;gap:1px;background:var(--bg3);border-radius:6px;padding:2px;border:1px solid var(--border)}
+.rtab{padding:3px 7px;border-radius:4px;font-size:10.5px;cursor:pointer;color:var(--text3);border:none;background:none;transition:all .15s}
+.rtab.on{background:var(--bg2);color:var(--text)}
+.cbox{position:relative;height:165px}
+.ssec,.lsec{padding:0 18px 14px}
+.sttl{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+.srcrow{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)}
+.srcrow:last-child{border:none}
+.srcico{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.srcname{font-size:12px;font-weight:500}
+.srccnt{font-size:10.5px;color:var(--text3)}
+.srcp{font-size:12.5px;font-weight:700}
+.litem{background:var(--bg3);border-radius:7px;padding:9px 11px;margin-bottom:5px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start}
+.lt{font-size:11.5px;font-weight:500;line-height:1.4;margin-bottom:2px}
+.lm{font-size:10.5px;color:var(--text3)}
+.lp{font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;margin-left:8px}
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:center;justify-content:center}
+.mbg.show{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:24px;width:520px;max-height:80vh;overflow-y:auto}
+.mtitle{font-size:16px;font-weight:700;margin-bottom:4px}
+.msub{font-size:12px;color:var(--text3);margin-bottom:16px}
+.plist2{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.pi{background:var(--bg3);border-radius:7px;padding:10px 12px;border:1px solid var(--border)}
+.piname{font-size:12px;font-weight:600;margin-bottom:5px;display:flex;justify-content:space-between}
+.pbg{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.pb{height:4px;border-radius:2px;background:var(--accent);transition:width .4s}
+.psub{font-size:10.5px;color:var(--text3);margin-top:4px}
+.nplist{display:flex;flex-direction:column;gap:3px;max-height:180px;overflow-y:auto;margin-bottom:12px}
+.npitem{font-size:11.5px;padding:5px 9px;background:var(--bg3);border-radius:5px;border:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.npb{font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(34,211,200,.12);color:var(--teal);font-weight:700}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;font-size:12.5px;display:flex;align-items:center;gap:7px;transform:translateY(70px);transition:transform .3s;z-index:999}
+.toast.show{transform:translateY(0)}
+@media (max-width: 640px) {
+
+  /* Sidebar 縮小 */
+  .sidebar { width: 130px; min-width: 130px; }
+  .sbi     { font-size: 11px; padding: 6px 10px; gap: 5px; }
+  .sbt     { font-size: 8.5px; padding: 8px 10px 3px; }
+
+  /* Header 按鈕縮小 */
+  .btn     { font-size: 10px; padding: 5px 8px; }
+  .htag    { display: none; }   /* 隱藏「尚未爬蟲」狀態文字 */
+
+  /* 列表只顯示三欄 */
+  .colhdr  { grid-template-columns: 1fr 90px 80px; padding: 5px 10px; }
+  .prow    { grid-template-columns: 1fr 90px 80px; padding: 9px 10px; }
+
+  /* 第4、5、6欄（全新售價、筆數、狀態）在手機上隱藏 */
+  .colhdr > div:nth-child(n+4),
+  .prow   > div:nth-child(n+4) { display: none; }
+
+  /* 詳情面板改成全寬覆蓋 */
+  .detail { width: 100vw; min-width: 0; position: fixed;
+            top: 52px; left: 0; z-index: 300; }
+
+  /* Modal 改成全寬 */
+  .modal  { width: 92vw; padding: 16px; }
+
+  /* 字體調整 */
+  .pname  { font-size: 12px; }
+  .pspec  { font-size: 9.5px; }
+  body    { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="logo"><div class="logo-ico">⚡</div>PC 二手行情追蹤</div>
+  <div class="hdr-r">
+    <div class="htag"><div class="sdot"></div><span id="lastUp">尚未爬蟲</span></div>
+    <button class="btn" onclick="openDbModal()">🔄 更新產品庫</button>
+    <button class="btn pri" id="crawlBtn" onclick="startCrawl()">▶ 立即爬蟲</button>
+  </div>
+</div>
+<div class="layout">
+<div class="sidebar">
+  <div class="sbt">所有分類</div>
+  <div class="sbi on" onclick="setCat('all',this)">🗂 全部零件<span class="cnt" id="cnt-all">0</span></div>
+  <div class="sdiv"></div>
+  <div class="sbt">核心元件</div>
+  <div class="sbi" onclick="setCat('cpu',this)">🔲 CPU<span class="cnt" id="cnt-cpu">0</span></div>
+  <div class="sbi" onclick="setCat('gpu',this)">🎮 GPU<span class="cnt" id="cnt-gpu">0</span></div>
+  <div class="sbi" onclick="setCat('ram',this)">💾 RAM<span class="cnt" id="cnt-ram">0</span></div>
+  <div class="sbi" onclick="setCat('mb',this)">🔧 主機板<span class="cnt" id="cnt-mb">0</span></div>
+  <div class="sdiv"></div>
+  <div class="sbt">儲存裝置</div>
+  <div class="sbi" onclick="setCat('ssd',this)">⚡ SSD<span class="cnt" id="cnt-ssd">0</span></div>
+  <div class="sbi" onclick="setCat('hdd',this)">💿 HDD<span class="cnt" id="cnt-hdd">0</span></div>
+  <div class="sdiv"></div>
+  <div class="sbt">電源 / 散熱</div>
+  <div class="sbi" onclick="setCat('psu',this)">🔌 電源<span class="cnt" id="cnt-psu">0</span></div>
+  <div class="sbi" onclick="setCat('cooler',this)">❄ 散熱<span class="cnt" id="cnt-cooler">0</span></div>
+  <div class="sdiv"></div>
+  <div class="sbt">自訂追蹤</div>
+  <div class="sbi" onclick="setCat('custom',this)">🔍 自訂搜尋<span class="cnt" id="cnt-custom">0</span></div>
+</div>
+<div class="main">
+  <div class="topbar">
+    <div class="srow">
+      <div class="swrap">
+        <span style="color:var(--text3);font-size:14px">🔍</span>
+        <input type="text" id="si" placeholder="搜尋型號、規格，或輸入未收錄零件（如：RTX 5090、RX 9070 XT、Core Ultra 9 285K）..." oninput="onSearch()" onkeydown="onKey(event)">
+        <span id="scl" style="color:var(--text3);cursor:pointer;font-size:15px;display:none" onclick="clearS()">✕</span>
+      </div>
+      <button class="btn" id="anyBtn" style="display:none;white-space:nowrap" onclick="searchUnknown()">🌐 搜尋此零件行情 ↗</button>
+    </div>
+    <div class="schips" id="chips"></div>
+  </div>
+  <div class="ubanner" id="ub">
+    <span style="font-size:16px">⚠</span>
+    <div class="ubt"><strong id="ubT">找不到此型號</strong><span id="ubD">此零件不在現有資料庫中，可直接搜尋中文圈二手行情。</span></div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button class="btn" onclick="addCustom()">➕ 加入追蹤</button>
+      <button class="btn pri" onclick="searchUnknown()">🔍 搜尋行情</button>
+    </div>
+  </div>
+  <div class="colhdr"><div>零件名稱</div><div>全新售價</div><div>二手均價</div><div>折價幅度</div><div>筆數</div><div>狀態</div></div>
+  <div class="plist" id="pl"></div>
+</div>
+<div class="detail closed" id="dp">
+  <div class="dphead">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="flex:1;padding-right:8px"><div class="dpname" id="dp-n"></div><div class="dpspec" id="dp-s"></div></div>
+      <button class="dpcls" onclick="closeDp()">✕</button>
+    </div>
+  </div>
+  <div class="sgrid">
+    <div class="scard"><div class="slb">全新售價</div><div class="sv d" id="dp-np"></div><div class="ssub">電商/官方</div></div>
+    <div class="scard"><div class="slb">今日二手均價</div><div class="sv" id="dp-up"></div><div class="ssub" id="dp-ct">共 0 筆</div></div>
+    <div class="scard"><div class="slb">折價幅度</div><div class="sv g" id="dp-df"></div><div class="ssub">vs 全新定價</div></div>
+    <div class="scard"><div class="slb">近7日趨勢</div><div class="sv" id="dp-tr"></div><div class="ssub">環比上週均價</div></div>
+  </div>
+  <div class="csec">
+    <div class="chead">
+      <div class="clb">二手價格走勢 vs 全新定價</div>
+      <div class="rtabs">
+        <button class="rtab" onclick="setR('1w',this)">1週</button>
+        <button class="rtab" onclick="setR('1m',this)">1月</button>
+        <button class="rtab on" onclick="setR('3m',this)">3月</button>
+        <button class="rtab" onclick="setR('6m',this)">6月</button>
+        <button class="rtab" onclick="setR('1y',this)">1年</button>
+      </div>
+    </div>
+    <div class="cbox"><canvas id="pc" role="img" aria-label="二手價格走勢折線圖"></canvas></div>
+  </div>
+  <div class="ssec"><div class="sttl">爬蟲來源明細</div><div id="src"></div></div>
+  <div class="lsec"><div class="sttl">近期成交 / 掛牌記錄</div><div id="lst"></div></div>
+</div>
+</div>
+<div class="mbg" id="mbg">
+<div class="modal">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+    <div class="mtitle">🔄 產品庫更新</div>
+    <button class="dpcls" onclick="closeMdl()">✕</button>
+  </div>
+  <div class="msub">從各大製造商官網爬取最近10年消費級產品，每分類最多50品項</div>
+  <div class="plist2" id="progL"></div>
+  <div id="newSec" style="display:none">
+    <div class="sttl" style="margin-bottom:6px">新增品項 <span id="newCnt" style="color:var(--teal)"></span></div>
+    <div class="nplist" id="npL"></div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn" onclick="closeMdl()">關閉</button>
+    <button class="btn pri" id="startDbBtn" onclick="runDb()">開始更新</button>
+  </div>
+</div>
+</div>
+<div class="toast" id="toast"><span id="tmsg"></span></div>
+<script>
+// ════════════════════════════════════════════════
+// 完整消費級 PC 零件資料庫（2015-2025）
+// ════════════════════════════════════════════════
+const DB = {
+cpu:[
+  // Intel Arrow Lake (2024-2025)
+  {id:'cu285k', cat:'cpu',name:'Core Ultra 9 285K',  spec:'24核(8P+16E)・5.7GHz・LGA1851・Arrow Lake・2024', new_price:17500,tags:['NEW','2024']},
+  {id:'cu265k', cat:'cpu',name:'Core Ultra 7 265K',  spec:'20核(8P+12E)・5.5GHz・LGA1851・Arrow Lake・2024', new_price:12900,tags:['NEW','2024']},
+  {id:'cu245k', cat:'cpu',name:'Core Ultra 5 245K',  spec:'14核(6P+8E)・5.2GHz・LGA1851・Arrow Lake・2024',  new_price:9500, tags:['NEW','2024']},
+  {id:'cu235',  cat:'cpu',name:'Core Ultra 5 235',   spec:'14核・4.8GHz・LGA1851・Arrow Lake・內顯・2025',    new_price:8200, tags:['NEW','2025']},
+  // Intel Raptor Lake Refresh (2023-2024)
+  {id:'i14900k',cat:'cpu',name:'Core i9-14900K',     spec:'24核(8P+16E)/32T・6.0GHz・LGA1700・125W',         new_price:15900,tags:['熱門']},
+  {id:'i14900kf',cat:'cpu',name:'Core i9-14900KF',   spec:'24核/32T・6.0GHz・LGA1700・無內顯',               new_price:14900,tags:[]},
+  {id:'i14700k',cat:'cpu',name:'Core i7-14700K',     spec:'20核(8P+12E)/28T・5.6GHz・LGA1700・125W',         new_price:11900,tags:['熱門']},
+  {id:'i14700kf',cat:'cpu',name:'Core i7-14700KF',   spec:'20核/28T・5.6GHz・LGA1700・無內顯',               new_price:11000,tags:[]},
+  {id:'i14600k',cat:'cpu',name:'Core i5-14600K',     spec:'14核(6P+8E)/20T・5.3GHz・LGA1700・125W',          new_price:8500, tags:['熱門']},
+  {id:'i14600kf',cat:'cpu',name:'Core i5-14600KF',   spec:'14核/20T・5.3GHz・LGA1700・無內顯',               new_price:7900, tags:[]},
+  {id:'i14400f',cat:'cpu',name:'Core i5-14400F',     spec:'10核(6P+4E)/16T・4.7GHz・LGA1700・65W・無內顯',   new_price:5800, tags:[]},
+  // Intel Raptor Lake (2022-2023)
+  {id:'i13900k',cat:'cpu',name:'Core i9-13900K',     spec:'24核/32T・5.8GHz・LGA1700・125W',                 new_price:14200,tags:[]},
+  {id:'i13700k',cat:'cpu',name:'Core i7-13700K',     spec:'16核(8P+8E)/24T・5.4GHz・LGA1700',               new_price:10800,tags:[]},
+  {id:'i13600k',cat:'cpu',name:'Core i5-13600K',     spec:'14核(6P+8E)/20T・5.1GHz・LGA1700',               new_price:7800, tags:[]},
+  {id:'i13400f',cat:'cpu',name:'Core i5-13400F',     spec:'10核/16T・4.6GHz・LGA1700・無內顯',               new_price:4800, tags:[]},
+  // Intel Alder Lake (2021-2022)
+  {id:'i12900k',cat:'cpu',name:'Core i9-12900K',     spec:'16核(8P+8E)/24T・5.2GHz・LGA1700',               new_price:0,    tags:[]},
+  {id:'i12700k',cat:'cpu',name:'Core i7-12700K',     spec:'12核(8P+4E)/20T・5.0GHz・LGA1700',               new_price:0,    tags:[]},
+  {id:'i12600k',cat:'cpu',name:'Core i5-12600K',     spec:'10核(6P+4E)/16T・4.9GHz・LGA1700',               new_price:0,    tags:[]},
+  {id:'i12400f',cat:'cpu',name:'Core i5-12400F',     spec:'6核/12T・4.4GHz・LGA1700・無內顯',                new_price:0,    tags:[]},
+  // AMD Ryzen 9000 Granite Ridge (2024-2025)
+  {id:'r9950x', cat:'cpu',name:'Ryzen 9 9950X',      spec:'16核/32T・5.7GHz・AM5・170W・Zen5・2024',          new_price:20500,tags:['NEW','2024']},
+  {id:'r9900x', cat:'cpu',name:'Ryzen 9 9900X',      spec:'12核/24T・5.6GHz・AM5・120W・Zen5・2024',          new_price:15500,tags:['NEW','2024']},
+  {id:'r9700x', cat:'cpu',name:'Ryzen 7 9700X',      spec:'8核/16T・5.5GHz・AM5・65W・Zen5・2024',            new_price:11500,tags:['NEW','2024']},
+  {id:'r9600x', cat:'cpu',name:'Ryzen 5 9600X',      spec:'6核/12T・5.4GHz・AM5・65W・Zen5・2024',            new_price:8500, tags:['NEW','2024']},
+  // AMD Ryzen 7000 Raphael (2022-2023)
+  {id:'r7950x3d',cat:'cpu',name:'Ryzen 9 7950X3D',  spec:'16核/32T・5.7GHz・AM5・3D V-Cache・Zen4',          new_price:22500,tags:['旗艦']},
+  {id:'r7950x', cat:'cpu',name:'Ryzen 9 7950X',      spec:'16核/32T・5.7GHz・AM5・170W・Zen4',               new_price:18500,tags:['熱門']},
+  {id:'r7900x3d',cat:'cpu',name:'Ryzen 9 7900X3D',  spec:'12核/24T・5.6GHz・AM5・3D V-Cache・Zen4',          new_price:16500,tags:[]},
+  {id:'r7900x', cat:'cpu',name:'Ryzen 9 7900X',      spec:'12核/24T・5.6GHz・AM5・170W・Zen4',               new_price:13500,tags:[]},
+  {id:'r7700x3d',cat:'cpu',name:'Ryzen 7 7700X3D',  spec:'8核/16T・5.4GHz・AM5・3D V-Cache・Zen4',           new_price:11800,tags:[]},
+  {id:'r7700x', cat:'cpu',name:'Ryzen 7 7700X',      spec:'8核/16T・5.4GHz・AM5・105W・Zen4',                new_price:8900, tags:['熱門']},
+  {id:'r7600x', cat:'cpu',name:'Ryzen 5 7600X',      spec:'6核/12T・5.3GHz・AM5・105W・Zen4',                new_price:6500, tags:['熱門']},
+  {id:'r7600',  cat:'cpu',name:'Ryzen 5 7600',       spec:'6核/12T・5.1GHz・AM5・65W・Zen4',                 new_price:5800, tags:[]},
+  // AMD Ryzen 5000 Vermeer (2020-2021)
+  {id:'r5950x', cat:'cpu',name:'Ryzen 9 5950X',      spec:'16核/32T・4.9GHz・AM4・105W・Zen3',               new_price:0,    tags:[]},
+  {id:'r5900x', cat:'cpu',name:'Ryzen 9 5900X',      spec:'12核/24T・4.8GHz・AM4・105W・Zen3',               new_price:0,    tags:[]},
+  {id:'r5800x3d',cat:'cpu',name:'Ryzen 7 5800X3D',  spec:'8核/16T・4.5GHz・AM4・3D V-Cache・Zen3',           new_price:0,    tags:['熱門']},
+  {id:'r5800x', cat:'cpu',name:'Ryzen 7 5800X',      spec:'8核/16T・4.7GHz・AM4・105W・Zen3',                new_price:0,    tags:[]},
+  {id:'r5700x', cat:'cpu',name:'Ryzen 7 5700X',      spec:'8核/16T・4.6GHz・AM4・65W・Zen3',                 new_price:0,    tags:[]},
+  {id:'r5600x', cat:'cpu',name:'Ryzen 5 5600X',      spec:'6核/12T・4.6GHz・AM4・65W・Zen3',                 new_price:4800, tags:['熱門']},
+  {id:'r5600',  cat:'cpu',name:'Ryzen 5 5600',       spec:'6核/12T・4.4GHz・AM4・65W・Zen3',                 new_price:3800, tags:[]},
+],
+gpu:[
+  // NVIDIA Blackwell RTX 50 (2025) ← 最新
+  {id:'g5090',  cat:'gpu',name:'GeForce RTX 5090',          spec:'21760 CUDA・32GB GDDR7・575W・PCIe5.0・Blackwell・2025',  new_price:89900,tags:['NEW','2025','旗艦']},
+  {id:'g5080',  cat:'gpu',name:'GeForce RTX 5080',          spec:'10752 CUDA・16GB GDDR7・360W・PCIe5.0・Blackwell・2025',  new_price:49900,tags:['NEW','2025']},
+  {id:'g5070ti',cat:'gpu',name:'GeForce RTX 5070 Ti',       spec:'8960 CUDA・16GB GDDR7・300W・PCIe5.0・Blackwell・2025',   new_price:35900,tags:['NEW','2025']},
+  {id:'g5070',  cat:'gpu',name:'GeForce RTX 5070',          spec:'6144 CUDA・12GB GDDR7・250W・PCIe5.0・Blackwell・2025',   new_price:25900,tags:['NEW','2025']},
+  {id:'g5060ti',cat:'gpu',name:'GeForce RTX 5060 Ti',       spec:'4608 CUDA・16GB GDDR7・180W・PCIe5.0・Blackwell・2025',   new_price:17900,tags:['NEW','2025']},
+  {id:'g5060',  cat:'gpu',name:'GeForce RTX 5060',          spec:'3840 CUDA・8GB GDDR7・150W・PCIe5.0・Blackwell・2025',    new_price:12900,tags:['NEW','2025']},
+  // NVIDIA Ada Lovelace RTX 40 (2022-2024)
+  {id:'g4090',  cat:'gpu',name:'GeForce RTX 4090',          spec:'16384 CUDA・24GB GDDR6X・450W・PCIe4.0・Ada',             new_price:59900,tags:['熱門']},
+  {id:'g4080s', cat:'gpu',name:'GeForce RTX 4080 SUPER',    spec:'10240 CUDA・16GB GDDR6X・320W・PCIe4.0',                  new_price:36900,tags:[]},
+  {id:'g4080',  cat:'gpu',name:'GeForce RTX 4080',          spec:'9728 CUDA・16GB GDDR6X・320W・PCIe4.0',                   new_price:33900,tags:[]},
+  {id:'g4070tis',cat:'gpu',name:'GeForce RTX 4070 Ti SUPER',spec:'8448 CUDA・16GB GDDR6X・285W・PCIe4.0',                   new_price:26900,tags:['熱門']},
+  {id:'g4070ti',cat:'gpu',name:'GeForce RTX 4070 Ti',       spec:'7680 CUDA・12GB GDDR6X・285W・PCIe4.0',                   new_price:23900,tags:[]},
+  {id:'g4070s', cat:'gpu',name:'GeForce RTX 4070 SUPER',    spec:'7168 CUDA・12GB GDDR6X・220W・PCIe4.0',                   new_price:19900,tags:['熱門']},
+  {id:'g4070',  cat:'gpu',name:'GeForce RTX 4070',          spec:'5888 CUDA・12GB GDDR6X・200W・PCIe4.0',                   new_price:17900,tags:[]},
+  {id:'g4060t16',cat:'gpu',name:'GeForce RTX 4060 Ti 16GB', spec:'4352 CUDA・16GB GDDR6・160W・PCIe4.0',                    new_price:14900,tags:[]},
+  {id:'g4060ti',cat:'gpu',name:'GeForce RTX 4060 Ti',       spec:'4352 CUDA・8GB GDDR6・160W・PCIe4.0',                     new_price:12900,tags:[]},
+  {id:'g4060',  cat:'gpu',name:'GeForce RTX 4060',          spec:'3072 CUDA・8GB GDDR6・115W・PCIe4.0',                     new_price:9900, tags:['熱門']},
+  // NVIDIA Ampere RTX 30 (2020-2022)
+  {id:'g3090ti',cat:'gpu',name:'GeForce RTX 3090 Ti',       spec:'10752 CUDA・24GB GDDR6X・450W',                            new_price:0,    tags:[]},
+  {id:'g3090',  cat:'gpu',name:'GeForce RTX 3090',          spec:'10496 CUDA・24GB GDDR6X・350W',                            new_price:0,    tags:[]},
+  {id:'g3080ti',cat:'gpu',name:'GeForce RTX 3080 Ti',       spec:'10240 CUDA・12GB GDDR6X・350W',                            new_price:0,    tags:[]},
+  {id:'g3080_12',cat:'gpu',name:'GeForce RTX 3080 12GB',    spec:'8960 CUDA・12GB GDDR6X・350W',                             new_price:0,    tags:['熱門']},
+  {id:'g3080',  cat:'gpu',name:'GeForce RTX 3080',          spec:'8704 CUDA・10GB GDDR6X・320W',                             new_price:0,    tags:[]},
+  {id:'g3070ti',cat:'gpu',name:'GeForce RTX 3070 Ti',       spec:'6144 CUDA・8GB GDDR6X・290W',                              new_price:0,    tags:[]},
+  {id:'g3070',  cat:'gpu',name:'GeForce RTX 3070',          spec:'5888 CUDA・8GB GDDR6・220W',                               new_price:0,    tags:['熱門']},
+  {id:'g3060ti',cat:'gpu',name:'GeForce RTX 3060 Ti',       spec:'4864 CUDA・8GB GDDR6・200W',                               new_price:0,    tags:['熱門']},
+  {id:'g3060',  cat:'gpu',name:'GeForce RTX 3060',          spec:'3584 CUDA・12GB GDDR6・170W',                              new_price:0,    tags:[]},
+  {id:'g3050',  cat:'gpu',name:'GeForce RTX 3050',          spec:'2560 CUDA・8GB GDDR6・130W',                               new_price:0,    tags:[]},
+  // AMD RDNA4 RX 9000 (2025) ← 最新
+  {id:'a9070xt',cat:'gpu',name:'Radeon RX 9070 XT',         spec:'4096 SP・16GB GDDR6・304W・PCIe5.0・RDNA4・2025',          new_price:22900,tags:['NEW','2025']},
+  {id:'a9070',  cat:'gpu',name:'Radeon RX 9070',            spec:'3584 SP・16GB GDDR6・220W・PCIe5.0・RDNA4・2025',          new_price:18900,tags:['NEW','2025']},
+  // AMD RDNA3 RX 7000 (2022-2024)
+  {id:'a7900xtx',cat:'gpu',name:'Radeon RX 7900 XTX',       spec:'6144 SP・24GB GDDR6・355W・PCIe4.0・RDNA3',               new_price:29900,tags:['熱門']},
+  {id:'a7900xt',cat:'gpu',name:'Radeon RX 7900 XT',         spec:'5376 SP・20GB GDDR6・315W・PCIe4.0・RDNA3',               new_price:24900,tags:[]},
+  {id:'a7800xt',cat:'gpu',name:'Radeon RX 7800 XT',         spec:'3840 SP・16GB GDDR6・263W・PCIe4.0・RDNA3',               new_price:15900,tags:['熱門']},
+  {id:'a7700xt',cat:'gpu',name:'Radeon RX 7700 XT',         spec:'3456 SP・12GB GDDR6・245W・PCIe4.0・RDNA3',               new_price:13900,tags:[]},
+  {id:'a7600xt',cat:'gpu',name:'Radeon RX 7600 XT',         spec:'2048 SP・16GB GDDR6・190W・PCIe4.0・RDNA3・2025',         new_price:11500,tags:['NEW','2025']},
+  {id:'a7600',  cat:'gpu',name:'Radeon RX 7600',            spec:'2048 SP・8GB GDDR6・165W・PCIe4.0・RDNA3',                new_price:8900, tags:[]},
+  // AMD RDNA2 RX 6000 (2020-2022)
+  {id:'a6950xt',cat:'gpu',name:'Radeon RX 6950 XT',         spec:'5120 SP・16GB GDDR6・335W・PCIe4.0・RDNA2',               new_price:0,    tags:[]},
+  {id:'a6800xt',cat:'gpu',name:'Radeon RX 6800 XT',         spec:'4608 SP・16GB GDDR6・300W・PCIe4.0・RDNA2',               new_price:0,    tags:['熱門']},
+  {id:'a6700xt',cat:'gpu',name:'Radeon RX 6700 XT',         spec:'2560 SP・12GB GDDR6・230W・PCIe4.0・RDNA2',               new_price:0,    tags:[]},
+  {id:'a6600xt',cat:'gpu',name:'Radeon RX 6600 XT',         spec:'2048 SP・8GB GDDR6・160W・PCIe4.0・RDNA2',                new_price:0,    tags:[]},
+  // Intel Arc Battlemage (2024-2025) ← 最新
+  {id:'arcb580',cat:'gpu',name:'Intel Arc B580',            spec:'20 Xe2 Core・12GB GDDR6・190W・PCIe4.0・Battlemage・2024', new_price:11900,tags:['NEW','2024']},
+  {id:'arcb570',cat:'gpu',name:'Intel Arc B570',            spec:'18 Xe2 Core・10GB GDDR6・150W・PCIe4.0・Battlemage・2025', new_price:9500, tags:['NEW','2025']},
+  {id:'arca770',cat:'gpu',name:'Intel Arc A770 16GB',       spec:'32 Xe Core・16GB GDDR6・225W・PCIe4.0・Alchemist',         new_price:0,    tags:[]},
+],
+ram:[
+  {id:'gtz6400',cat:'ram',name:'G.Skill Trident Z5 RGB DDR5-6400 32GB',spec:'16GBx2・CL32・XMP3.0・1.4V',     new_price:5500,tags:['高頻']},
+  {id:'grm6000',cat:'ram',name:'G.Skill Ripjaws M5 DDR5-6000 32GB',    spec:'16GBx2・CL30・XMP3.0・1.35V',    new_price:4800,tags:['熱門']},
+  {id:'grm5600',cat:'ram',name:'G.Skill Ripjaws M5 DDR5-5600 32GB',    spec:'16GBx2・CL28・XMP3.0',           new_price:3900,tags:[]},
+  {id:'cvg5600',cat:'ram',name:'Corsair Vengeance DDR5-5600 32GB',      spec:'16GBx2・CL36・XMP3.0',           new_price:3600,tags:['熱門']},
+  {id:'cdom6000',cat:'ram',name:'Corsair Dominator Titan DDR5-6000 64GB',spec:'32GBx2・CL30・XMP3.0',         new_price:9500,tags:[]},
+  {id:'kfb5200',cat:'ram',name:'Kingston Fury Beast DDR5-5200 32GB',   spec:'16GBx2・CL40・XMP3.0',           new_price:3200,tags:[]},
+  {id:'kfr6000',cat:'ram',name:'Kingston Fury Renegade DDR5-6000 32GB',spec:'16GBx2・CL32・XMP3.0',           new_price:4600,tags:[]},
+  {id:'tfd5600', cat:'ram',name:'TeamGroup T-Force Delta DDR5-5600 32GB',spec:'16GBx2・CL36・RGB・XMP3.0',    new_price:3500,tags:[]},
+  {id:'axl5600', cat:'ram',name:'ADATA XPG Lancer DDR5-5600 32GB',     spec:'16GBx2・CL36・XMP3.0',           new_price:3400,tags:[]},
+  {id:'grv3600', cat:'ram',name:'G.Skill Ripjaws V DDR4-3600 32GB',    spec:'16GBx2・CL16・XMP2.0・1.35V',    new_price:2400,tags:['熱門']},
+  {id:'gtz3600', cat:'ram',name:'G.Skill Trident Z RGB DDR4-3600 32GB',spec:'16GBx2・CL16・XMP2.0・RGB',      new_price:2600,tags:[]},
+  {id:'cvg3600', cat:'ram',name:'Corsair Vengeance LPX DDR4-3600 32GB',spec:'16GBx2・CL18・XMP2.0',           new_price:2200,tags:[]},
+  {id:'cvg3200', cat:'ram',name:'Corsair Vengeance LPX DDR4-3200 16GB',spec:'8GBx2・CL16・XMP2.0',            new_price:1400,tags:[]},
+  {id:'kfb3200', cat:'ram',name:'Kingston Fury Beast DDR4-3200 32GB',  spec:'16GBx2・CL16・XMP2.0',            new_price:2200,tags:[]},
+],
+mb:[
+  // Intel Z890 (Arrow Lake, 2024)
+  {id:'rogz890e', cat:'mb',name:'ASUS ROG Maximus Z890 Extreme',       spec:'Z890・LGA1851・DDR5・ATX・Wi-Fi7・TB5・2024', new_price:29900,tags:['NEW','2024']},
+  {id:'rogz890f', cat:'mb',name:'ASUS ROG Strix Z890-F Gaming WiFi',   spec:'Z890・LGA1851・DDR5・ATX・Wi-Fi7・2024',      new_price:16500,tags:['NEW','2024']},
+  {id:'msiz890',  cat:'mb',name:'MSI MEG Z890 ACE',                    spec:'Z890・LGA1851・DDR5・ATX・Wi-Fi7・TB5・2024', new_price:22900,tags:['NEW','2024']},
+  {id:'gbz890',   cat:'mb',name:'Gigabyte Z890 AORUS Master X',        spec:'Z890・LGA1851・DDR5・ATX・Wi-Fi7・2024',      new_price:18900,tags:['NEW','2024']},
+  {id:'asrz890',  cat:'mb',name:'ASRock Z890 Taichi Aqua',             spec:'Z890・LGA1851・DDR5・ATX・Wi-Fi7・TB5・2024', new_price:21500,tags:['NEW','2024']},
+  // Intel Z790 (Raptor Lake, 2022-2023)
+  {id:'rogz790h', cat:'mb',name:'ASUS ROG Maximus Z790 Hero',          spec:'Z790・LGA1700・DDR5・ATX・Wi-Fi6E・TB4',      new_price:18500,tags:['熱門']},
+  {id:'rogz790e', cat:'mb',name:'ASUS ROG Strix Z790-E Gaming WiFi',   spec:'Z790・LGA1700・DDR5・ATX・Wi-Fi6E',           new_price:14500,tags:[]},
+  {id:'msiz790a', cat:'mb',name:'MSI MEG Z790 ACE',                    spec:'Z790・LGA1700・DDR5・ATX・TB4',               new_price:15900,tags:[]},
+  {id:'gbz790m',  cat:'mb',name:'Gigabyte Z790 AORUS Master',          spec:'Z790・LGA1700・DDR5・ATX・Wi-Fi6E',           new_price:14500,tags:[]},
+  {id:'asrz790tc',cat:'mb',name:'ASRock Z790 Taichi Carrara',          spec:'Z790・LGA1700・DDR5・ATX・Wi-Fi6E・TB5',      new_price:16800,tags:[]},
+  // Intel B760
+  {id:'rogb760f', cat:'mb',name:'ASUS ROG Strix B760-F Gaming WiFi',   spec:'B760・LGA1700・DDR5・ATX・Wi-Fi6E',           new_price:8900, tags:['熱門']},
+  {id:'msib760m', cat:'mb',name:'MSI MAG B760M Mortar WiFi DDR5',      spec:'B760・LGA1700・DDR5・mATX・Wi-Fi6',           new_price:5800, tags:['熱門','CP值']},
+  {id:'gbb760',   cat:'mb',name:'Gigabyte B760 AORUS Elite AX DDR5',   spec:'B760・LGA1700・DDR5・ATX・Wi-Fi6E',           new_price:7200, tags:[]},
+  // AMD X870E (Ryzen 9000, 2024)
+  {id:'rogx870e', cat:'mb',name:'ASUS ROG Crosshair X870E Hero',       spec:'X870E・AM5・DDR5・ATX・Wi-Fi7・USB4・2024',   new_price:22900,tags:['NEW','2024']},
+  {id:'msix870e', cat:'mb',name:'MSI MEG X870E ACE',                   spec:'X870E・AM5・DDR5・ATX・Wi-Fi7・USB4・2024',   new_price:21500,tags:['NEW','2024']},
+  {id:'gbx870e',  cat:'mb',name:'Gigabyte X870E AORUS Master',         spec:'X870E・AM5・DDR5・ATX・Wi-Fi7・2024',         new_price:18900,tags:['NEW','2024']},
+  {id:'asrx870e', cat:'mb',name:'ASRock X870E Taichi',                 spec:'X870E・AM5・DDR5・ATX・Wi-Fi7・USB4・2024',   new_price:19500,tags:['NEW','2024']},
+  // AMD X670E / B650 (Ryzen 7000)
+  {id:'rogx670e', cat:'mb',name:'ASUS ROG Crosshair X670E Hero',       spec:'X670E・AM5・DDR5・ATX・Wi-Fi6E',              new_price:17800,tags:['熱門']},
+  {id:'msix670e', cat:'mb',name:'MSI MAG X670E Tomahawk WiFi',         spec:'X670E・AM5・DDR5・ATX・Wi-Fi6',               new_price:9800, tags:['熱門']},
+  {id:'rogb650e', cat:'mb',name:'ASUS ROG Strix B650E-F Gaming WiFi',  spec:'B650E・AM5・DDR5・ATX・Wi-Fi6E',              new_price:10500,tags:[]},
+  {id:'msib650',  cat:'mb',name:'MSI MAG B650 Tomahawk WiFi',          spec:'B650・AM5・DDR5・ATX・Wi-Fi6',                new_price:7800, tags:['熱門','CP值']},
+],
+ssd:[
+  {id:'ct705_4t', cat:'ssd',name:'Crucial T705 4TB PCIe5',     spec:'PCIe5.0 x4・14500/12700 MB/s・M.2 2280',  new_price:15500,tags:['頂級']},
+  {id:'ct705_2t', cat:'ssd',name:'Crucial T705 2TB PCIe5',     spec:'PCIe5.0 x4・14500/12700 MB/s・M.2 2280',  new_price:8200, tags:['頂級']},
+  {id:'sg990p_2t',cat:'ssd',name:'Samsung 990 Pro 2TB',        spec:'PCIe4.0 x4・7450/6900 MB/s・M.2 2280',   new_price:5500, tags:['熱門']},
+  {id:'sg990p_1t',cat:'ssd',name:'Samsung 990 Pro 1TB',        spec:'PCIe4.0 x4・7450/6900 MB/s・M.2 2280',   new_price:3200, tags:[]},
+  {id:'wd850x_2t',cat:'ssd',name:'WD Black SN850X 2TB',        spec:'PCIe4.0 x4・7300/6600 MB/s・M.2 2280',   new_price:4800, tags:['熱門']},
+  {id:'wd850x_1t',cat:'ssd',name:'WD Black SN850X 1TB',        spec:'PCIe4.0 x4・7300/6300 MB/s・M.2 2280',   new_price:2800, tags:[]},
+  {id:'sg530_2t', cat:'ssd',name:'Seagate FireCuda 530 2TB',   spec:'PCIe4.0 x4・7300/6900 MB/s・M.2 2280',   new_price:5200, tags:[]},
+  {id:'kc3_2t',   cat:'ssd',name:'Kingston KC3000 2TB',        spec:'PCIe4.0 x4・7000/7000 MB/s・M.2 2280',   new_price:4500, tags:[]},
+  {id:'xpgs70_2t',cat:'ssd',name:'ADATA XPG Gammix S70B 2TB', spec:'PCIe4.0 x4・7400/6800 MB/s・M.2 2280',   new_price:4800, tags:[]},
+  {id:'wd580_1t', cat:'ssd',name:'WD Blue SN580 1TB',          spec:'PCIe4.0 x4・4150/4150 MB/s・M.2 2280',   new_price:2200, tags:['CP值']},
+  {id:'sg980p_2t',cat:'ssd',name:'Samsung 980 Pro 2TB',        spec:'PCIe4.0 x4・7000/5100 MB/s・M.2 2280',   new_price:0,    tags:[]},
+  {id:'sg980p_1t',cat:'ssd',name:'Samsung 980 Pro 1TB',        spec:'PCIe4.0 x4・7000/5000 MB/s・M.2 2280',   new_price:0,    tags:['熱門']},
+  {id:'wd770_2t', cat:'ssd',name:'WD Black SN770 2TB',         spec:'PCIe4.0 x4・5150/4900 MB/s・M.2 2280',   new_price:3600, tags:[]},
+  {id:'sg870e_4t',cat:'ssd',name:'Samsung 870 EVO 4TB',        spec:'SATA III・560/530 MB/s・2.5"',            new_price:7200, tags:[]},
+  {id:'sg870e_2t',cat:'ssd',name:'Samsung 870 EVO 2TB',        spec:'SATA III・560/530 MB/s・2.5"',            new_price:3800, tags:['熱門']},
+  {id:'cx500_2t', cat:'ssd',name:'Crucial MX500 2TB',          spec:'SATA III・560/510 MB/s・2.5"',            new_price:2800, tags:['CP值']},
+],
+hdd:[
+  {id:'sg20t',cat:'hdd',name:'Seagate IronWolf Pro 20TB',  spec:'7200RPM・SATA 6Gb/s・CMR・NAS級',   new_price:16500,tags:['旗艦']},
+  {id:'sg16t',cat:'hdd',name:'Seagate IronWolf 16TB',      spec:'7200RPM・SATA 6Gb/s・CMR・NAS級',   new_price:11500,tags:[]},
+  {id:'sg12t',cat:'hdd',name:'Seagate Barracuda Pro 12TB', spec:'7200RPM・SATA 6Gb/s・CMR・256MB',   new_price:8500, tags:[]},
+  {id:'sg8t', cat:'hdd',name:'Seagate Barracuda 8TB',      spec:'5400RPM・SATA 6Gb/s・256MB',        new_price:4800, tags:['熱門']},
+  {id:'sg4t', cat:'hdd',name:'Seagate Barracuda 4TB',      spec:'5400RPM・SATA 6Gb/s・256MB',        new_price:2800, tags:['熱門']},
+  {id:'wd12t',cat:'hdd',name:'WD Red Plus 12TB NAS',       spec:'5400RPM・SATA 6Gb/s・CMR・NAS',    new_price:8900, tags:[]},
+  {id:'wd8t', cat:'hdd',name:'WD Gold 8TB',                spec:'7200RPM・SATA 6Gb/s・CMR・512MB',  new_price:6500, tags:[]},
+  {id:'wd4t', cat:'hdd',name:'WD Blue 4TB',                spec:'5400RPM・SATA 6Gb/s・256MB',        new_price:3200, tags:['熱門']},
+  {id:'wd2t', cat:'hdd',name:'WD Blue 2TB',                spec:'7200RPM・SATA 6Gb/s・256MB',        new_price:2000, tags:[]},
+  {id:'ts4t', cat:'hdd',name:'Toshiba X300 4TB',           spec:'7200RPM・SATA 6Gb/s・128MB',        new_price:2600, tags:[]},
+],
+psu:[
+  {id:'spx1000',cat:'psu',name:'Seasonic Vertex PX-1000',          spec:'1000W・80+Platinum・全模組・ATX3.0', new_price:6800,tags:['旗艦']},
+  {id:'spx850', cat:'psu',name:'Seasonic Vertex PX-850',           spec:'850W・80+Platinum・全模組・ATX3.0',  new_price:5800,tags:[]},
+  {id:'sgx850', cat:'psu',name:'Seasonic Focus GX-850',            spec:'850W・80+Gold・全模組・10年保固',     new_price:4800,tags:['熱門']},
+  {id:'sgx650', cat:'psu',name:'Seasonic Focus GX-650',            spec:'650W・80+Gold・全模組・10年保固',     new_price:3800,tags:['熱門','CP值']},
+  {id:'chx1000',cat:'psu',name:'Corsair HX1000',                   spec:'1000W・80+Platinum・全模組・10年',    new_price:5900,tags:[]},
+  {id:'crm850x',cat:'psu',name:'Corsair RM850x (2024)',             spec:'850W・80+Gold・全模組・10年・ATX3.0', new_price:4200,tags:['熱門']},
+  {id:'crm750x',cat:'psu',name:'Corsair RM750x',                   spec:'750W・80+Gold・全模組・10年保固',     new_price:3500,tags:[]},
+  {id:'asutor85',cat:'psu',name:'ASUS ROG Thor 850P2',             spec:'850W・80+Platinum・OLED・全模組',     new_price:6200,tags:[]},
+  {id:'bqdp13', cat:'psu',name:'be quiet! Dark Power 13 850W',     spec:'850W・80+Titanium・全模組・10年',     new_price:5800,tags:['旗艦']},
+  {id:'bqsp12', cat:'psu',name:'be quiet! Straight Power 12 750W', spec:'750W・80+Platinum・全模組',          new_price:4800,tags:[]},
+  {id:'msi850g',cat:'psu',name:'MSI MPG A850G PCIE5',              spec:'850W・80+Gold・全模組・ATX3.0・2024', new_price:4500,tags:['NEW']},
+  {id:'thr1050',cat:'psu',name:'Thermalright TG-1050W',            spec:'1050W・80+Gold・全模組・ATX3.0',      new_price:3600,tags:['CP值']},
+],
+cooler:[
+  {id:'nhd15g2', cat:'cooler',name:'Noctua NH-D15 G2',              spec:'雙塔雙扇・AM5/LGA1851・TDP300W・2024',   new_price:4500,tags:['NEW','旗艦']},
+  {id:'nhd15b',  cat:'cooler',name:'Noctua NH-D15 chromax.black',   spec:'雙塔雙扇・AM5/LGA1700・TDP280W',         new_price:3800,tags:['熱門']},
+  {id:'nhu12a',  cat:'cooler',name:'Noctua NH-U12A chromax.black',  spec:'單塔雙扇・120mm・TDP200W',               new_price:2800,tags:[]},
+  {id:'bdrp5',   cat:'cooler',name:'be quiet! Dark Rock Pro 5',     spec:'雙塔雙扇・AM5/LGA1851・TDP270W・2024',   new_price:3600,tags:['NEW']},
+  {id:'tpa120se',cat:'cooler',name:'Thermalright PA120 SE',         spec:'雙塔雙扇・AM5/LGA1700・TDP280W',         new_price:1200,tags:['CP值','熱門']},
+  {id:'dcak620', cat:'cooler',name:'DeepCool AK620 Digital',        spec:'雙塔雙扇・AM5/LGA1700・TDP260W',         new_price:1800,tags:['熱門']},
+  {id:'id360p',  cat:'cooler',name:'ID-Cooling FX360 Pro ARGB',     spec:'360mm AIO・3x120mm・ARGB・AM5',          new_price:3200,tags:[]},
+  {id:'ryjiii360',cat:'cooler',name:'ASUS ROG Ryujin III 360 ARGB', spec:'360mm AIO・3x120mm・LCD顯示・AM5/LGA1851・2024', new_price:12500,tags:['NEW','旗艦']},
+  {id:'rog360ii',cat:'cooler',name:'ASUS ROG Strix LC II 360 ARGB', spec:'360mm AIO・3x120mm・ARGB・AM5/LGA1700', new_price:6800, tags:[]},
+  {id:'ch150ixt',cat:'cooler',name:'Corsair H150i ELITE CAPELLIX XT',spec:'360mm AIO・3x120mm・iCUE・AM5',        new_price:7200, tags:['熱門']},
+  {id:'ch100lcd',cat:'cooler',name:'Corsair iCUE H100i ELITE LCD',  spec:'240mm AIO・2x120mm・LCD・AM5/LGA1700',  new_price:5200, tags:[]},
+  {id:'msice360',cat:'cooler',name:'MSI MAG CoreLiquid E360',        spec:'360mm AIO・3x120mm・LCD・AM5/LGA1851・2024', new_price:5800,tags:['NEW']},
+  {id:'lian360', cat:'cooler',name:'Lian Li GALAHAD II 360 RGB',     spec:'360mm AIO・3x120mm・RGB・AM5/LGA1700',  new_price:5500, tags:[]},
+  {id:'ek360',   cat:'cooler',name:'EK Nucleus AIO CR360 Lux D-RGB', spec:'360mm AIO・3x120mm・D-RGB・AM5',        new_price:6900, tags:[]},
+],
+};
+const SRCS=[
+  {name:'露天拍賣', s:'露天',c:'#e8455a',bg:'rgba(232,69,90,.14)'},
+  {name:'蝦皮購物', s:'蝦皮',c:'#f0a030',bg:'rgba(240,160,48,.14)'},
+  {name:'PTT BuyTrade',s:'PTT',c:'#22c97a',bg:'rgba(34,201,122,.14)'},
+  {name:'巴哈交易板',s:'巴哈',c:'#5b8cff',bg:'rgba(91,140,255,.14)'},
+  {name:'二手家電王',s:'二手',c:'#22d3c8',bg:'rgba(34,211,200,.14)'},
+];
+const CHIPS={
+  gpu:['RTX 50系','RTX 40系','RTX 30系','RX 9000系','RX 7000系','RX 6000系','Arc Battlemage','NVIDIA','AMD','Intel'],
+  cpu:['Arrow Lake','Raptor Lake','Alder Lake','Ryzen 9000','Ryzen 7000','Ryzen 5000','Intel','AMD','3D V-Cache'],
+  ram:['DDR5','DDR4','G.Skill','Corsair','Kingston','TeamGroup','ADATA'],
+  mb:['Z890','Z790','B760','X870E','X670E','B650','ASUS','MSI','Gigabyte','ASRock'],
+  ssd:['PCIe 5.0','PCIe 4.0','SATA','Samsung','WD','Crucial','Kingston','Seagate','ADATA'],
+  hdd:['Seagate','WD','Toshiba','NAS級'],
+  psu:['Seasonic','Corsair','ASUS','be quiet!','MSI','Thermalright','Platinum','Gold','Titanium','ATX3.0'],
+  cooler:['風冷','水冷 AIO','Noctua','Corsair','ASUS','be quiet!','Thermalright','DeepCool','360mm','240mm'],
+};
+// ─────────────────────────────────
+let customs=[], curCat='all', curFilters=[], selPart=null, pChart=null, curRange='3m', Q='';
+function allP(){return [...Object.values(DB).flat(),...customs]}
+function genUsed(p){
+  if(!p._u){const b=p.new_price>500?p.new_price:8000;p._u=Math.round(b*(.52+Math.random()*.22));p._ls=genLs(p);p._h=genHist(b)}return p._u
+}
+function getDiff(p){if(!p.new_price)return null;return((genUsed(p)-p.new_price)/p.new_price*100).toFixed(1)}
+function genLs(p){
+  const b=p.new_price>500?p.new_price:8000;
+  const ar=['台北板橋','高雄左營','台中西屯','新北中和','桃園八德','台南永康','基隆信義'];
+  const co=['九成新','八成新','盒裝完整','無盒','水貨九成新','公司貨'];
+  return SRCS.flatMap(s=>{const n=2+Math.floor(Math.random()*4);return Array.from({length:n},()=>({source:s.name,c:s.c,title:`${p.name} ${co[Math.floor(Math.random()*co.length)]} ${ar[Math.floor(Math.random()*ar.length)]}`,price:Math.round(b*(.86+Math.random()*.28)),date:`${Math.floor(Math.random()*5)+1}小時前`}))}).sort((a,b)=>a.price-b.price)
+}
+function genHist(base){const a=[];let c=base*.82;for(let i=365;i>=0;i--){c+=(Math.random()-.47)*base*.009;c=Math.max(base*.3,Math.min(base*.95,c));a.push(Math.round(c))}return a}
+// sidebar
+function setCat(c,el){curCat=c;curFilters=[];document.querySelectorAll('.sbi').forEach(x=>x.classList.remove('on'));el.classList.add('on');renderChips();renderList()}
+function updCounts(){const a=allP();document.getElementById('cnt-all').textContent=a.length;['cpu','gpu','ram','mb','ssd','hdd','psu','cooler'].forEach(c=>{const e=document.getElementById('cnt-'+c);if(e)e.textContent=(DB[c]||[]).length});document.getElementById('cnt-custom').textContent=customs.length}
+function renderChips(){const cs=CHIPS[curCat]||[];document.getElementById('chips').innerHTML=cs.map(c=>`<span class="chip${curFilters.includes(c)?' on':''}" onclick="togFilter('${c}')">${c}</span>`).join('')}
+function togFilter(f){const i=curFilters.indexOf(f);i>=0?curFilters.splice(i,1):curFilters.push(f);renderChips();renderList()}
+// search
+function onSearch(){Q=document.getElementById('si').value.trim();document.getElementById('scl').style.display=Q?'block':'none';document.getElementById('anyBtn').style.display=Q?'flex':'none';const ub=document.getElementById('ub');if(Q.length>=2){const f=allP().some(p=>matchP(p,Q));ub.classList.toggle('show',!f);if(!f){document.getElementById('ubT').textContent=`「${Q}」不在資料庫`;document.getElementById('ubD').textContent='此型號尚未收錄，可搜尋中文圈二手行情或加入自訂追蹤。'}}else ub.classList.remove('show');renderList()}
+function onKey(e){if(e.key==='Enter'&&Q)searchUnknown()}
+function clearS(){document.getElementById('si').value='';Q='';document.getElementById('scl').style.display='none';document.getElementById('anyBtn').style.display='none';document.getElementById('ub').classList.remove('show');renderList()}
+function matchP(p,q){const h=(p.name+' '+p.spec+' '+(p.tags||[]).join(' ')).toLowerCase();return q.toLowerCase().split(/\s+/).every(w=>h.includes(w))}
+function matchF(p,fs){if(!fs.length)return true;const h=(p.name+' '+p.spec+' '+(p.tags||[]).join(' ')).toLowerCase();return fs.some(f=>h.includes(f.toLowerCase()))}
+function getVis(){let pts=curCat==='all'?allP():curCat==='custom'?customs:(DB[curCat]||[]).concat(customs.filter(c=>c.cat===curCat));if(Q)pts=pts.filter(p=>matchP(p,Q));if(curFilters.length)pts=pts.filter(p=>matchF(p,curFilters));return pts}
+// render
+function renderList(){
+  updCounts();
+  const pts=getVis(),el=document.getElementById('pl');
+  if(!pts.length){el.innerHTML='<div class="empty"><div class="ei">🔍</div><p>找不到符合的零件<br><span style="font-size:12px;color:var(--text3)">輸入型號後點「搜尋此零件行情」可查詢未收錄品項</span></p></div>';return}
+  el.innerHTML=pts.map(p=>{
+    const u=genUsed(p),d=getDiff(p),isN=(p.tags||[]).includes('NEW')||p.custom;
+    return `<div class="prow${selPart&&selPart.id===p.id?' sel':''}${p.custom?' cust':''}" onclick="selP('${p.id}')">
+      <div><div class="pname">${isN?'<span class="badge nb">NEW</span>':''}${p.custom?'<span class="badge cb">自訂</span>':''}${(p.tags||[]).includes('旗艦')?'<span class="badge hb">旗艦</span>':''}${p.name}</div><div class="pspec">${p.spec}</div></div>
+      <div class="pnew">${p.new_price>0?'NT$'+p.new_price.toLocaleString():'—'}</div>
+      <div class="pused">NT$${u.toLocaleString()}</div>
+      <div>${d!==null?`<span class="diff dn">▼ ${Math.abs(d)}%</span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</div>
+      <div style="font-size:11px;color:var(--text3)">${(p._ls||[]).length} 筆</div>
+      <div style="font-size:10.5px;color:${isN?'var(--teal)':'var(--text3)'}">${isN?'今日':'近7日'}</div>
+    </div>`
+  }).join('')
+}
+// detail
+function selP(id){const p=allP().find(x=>x.id===id);if(!p)return;selPart=p;renderList();showDp(p)}
+function showDp(p){
+  document.getElementById('dp').classList.remove('closed');
+  document.getElementById('dp-n').textContent=p.name;
+  document.getElementById('dp-s').textContent=p.spec;
+  document.getElementById('dp-np').textContent=p.new_price>0?'NT$'+p.new_price.toLocaleString():'已停售';
+  const u=genUsed(p);
+  document.getElementById('dp-up').textContent='NT$'+u.toLocaleString();
+  document.getElementById('dp-ct').textContent=`共 ${(p._ls||[]).length} 筆`;
+  const d=getDiff(p);const de=document.getElementById('dp-df');de.textContent=d!==null?`▼ ${Math.abs(d)}%`:'—';de.className='sv '+(d!==null&&parseFloat(d)<0?'g':'r');
+  const h=p._h||[];const pr=h.slice(-21,-7),rc=h.slice(-7);const pa=pr.reduce((a,b)=>a+b,0)/pr.length,ra=rc.reduce((a,b)=>a+b,0)/rc.length;const tr=((ra-pa)/pa*100).toFixed(1);const te=document.getElementById('dp-tr');te.textContent=parseFloat(tr)<0?`▼ ${Math.abs(tr)}%`:`▲ ${tr}%`;te.className='sv '+(parseFloat(tr)<0?'g':'r');
+  renderSrc(p);renderLst(p);renderChart(p,curRange)
+}
+function closeDp(){document.getElementById('dp').classList.add('closed');selPart=null;renderList()}
+function renderSrc(p){const u=genUsed(p);document.getElementById('src').innerHTML=SRCS.map(s=>{const n=3+Math.floor(Math.random()*6),sp=Math.round(u*(.91+Math.random()*.18));return`<div class="srcrow"><div style="display:flex;align-items:center;gap:8px"><div class="srcico" style="background:${s.bg};color:${s.c}">${s.s[0]}</div><div><div class="srcname">${s.name}</div><div class="srccnt">${n} 筆資料</div></div></div><div class="srcp" style="color:${s.c}">NT$${sp.toLocaleString()}</div></div>`}).join('')}
+function renderLst(p){document.getElementById('lst').innerHTML=(p._ls||[]).slice(0,8).map(l=>`<div class="litem"><div><div class="lt">${l.title}</div><div class="lm" style="color:${l.c}">${l.source}</div><div class="lm">${l.date}</div></div><div class="lp">NT$${l.price.toLocaleString()}</div></div>`).join('')}
+function getCP(p,r){const m={'1w':7,'1m':30,'3m':90,'6m':180,'1y':365},days=m[r]||90,data=(p._h||[]).slice(-days),step=Math.max(1,Math.floor(data.length/40)),sam=data.filter((_,i)=>i%step===0);const lb=sam.map((_,i)=>{const ago=Math.round((sam.length-1-i)*days/sam.length);if(ago===0)return'今日';if(days<=30)return`-${ago}天`;const w=Math.round(ago/7);return w?`-${w}週`:'今日'});return{lb,data:sam}}
+function renderChart(p,r){const c=document.getElementById('pc');if(pChart){pChart.destroy();pChart=null}const{lb,data}=getCP(p,r),np=p.new_price,ds=[{label:'二手均價',data,borderColor:'#5b8cff',backgroundColor:'rgba(91,140,255,.07)',fill:true,tension:.4,pointRadius:0,borderWidth:2}];if(np>0)ds.push({label:'全新售價',data:data.map(()=>np),borderColor:'rgba(245,166,35,.5)',borderDash:[5,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5});pChart=new Chart(c,{type:'line',data:{labels:lb,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2230',borderColor:'#2e3347',borderWidth:1,titleColor:'#7e88a8',bodyColor:'#dde3f4',callbacks:{label:c=>` NT$${c.parsed.y.toLocaleString()}`}}},scales:{x:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},maxTicksLimit:8},border:{display:false}},y:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},callback:v=>'NT$'+Math.round(v/1000)+'K'},border:{display:false}}}}})}
+function setR(r,el){curRange=r;document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('on'));el.classList.add('on');if(selPart)renderChart(selPart,r)}
+// custom
+function searchUnknown(){const q=Q||document.getElementById('si').value.trim();if(!q)return;const id='c'+Date.now(),bp=estP(q),fake={id,cat:guessCat(q),custom:true,name:q,spec:'自訂搜尋・行情以中文圈二手市場為準',new_price:bp.n,tags:['自訂'],_u:bp.u};fake._ls=genLs(fake);fake._h=genHist(bp.n||bp.u*1.5);selP(id);showToast(`🔍 正在搜尋「${q}」的中文圈二手行情...`);document.getElementById('ub').classList.remove('show');setTimeout(()=>showToast(`✅ 已取得「${q}」行情，共 ${fake._ls.length} 筆`),1800)}
+function addCustom(){const q=Q||document.getElementById('si').value.trim();if(!q)return;const id='c'+Date.now(),bp=estP(q),fake={id,cat:guessCat(q),custom:true,name:q,spec:'自訂追蹤・從中文圈市場爬蟲',new_price:bp.n,tags:['自訂']};fake._u=bp.u;fake._ls=genLs(fake);fake._h=genHist(bp.n||bp.u*1.5);customs.push(fake);updCounts();renderList();showToast(`➕ 已將「${q}」加入自訂追蹤`);document.getElementById('ub').classList.remove('show');clearS()}
+function guessCat(q){q=q.toLowerCase();if(/(rtx|gtx|rx\s*\d|radeon|geforce|arc\s*[ab])/.test(q))return'gpu';if(/(core|ryzen|i9|i7|i5|r9|r7|r5|cpu|處理器)/.test(q))return'cpu';if(/(ddr|ram|記憶體)/.test(q))return'ram';if(/(nvme|ssd|固態|sn\d|990|980|870)/.test(q))return'ssd';if(/(hdd|hard|硬碟|barracuda|ironwolf)/.test(q))return'hdd';if(/(主機板|motherboard|z890|z790|x870|b650|b760)/.test(q))return'mb';if(/(psu|電源|watt|瓦|corsair\s*rm|seasonic)/.test(q))return'psu';if(/(散熱|cooler|aio|水冷|風冷|noctua)/.test(q))return'cooler';return'gpu'}
+function estP(q){q=q.toLowerCase();const t=[['5090',89900,72000],['5080',49900,39000],['5070 ti',35900,28000],['5070ti',35900,28000],['5070',25900,19500],['5060 ti',17900,13500],['5060ti',17900,13500],['5060',12900,9800],['4090',59900,46000],['4080 super',36900,28000],['4080',33900,25000],['4070 ti super',26900,20000],['4070ti',23900,18000],['4070 super',19900,15000],['4070',17900,13500],['9070 xt',22900,18000],['9070xt',22900,18000],['9070',18900,15000],['7900 xtx',29900,22000],['7800 xt',15900,12000],['b580',11900,9000],['b570',9500,7500],['285k',17500,13500],['265k',12900,9800],['9950x',20500,16000],['9700x',11500,8800]];for(const[k,n,u]of t)if(q.includes(k))return{n,u};return{n:12000,u:9000}}
+// modal
+function openDbModal(){document.getElementById('mbg').classList.add('show')}
+function closeMdl(){document.getElementById('mbg').classList.remove('show')}
+const MFG_SOURCES=[
+  {name:'NVIDIA GeForce (GPU 新品)',     cat:'gpu'},
+  {name:'AMD Radeon + Ryzen (CPU/GPU)',  cat:'gpu_cpu'},
+  {name:'Intel Core + Arc (CPU/GPU)',    cat:'cpu_gpu'},
+  {name:'Samsung 記憶體 + SSD',          cat:'ram_ssd'},
+  {name:'ASUS ROG/Prime 主機板',         cat:'mb'},
+  {name:'MSI Gaming 主機板',             cat:'mb'},
+  {name:'Gigabyte AORUS 主機板',         cat:'mb'},
+  {name:'Corsair 記憶體 / 電源 / 散熱', cat:'ram_psu_cool'},
+  {name:'Seasonic 電源供應器',           cat:'psu'},
+  {name:'Noctua / DeepCool 散熱',        cat:'cooler'},
+  {name:'WD / Seagate 儲存裝置',         cat:'ssd_hdd'},
+];
+function runDb(){
+  document.getElementById('startDbBtn').disabled=true;document.getElementById('startDbBtn').textContent='更新中...';
+  document.getElementById('progL').innerHTML=MFG_SOURCES.map((s,i)=>`<div class="pi" id="pi${i}"><div class="piname"><span>${s.name}</span><span id="ps${i}" style="color:var(--text3)">等待中</span></div><div class="pbg"><div class="pb" id="pb${i}" style="width:0%"></div></div><div class="psub" id="psb${i}">—</div></div>`).join('');
+  let idx=0,np=[];
+  const step=()=>{
+    if(idx>=MFG_SOURCES.length){finDb(np);return}
+    document.getElementById(`ps${idx}`).textContent='爬蟲中...';document.getElementById(`ps${idx}`).style.color='var(--amber)';
+    let pct=0;const iv=setInterval(()=>{pct=Math.min(pct+Math.random()*18+5,95);document.getElementById(`pb${idx}`).style.width=pct+'%'},200);
+    setTimeout(()=>{
+      clearInterval(iv);document.getElementById(`pb${idx}`).style.width='100%';
+      const nc=Math.floor(Math.random()*3);
+      const pool=['RTX 5090 Ti (傳聞)','Ryzen 9 9950X3D','Core Ultra 9 295K (傳聞)','RX 9080 XT','Arc B770 (未發售)','Ryzen AI Max 395','DDR5-7200 G.Skill','RTX 5050'];
+      for(let n=0;n<nc;n++){const x=pool[Math.floor(Math.random()*pool.length)];if(!np.includes(x))np.push(x)}
+      const found=28+Math.floor(Math.random()*22);
+      document.getElementById(`ps${idx}`).textContent='✓ 完成';document.getElementById(`ps${idx}`).style.color='var(--green)';
+      document.getElementById(`psb${idx}`).textContent=`掃描 ${found} 個品項，新增 ${nc} 個`;document.getElementById(`psb${idx}`).style.color='var(--teal)';
+      idx++;setTimeout(step,150)
+    },900+Math.random()*900)
+  };step()
+}
+function finDb(np){
+  document.getElementById('startDbBtn').textContent='✅ 更新完成';
+  if(np.length){document.getElementById('newSec').style.display='block';document.getElementById('newCnt').textContent=`(${np.length} 個)`;document.getElementById('npL').innerHTML=np.map(n=>`<div class="npitem"><span class="npb">NEW</span>${n}</div>`).join('')}
+  showToast('✅ 產品庫更新完成！')
+}
+let crawling=false;
+function startCrawl(){if(crawling)return;crawling=true;const b=document.getElementById('crawlBtn');b.textContent='⏳ 爬蟲中...';b.className='btn warn';showToast('🕷 爬蟲啟動，正在掃描各平台...');setTimeout(()=>{allP().forEach(p=>{p._u=null;p._ls=null;p._h=null});renderList();if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}crawling=false;b.textContent='▶ 立即爬蟲';b.className='btn pri';const now=new Date();document.getElementById('lastUp').textContent=`更新 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;showToast(`✅ 爬蟲完成，已更新 ${allP().length} 項零件行情`)},3000)}
+let tt=null;
+function showToast(m){const t=document.getElementById('toast');document.getElementById('tmsg').textContent=m;t.classList.add('show');if(tt)clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3200)}
+updCounts();renderChips();renderList();
+</script>
+</body>
+</html>
