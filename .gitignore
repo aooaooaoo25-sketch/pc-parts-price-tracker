@@ -1,0 +1,34 @@
+# === 本專案敏感檔 / 產出檔 ===
+# .env：API 金鑰，絕不提交
+.env
+# *.db：SQLite 資料庫（pc_prices.db 執行後自動產生）
+*.db
+# price_report.json：匯出報表（執行後自動產生）
+price_report.json
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# 虛擬環境
+.venv/
+venv/
+env/
+ENV/
+
+# === 測試 / 工具快取 ===
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# === 編輯器 / 作業系統 ===
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
