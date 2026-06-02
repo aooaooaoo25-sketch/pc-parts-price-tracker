@@ -52,166 +52,254 @@ class PriceSnapshot:
 # ─────────────────────────────────────────────────
 
 PARTS_DB = {
-    # ── CPU ──────────────────────────────────────
+    # ── CPU ──
     "cpu": {
+        "intel_ultra": [
+            {"id": "cpu_ultra9_285k", "name": "Core Ultra 9 285K", "aliases": ["Ultra 9 285K", "285K"], "new_price": 17500},
+            {"id": "cpu_ultra7_265k", "name": "Core Ultra 7 265K", "aliases": ["Ultra 7 265K", "265K"], "new_price": 12900},
+            {"id": "cpu_ultra5_245k", "name": "Core Ultra 5 245K", "aliases": ["Ultra 5 245K", "245K"], "new_price": 9500},
+            {"id": "cpu_ultra5_235", "name": "Core Ultra 5 235", "aliases": ["Ultra 5 235", "235"], "new_price": 8200},
+        ],
         "intel_14": [
-            {"id":"cpu_i9_14900k", "name":"Intel Core i9-14900K",    "aliases":["i9-14900K","14900K"],             "new_price":15900, "socket":"LGA1700"},
-            {"id":"cpu_i7_14700k", "name":"Intel Core i7-14700K",    "aliases":["i7-14700K","14700K"],             "new_price":11900, "socket":"LGA1700"},
-            {"id":"cpu_i5_14600k", "name":"Intel Core i5-14600K",    "aliases":["i5-14600K","14600K"],             "new_price":8500,  "socket":"LGA1700"},
-            {"id":"cpu_i5_14400f", "name":"Intel Core i5-14400F",    "aliases":["i5-14400F","14400F"],             "new_price":5900,  "socket":"LGA1700"},
+            {"id": "cpu_i9_14900k", "name": "Core i9-14900K", "aliases": ["i9-14900K", "14900K"], "new_price": 15900},
+            {"id": "cpu_i9_14900kf", "name": "Core i9-14900KF", "aliases": ["i9-14900KF", "14900KF"], "new_price": 14900},
+            {"id": "cpu_i7_14700k", "name": "Core i7-14700K", "aliases": ["i7-14700K", "14700K"], "new_price": 11900},
+            {"id": "cpu_i7_14700kf", "name": "Core i7-14700KF", "aliases": ["i7-14700KF", "14700KF"], "new_price": 11000},
+            {"id": "cpu_i5_14600k", "name": "Core i5-14600K", "aliases": ["i5-14600K", "14600K"], "new_price": 8500},
+            {"id": "cpu_i5_14600kf", "name": "Core i5-14600KF", "aliases": ["i5-14600KF", "14600KF"], "new_price": 7900},
+            {"id": "cpu_i5_14400f", "name": "Core i5-14400F", "aliases": ["i5-14400F", "14400F"], "new_price": 5800},
         ],
         "intel_13": [
-            {"id":"cpu_i9_13900k", "name":"Intel Core i9-13900K",    "aliases":["i9-13900K","13900K"],             "new_price":14200, "socket":"LGA1700"},
-            {"id":"cpu_i7_13700k", "name":"Intel Core i7-13700K",    "aliases":["i7-13700K","13700K"],             "new_price":10800, "socket":"LGA1700"},
-            {"id":"cpu_i5_13600k", "name":"Intel Core i5-13600K",    "aliases":["i5-13600K","13600K"],             "new_price":7800,  "socket":"LGA1700"},
-            {"id":"cpu_i5_13400f", "name":"Intel Core i5-13400F",    "aliases":["i5-13400F","13400F"],             "new_price":4800,  "socket":"LGA1700"},
+            {"id": "cpu_i9_13900k", "name": "Core i9-13900K", "aliases": ["i9-13900K", "13900K"], "new_price": 14200},
+            {"id": "cpu_i7_13700k", "name": "Core i7-13700K", "aliases": ["i7-13700K", "13700K"], "new_price": 10800},
+            {"id": "cpu_i5_13600k", "name": "Core i5-13600K", "aliases": ["i5-13600K", "13600K"], "new_price": 7800},
+            {"id": "cpu_i5_13400f", "name": "Core i5-13400F", "aliases": ["i5-13400F", "13400F"], "new_price": 4800},
         ],
         "intel_12": [
-            {"id":"cpu_i9_12900k", "name":"Intel Core i9-12900K",    "aliases":["i9-12900K","12900K"],             "new_price":0,     "socket":"LGA1700"},
-            {"id":"cpu_i7_12700k", "name":"Intel Core i7-12700K",    "aliases":["i7-12700K","12700K"],             "new_price":0,     "socket":"LGA1700"},
-            {"id":"cpu_i5_12600k", "name":"Intel Core i5-12600K",    "aliases":["i5-12600K","12600K"],             "new_price":0,     "socket":"LGA1700"},
+            {"id": "cpu_i9_12900k", "name": "Core i9-12900K", "aliases": ["i9-12900K", "12900K"], "new_price": 0},
+            {"id": "cpu_i7_12700k", "name": "Core i7-12700K", "aliases": ["i7-12700K", "12700K"], "new_price": 0},
+            {"id": "cpu_i5_12600k", "name": "Core i5-12600K", "aliases": ["i5-12600K", "12600K"], "new_price": 0},
+            {"id": "cpu_i5_12400f", "name": "Core i5-12400F", "aliases": ["i5-12400F", "12400F"], "new_price": 0},
+        ],
+        "amd_9000": [
+            {"id": "cpu_r9_9950x", "name": "Ryzen 9 9950X", "aliases": ["Ryzen 9 9950X", "9950X"], "new_price": 20500},
+            {"id": "cpu_r9_9900x", "name": "Ryzen 9 9900X", "aliases": ["Ryzen 9 9900X", "9900X"], "new_price": 15500},
+            {"id": "cpu_r7_9700x", "name": "Ryzen 7 9700X", "aliases": ["Ryzen 7 9700X", "9700X"], "new_price": 11500},
+            {"id": "cpu_r5_9600x", "name": "Ryzen 5 9600X", "aliases": ["Ryzen 5 9600X", "9600X"], "new_price": 8500},
         ],
         "amd_7000": [
-            {"id":"cpu_r9_7950x",  "name":"AMD Ryzen 9 7950X",       "aliases":["R9 7950X","7950X"],               "new_price":18500, "socket":"AM5"},
-            {"id":"cpu_r9_7900x",  "name":"AMD Ryzen 9 7900X",       "aliases":["R9 7900X","7900X"],               "new_price":13500, "socket":"AM5"},
-            {"id":"cpu_r7_7700x",  "name":"AMD Ryzen 7 7700X",       "aliases":["R7 7700X","7700X"],               "new_price":8900,  "socket":"AM5"},
-            {"id":"cpu_r5_7600x",  "name":"AMD Ryzen 5 7600X",       "aliases":["R5 7600X","7600X"],               "new_price":6500,  "socket":"AM5"},
-            {"id":"cpu_r5_7600",   "name":"AMD Ryzen 5 7600",        "aliases":["R5 7600","Ryzen 5 7600"],         "new_price":5800,  "socket":"AM5"},
+            {"id": "cpu_r9_7950x3d", "name": "Ryzen 9 7950X3D", "aliases": ["Ryzen 9 7950X3D", "7950X3D"], "new_price": 22500},
+            {"id": "cpu_r9_7950x", "name": "Ryzen 9 7950X", "aliases": ["Ryzen 9 7950X", "7950X"], "new_price": 18500},
+            {"id": "cpu_r9_7900x3d", "name": "Ryzen 9 7900X3D", "aliases": ["Ryzen 9 7900X3D", "7900X3D"], "new_price": 16500},
+            {"id": "cpu_r9_7900x", "name": "Ryzen 9 7900X", "aliases": ["Ryzen 9 7900X", "7900X"], "new_price": 13500},
+            {"id": "cpu_r7_7700x3d", "name": "Ryzen 7 7700X3D", "aliases": ["Ryzen 7 7700X3D", "7700X3D"], "new_price": 11800},
+            {"id": "cpu_r7_7700x", "name": "Ryzen 7 7700X", "aliases": ["Ryzen 7 7700X", "7700X"], "new_price": 8900},
+            {"id": "cpu_r5_7600x", "name": "Ryzen 5 7600X", "aliases": ["Ryzen 5 7600X", "7600X"], "new_price": 6500},
+            {"id": "cpu_r5_7600", "name": "Ryzen 5 7600", "aliases": ["Ryzen 5 7600", "7600"], "new_price": 5800},
         ],
         "amd_5000": [
-            {"id":"cpu_r9_5950x",  "name":"AMD Ryzen 9 5950X",       "aliases":["R9 5950X","5950X"],               "new_price":0,     "socket":"AM4"},
-            {"id":"cpu_r9_5900x",  "name":"AMD Ryzen 9 5900X",       "aliases":["R9 5900X","5900X"],               "new_price":0,     "socket":"AM4"},
-            {"id":"cpu_r7_5800x3d","name":"AMD Ryzen 7 5800X3D",     "aliases":["R7 5800X3D","5800X3D"],          "new_price":0,     "socket":"AM4"},
-            {"id":"cpu_r5_5600x",  "name":"AMD Ryzen 5 5600X",       "aliases":["R5 5600X","5600X"],               "new_price":4800,  "socket":"AM4"},
-            {"id":"cpu_r5_5600",   "name":"AMD Ryzen 5 5600",        "aliases":["R5 5600"],                        "new_price":3800,  "socket":"AM4"},
+            {"id": "cpu_r9_5950x", "name": "Ryzen 9 5950X", "aliases": ["Ryzen 9 5950X", "5950X"], "new_price": 0},
+            {"id": "cpu_r9_5900x", "name": "Ryzen 9 5900X", "aliases": ["Ryzen 9 5900X", "5900X"], "new_price": 0},
+            {"id": "cpu_r7_5800x3d", "name": "Ryzen 7 5800X3D", "aliases": ["Ryzen 7 5800X3D", "5800X3D"], "new_price": 0},
+            {"id": "cpu_r7_5800x", "name": "Ryzen 7 5800X", "aliases": ["Ryzen 7 5800X", "5800X"], "new_price": 0},
+            {"id": "cpu_r7_5700x", "name": "Ryzen 7 5700X", "aliases": ["Ryzen 7 5700X", "5700X"], "new_price": 0},
+            {"id": "cpu_r5_5600x", "name": "Ryzen 5 5600X", "aliases": ["Ryzen 5 5600X", "5600X"], "new_price": 4800},
+            {"id": "cpu_r5_5600", "name": "Ryzen 5 5600", "aliases": ["Ryzen 5 5600", "5600"], "new_price": 3800},
         ],
     },
-
-    # ── GPU ──────────────────────────────────────
+    # ── GPU ──
     "gpu": {
+        "nvidia_50": [
+            {"id": "gpu_rtx5090", "name": "GeForce RTX 5090", "aliases": ["RTX 5090", "5090"], "new_price": 89900},
+            {"id": "gpu_rtx5080", "name": "GeForce RTX 5080", "aliases": ["RTX 5080", "5080"], "new_price": 49900},
+            {"id": "gpu_rtx5070ti", "name": "GeForce RTX 5070 Ti", "aliases": ["RTX 5070 Ti", "5070 Ti"], "new_price": 35900},
+            {"id": "gpu_rtx5070", "name": "GeForce RTX 5070", "aliases": ["RTX 5070", "5070"], "new_price": 25900},
+            {"id": "gpu_rtx5060ti", "name": "GeForce RTX 5060 Ti", "aliases": ["RTX 5060 Ti", "5060 Ti"], "new_price": 17900},
+            {"id": "gpu_rtx5060", "name": "GeForce RTX 5060", "aliases": ["RTX 5060", "5060"], "new_price": 12900},
+        ],
         "nvidia_40": [
-            {"id":"gpu_4090",        "name":"NVIDIA GeForce RTX 4090",      "aliases":["RTX 4090","4090"],           "new_price":59900, "vram":"24GB"},
-            {"id":"gpu_4080s",       "name":"NVIDIA GeForce RTX 4080 SUPER", "aliases":["RTX 4080S","4080 SUPER"],   "new_price":36900, "vram":"16GB"},
-            {"id":"gpu_4080",        "name":"NVIDIA GeForce RTX 4080",      "aliases":["RTX 4080","4080"],           "new_price":33900, "vram":"16GB"},
-            {"id":"gpu_4070tis",     "name":"NVIDIA GeForce RTX 4070 Ti SUPER","aliases":["RTX 4070Ti Super","4070Ti Super"],"new_price":26900,"vram":"16GB"},
-            {"id":"gpu_4070ti",      "name":"NVIDIA GeForce RTX 4070 Ti",   "aliases":["RTX 4070Ti","4070Ti"],       "new_price":23900, "vram":"12GB"},
-            {"id":"gpu_4070s",       "name":"NVIDIA GeForce RTX 4070 SUPER","aliases":["RTX 4070S","4070 Super"],    "new_price":19900, "vram":"12GB"},
-            {"id":"gpu_4070",        "name":"NVIDIA GeForce RTX 4070",      "aliases":["RTX 4070","4070"],           "new_price":17900, "vram":"12GB"},
-            {"id":"gpu_4060ti_16g",  "name":"NVIDIA GeForce RTX 4060 Ti 16G","aliases":["RTX 4060Ti 16G","4060Ti 16GB"],"new_price":14900,"vram":"16GB"},
-            {"id":"gpu_4060ti",      "name":"NVIDIA GeForce RTX 4060 Ti",   "aliases":["RTX 4060Ti","4060Ti"],       "new_price":12900, "vram":"8GB"},
-            {"id":"gpu_4060",        "name":"NVIDIA GeForce RTX 4060",      "aliases":["RTX 4060","4060"],           "new_price":9900,  "vram":"8GB"},
+            {"id": "gpu_rtx4090", "name": "GeForce RTX 4090", "aliases": ["RTX 4090", "4090"], "new_price": 59900},
+            {"id": "gpu_rtx4080s", "name": "GeForce RTX 4080 SUPER", "aliases": ["RTX 4080 SUPER", "4080 SUPER"], "new_price": 36900},
+            {"id": "gpu_rtx4080", "name": "GeForce RTX 4080", "aliases": ["RTX 4080", "4080"], "new_price": 33900},
+            {"id": "gpu_rtx4070tis", "name": "GeForce RTX 4070 Ti SUPER", "aliases": ["RTX 4070 Ti SUPER", "4070 Ti SUPER"], "new_price": 26900},
+            {"id": "gpu_rtx4070ti", "name": "GeForce RTX 4070 Ti", "aliases": ["RTX 4070 Ti", "4070 Ti"], "new_price": 23900},
+            {"id": "gpu_rtx4070s", "name": "GeForce RTX 4070 SUPER", "aliases": ["RTX 4070 SUPER", "4070 SUPER"], "new_price": 19900},
+            {"id": "gpu_rtx4070", "name": "GeForce RTX 4070", "aliases": ["RTX 4070", "4070"], "new_price": 17900},
+            {"id": "gpu_rtx4060ti_16g", "name": "GeForce RTX 4060 Ti 16GB", "aliases": ["RTX 4060 Ti 16GB", "4060 Ti 16GB"], "new_price": 14900},
+            {"id": "gpu_rtx4060ti", "name": "GeForce RTX 4060 Ti", "aliases": ["RTX 4060 Ti", "4060 Ti"], "new_price": 12900},
+            {"id": "gpu_rtx4060", "name": "GeForce RTX 4060", "aliases": ["RTX 4060", "4060"], "new_price": 9900},
         ],
         "nvidia_30": [
-            {"id":"gpu_3090ti",      "name":"NVIDIA GeForce RTX 3090 Ti",   "aliases":["RTX 3090Ti","3090Ti"],       "new_price":0,     "vram":"24GB"},
-            {"id":"gpu_3090",        "name":"NVIDIA GeForce RTX 3090",      "aliases":["RTX 3090","3090"],           "new_price":0,     "vram":"24GB"},
-            {"id":"gpu_3080_12g",    "name":"NVIDIA GeForce RTX 3080 12GB", "aliases":["RTX 3080 12G","3080 12GB"],  "new_price":0,     "vram":"12GB"},
-            {"id":"gpu_3080",        "name":"NVIDIA GeForce RTX 3080",      "aliases":["RTX 3080 10G","3080 10GB"],  "new_price":0,     "vram":"10GB"},
-            {"id":"gpu_3070ti",      "name":"NVIDIA GeForce RTX 3070 Ti",   "aliases":["RTX 3070Ti","3070Ti"],       "new_price":0,     "vram":"8GB"},
-            {"id":"gpu_3070",        "name":"NVIDIA GeForce RTX 3070",      "aliases":["RTX 3070","3070"],           "new_price":0,     "vram":"8GB"},
-            {"id":"gpu_3060ti",      "name":"NVIDIA GeForce RTX 3060 Ti",   "aliases":["RTX 3060Ti","3060Ti"],       "new_price":0,     "vram":"8GB"},
-            {"id":"gpu_3060",        "name":"NVIDIA GeForce RTX 3060",      "aliases":["RTX 3060","3060"],           "new_price":0,     "vram":"12GB"},
+            {"id": "gpu_rtx3090ti", "name": "GeForce RTX 3090 Ti", "aliases": ["RTX 3090 Ti", "3090 Ti"], "new_price": 0},
+            {"id": "gpu_rtx3090", "name": "GeForce RTX 3090", "aliases": ["RTX 3090", "3090"], "new_price": 0},
+            {"id": "gpu_rtx3080ti", "name": "GeForce RTX 3080 Ti", "aliases": ["RTX 3080 Ti", "3080 Ti"], "new_price": 0},
+            {"id": "gpu_rtx3080_12g", "name": "GeForce RTX 3080 12GB", "aliases": ["RTX 3080 12GB", "3080 12GB"], "new_price": 0},
+            {"id": "gpu_rtx3080", "name": "GeForce RTX 3080", "aliases": ["RTX 3080", "3080"], "new_price": 0},
+            {"id": "gpu_rtx3070ti", "name": "GeForce RTX 3070 Ti", "aliases": ["RTX 3070 Ti", "3070 Ti"], "new_price": 0},
+            {"id": "gpu_rtx3070", "name": "GeForce RTX 3070", "aliases": ["RTX 3070", "3070"], "new_price": 0},
+            {"id": "gpu_rtx3060ti", "name": "GeForce RTX 3060 Ti", "aliases": ["RTX 3060 Ti", "3060 Ti"], "new_price": 0},
+            {"id": "gpu_rtx3060", "name": "GeForce RTX 3060", "aliases": ["RTX 3060", "3060"], "new_price": 0},
+            {"id": "gpu_rtx3050", "name": "GeForce RTX 3050", "aliases": ["RTX 3050", "3050"], "new_price": 0},
+        ],
+        "amd_9000": [
+            {"id": "gpu_rx9070xt", "name": "Radeon RX 9070 XT", "aliases": ["RX 9070 XT", "9070 XT"], "new_price": 22900},
+            {"id": "gpu_rx9070", "name": "Radeon RX 9070", "aliases": ["RX 9070", "9070"], "new_price": 18900},
         ],
         "amd_7000": [
-            {"id":"gpu_rx7900xtx",   "name":"AMD Radeon RX 7900 XTX",       "aliases":["RX 7900XTX","7900XTX"],     "new_price":29900, "vram":"24GB"},
-            {"id":"gpu_rx7900xt",    "name":"AMD Radeon RX 7900 XT",        "aliases":["RX 7900XT","7900XT"],       "new_price":24900, "vram":"20GB"},
-            {"id":"gpu_rx7800xt",    "name":"AMD Radeon RX 7800 XT",        "aliases":["RX 7800XT","7800XT"],       "new_price":15900, "vram":"16GB"},
-            {"id":"gpu_rx7700xt",    "name":"AMD Radeon RX 7700 XT",        "aliases":["RX 7700XT","7700XT"],       "new_price":13900, "vram":"12GB"},
-            {"id":"gpu_rx7600",      "name":"AMD Radeon RX 7600",           "aliases":["RX 7600"],                  "new_price":8900,  "vram":"8GB"},
+            {"id": "gpu_rx7900xtx", "name": "Radeon RX 7900 XTX", "aliases": ["RX 7900 XTX", "7900 XTX"], "new_price": 29900},
+            {"id": "gpu_rx7900xt", "name": "Radeon RX 7900 XT", "aliases": ["RX 7900 XT", "7900 XT"], "new_price": 24900},
+            {"id": "gpu_rx7800xt", "name": "Radeon RX 7800 XT", "aliases": ["RX 7800 XT", "7800 XT"], "new_price": 15900},
+            {"id": "gpu_rx7700xt", "name": "Radeon RX 7700 XT", "aliases": ["RX 7700 XT", "7700 XT"], "new_price": 13900},
+            {"id": "gpu_rx7600xt", "name": "Radeon RX 7600 XT", "aliases": ["RX 7600 XT", "7600 XT"], "new_price": 11500},
+            {"id": "gpu_rx7600", "name": "Radeon RX 7600", "aliases": ["RX 7600", "7600"], "new_price": 8900},
+        ],
+        "amd_6000": [
+            {"id": "gpu_rx6950xt", "name": "Radeon RX 6950 XT", "aliases": ["RX 6950 XT", "6950 XT"], "new_price": 0},
+            {"id": "gpu_rx6800xt", "name": "Radeon RX 6800 XT", "aliases": ["RX 6800 XT", "6800 XT"], "new_price": 0},
+            {"id": "gpu_rx6700xt", "name": "Radeon RX 6700 XT", "aliases": ["RX 6700 XT", "6700 XT"], "new_price": 0},
+            {"id": "gpu_rx6600xt", "name": "Radeon RX 6600 XT", "aliases": ["RX 6600 XT", "6600 XT"], "new_price": 0},
+        ],
+        "intel_arc": [
+            {"id": "gpu_arcb580", "name": "Intel Arc B580", "aliases": ["Arc B580", "B580"], "new_price": 11900},
+            {"id": "gpu_arcb570", "name": "Intel Arc B570", "aliases": ["Arc B570", "B570"], "new_price": 9500},
+            {"id": "gpu_arca770_16g", "name": "Intel Arc A770 16GB", "aliases": ["Arc A770 16GB", "A770 16GB"], "new_price": 0},
         ],
     },
-
-    # ── RAM ──────────────────────────────────────
+    # ── RAM ──
     "ram": {
         "ddr5": [
-            {"id":"ram_ddr5_6000_32","name":"DDR5-6000 32GB (16GBx2)","aliases":["DDR5 6000 32GB","DDR5-6000"],"new_price":4800,"type":"DDR5"},
-            {"id":"ram_ddr5_5600_32","name":"DDR5-5600 32GB (16GBx2)","aliases":["DDR5 5600 32GB"],             "new_price":3600,"type":"DDR5"},
-            {"id":"ram_ddr5_5200_32","name":"DDR5-5200 32GB (16GBx2)","aliases":["DDR5 5200 32GB"],             "new_price":3200,"type":"DDR5"},
-            {"id":"ram_ddr5_4800_16","name":"DDR5-4800 16GB (8GBx2)", "aliases":["DDR5 4800 16GB"],             "new_price":1800,"type":"DDR5"},
+            {"id": "ram_g_skill_trident_z5_rgb_ddr5_6400_32gb", "name": "G.Skill Trident Z5 RGB DDR5-6400 32GB", "aliases": ["G.Skill Trident Z5 RGB DDR5-6400 32GB", "Trident Z5 RGB DDR5-6400 32GB"], "new_price": 5500},
+            {"id": "ram_g_skill_ripjaws_m5_ddr5_6000_32gb", "name": "G.Skill Ripjaws M5 DDR5-6000 32GB", "aliases": ["G.Skill Ripjaws M5 DDR5-6000 32GB", "Ripjaws M5 DDR5-6000 32GB"], "new_price": 4800},
+            {"id": "ram_g_skill_ripjaws_m5_ddr5_5600_32gb", "name": "G.Skill Ripjaws M5 DDR5-5600 32GB", "aliases": ["G.Skill Ripjaws M5 DDR5-5600 32GB", "Ripjaws M5 DDR5-5600 32GB"], "new_price": 3900},
+            {"id": "ram_corsair_vengeance_ddr5_5600_32gb", "name": "Corsair Vengeance DDR5-5600 32GB", "aliases": ["Corsair Vengeance DDR5-5600 32GB", "Vengeance DDR5-5600 32GB"], "new_price": 3600},
+            {"id": "ram_corsair_dominator_titan_ddr5_6000_64gb", "name": "Corsair Dominator Titan DDR5-6000 64GB", "aliases": ["Corsair Dominator Titan DDR5-6000 64GB", "Dominator Titan DDR5-6000 64GB"], "new_price": 9500},
+            {"id": "ram_kingston_fury_beast_ddr5_5200_32gb", "name": "Kingston Fury Beast DDR5-5200 32GB", "aliases": ["Kingston Fury Beast DDR5-5200 32GB", "Fury Beast DDR5-5200 32GB"], "new_price": 3200},
+            {"id": "ram_kingston_fury_renegade_ddr5_6000_32gb", "name": "Kingston Fury Renegade DDR5-6000 32GB", "aliases": ["Kingston Fury Renegade DDR5-6000 32GB", "Fury Renegade DDR5-6000 32GB"], "new_price": 4600},
+            {"id": "ram_teamgroup_t_force_delta_ddr5_5600_32gb", "name": "TeamGroup T-Force Delta DDR5-5600 32GB", "aliases": ["TeamGroup T-Force Delta DDR5-5600 32GB", "T-Force Delta DDR5-5600 32GB"], "new_price": 3500},
+            {"id": "ram_adata_xpg_lancer_ddr5_5600_32gb", "name": "ADATA XPG Lancer DDR5-5600 32GB", "aliases": ["ADATA XPG Lancer DDR5-5600 32GB", "XPG Lancer DDR5-5600 32GB"], "new_price": 3400},
         ],
         "ddr4": [
-            {"id":"ram_ddr4_3600_32","name":"DDR4-3600 32GB (16GBx2)","aliases":["DDR4 3600 32GB"],             "new_price":2400,"type":"DDR4"},
-            {"id":"ram_ddr4_3200_32","name":"DDR4-3200 32GB (16GBx2)","aliases":["DDR4 3200 32GB"],             "new_price":2200,"type":"DDR4"},
-            {"id":"ram_ddr4_3200_16","name":"DDR4-3200 16GB (8GBx2)", "aliases":["DDR4 3200 16GB"],             "new_price":1600,"type":"DDR4"},
-            {"id":"ram_ddr4_2666_16","name":"DDR4-2666 16GB (8GBx2)", "aliases":["DDR4 2666 16GB"],             "new_price":1200,"type":"DDR4"},
+            {"id": "ram_g_skill_ripjaws_v_ddr4_3600_32gb", "name": "G.Skill Ripjaws V DDR4-3600 32GB", "aliases": ["G.Skill Ripjaws V DDR4-3600 32GB", "Ripjaws V DDR4-3600 32GB"], "new_price": 2400},
+            {"id": "ram_g_skill_trident_z_rgb_ddr4_3600_32gb", "name": "G.Skill Trident Z RGB DDR4-3600 32GB", "aliases": ["G.Skill Trident Z RGB DDR4-3600 32GB", "Trident Z RGB DDR4-3600 32GB"], "new_price": 2600},
+            {"id": "ram_corsair_vengeance_lpx_ddr4_3600_32gb", "name": "Corsair Vengeance LPX DDR4-3600 32GB", "aliases": ["Corsair Vengeance LPX DDR4-3600 32GB", "Vengeance LPX DDR4-3600 32GB"], "new_price": 2200},
+            {"id": "ram_corsair_vengeance_lpx_ddr4_3200_16gb", "name": "Corsair Vengeance LPX DDR4-3200 16GB", "aliases": ["Corsair Vengeance LPX DDR4-3200 16GB", "Vengeance LPX DDR4-3200 16GB"], "new_price": 1400},
+            {"id": "ram_kingston_fury_beast_ddr4_3200_32gb", "name": "Kingston Fury Beast DDR4-3200 32GB", "aliases": ["Kingston Fury Beast DDR4-3200 32GB", "Fury Beast DDR4-3200 32GB"], "new_price": 2200},
         ],
     },
-
-    # ── 主機板 ────────────────────────────────────
-    "motherboard": {
-        "intel_z790": [
-            {"id":"mb_rog_z790_hero",  "name":"ASUS ROG Maximus Z790 Hero",   "aliases":["Z790 Hero","ROG Z790"],    "new_price":18500,"socket":"LGA1700"},
-            {"id":"mb_msi_z790_ace",   "name":"MSI MEG Z790 ACE",             "aliases":["Z790 ACE","MEG Z790"],     "new_price":15900,"socket":"LGA1700"},
-            {"id":"mb_giga_z790_aorus","name":"Gigabyte Z790 AORUS Master",   "aliases":["Z790 AORUS","Z790 Master"],"new_price":14500,"socket":"LGA1700"},
+    # ── 主機板 ──
+    "mb": {
+        "z890": [
+            {"id": "mb_asus_rog_maximus_z890_extreme", "name": "ASUS ROG Maximus Z890 Extreme", "aliases": ["ASUS ROG Maximus Z890 Extreme", "ROG Maximus Z890 Extreme"], "new_price": 29900},
+            {"id": "mb_asus_rog_strix_z890_f_gaming_wifi", "name": "ASUS ROG Strix Z890-F Gaming WiFi", "aliases": ["ASUS ROG Strix Z890-F Gaming WiFi", "ROG Strix Z890-F Gaming WiFi"], "new_price": 16500},
+            {"id": "mb_msi_meg_z890_ace", "name": "MSI MEG Z890 ACE", "aliases": ["MSI MEG Z890 ACE", "MEG Z890 ACE"], "new_price": 22900},
+            {"id": "mb_gigabyte_z890_aorus_master_x", "name": "Gigabyte Z890 AORUS Master X", "aliases": ["Gigabyte Z890 AORUS Master X", "Z890 AORUS Master X"], "new_price": 18900},
+            {"id": "mb_asrock_z890_taichi_aqua", "name": "ASRock Z890 Taichi Aqua", "aliases": ["ASRock Z890 Taichi Aqua", "Z890 Taichi Aqua"], "new_price": 21500},
         ],
-        "amd_x670": [
-            {"id":"mb_rog_x670e_hero", "name":"ASUS ROG Crosshair X670E Hero","aliases":["X670E Hero"],              "new_price":17800,"socket":"AM5"},
-            {"id":"mb_msi_x670e_tom",  "name":"MSI MAG X670E Tomahawk",       "aliases":["X670E Tomahawk"],          "new_price":9800, "socket":"AM5"},
+        "z790": [
+            {"id": "mb_asus_rog_maximus_z790_hero", "name": "ASUS ROG Maximus Z790 Hero", "aliases": ["ASUS ROG Maximus Z790 Hero", "ROG Maximus Z790 Hero"], "new_price": 18500},
+            {"id": "mb_asus_rog_strix_z790_e_gaming_wifi", "name": "ASUS ROG Strix Z790-E Gaming WiFi", "aliases": ["ASUS ROG Strix Z790-E Gaming WiFi", "ROG Strix Z790-E Gaming WiFi"], "new_price": 14500},
+            {"id": "mb_msi_meg_z790_ace", "name": "MSI MEG Z790 ACE", "aliases": ["MSI MEG Z790 ACE", "MEG Z790 ACE"], "new_price": 15900},
+            {"id": "mb_gigabyte_z790_aorus_master", "name": "Gigabyte Z790 AORUS Master", "aliases": ["Gigabyte Z790 AORUS Master", "Z790 AORUS Master"], "new_price": 14500},
+            {"id": "mb_asrock_z790_taichi_carrara", "name": "ASRock Z790 Taichi Carrara", "aliases": ["ASRock Z790 Taichi Carrara", "Z790 Taichi Carrara"], "new_price": 16800},
         ],
-        "intel_b660": [
-            {"id":"mb_asus_b660m",     "name":"ASUS Prime B660M-A",           "aliases":["B660M-A","ASUS B660M"],    "new_price":4200, "socket":"LGA1700"},
-            {"id":"mb_msi_b660",       "name":"MSI MAG B660M Mortar",         "aliases":["B660M Mortar"],            "new_price":3800, "socket":"LGA1700"},
+        "b760": [
+            {"id": "mb_asus_rog_strix_b760_f_gaming_wifi", "name": "ASUS ROG Strix B760-F Gaming WiFi", "aliases": ["ASUS ROG Strix B760-F Gaming WiFi", "ROG Strix B760-F Gaming WiFi"], "new_price": 8900},
+            {"id": "mb_msi_mag_b760m_mortar_wifi_ddr5", "name": "MSI MAG B760M Mortar WiFi DDR5", "aliases": ["MSI MAG B760M Mortar WiFi DDR5", "MAG B760M Mortar WiFi DDR5"], "new_price": 5800},
+            {"id": "mb_gigabyte_b760_aorus_elite_ax_ddr5", "name": "Gigabyte B760 AORUS Elite AX DDR5", "aliases": ["Gigabyte B760 AORUS Elite AX DDR5", "B760 AORUS Elite AX DDR5"], "new_price": 7200},
+        ],
+        "x870e": [
+            {"id": "mb_asus_rog_crosshair_x870e_hero", "name": "ASUS ROG Crosshair X870E Hero", "aliases": ["ASUS ROG Crosshair X870E Hero", "ROG Crosshair X870E Hero"], "new_price": 22900},
+            {"id": "mb_msi_meg_x870e_ace", "name": "MSI MEG X870E ACE", "aliases": ["MSI MEG X870E ACE", "MEG X870E ACE"], "new_price": 21500},
+            {"id": "mb_gigabyte_x870e_aorus_master", "name": "Gigabyte X870E AORUS Master", "aliases": ["Gigabyte X870E AORUS Master", "X870E AORUS Master"], "new_price": 18900},
+            {"id": "mb_asrock_x870e_taichi", "name": "ASRock X870E Taichi", "aliases": ["ASRock X870E Taichi", "X870E Taichi"], "new_price": 19500},
+        ],
+        "x670e": [
+            {"id": "mb_asus_rog_crosshair_x670e_hero", "name": "ASUS ROG Crosshair X670E Hero", "aliases": ["ASUS ROG Crosshair X670E Hero", "ROG Crosshair X670E Hero"], "new_price": 17800},
+            {"id": "mb_msi_mag_x670e_tomahawk_wifi", "name": "MSI MAG X670E Tomahawk WiFi", "aliases": ["MSI MAG X670E Tomahawk WiFi", "MAG X670E Tomahawk WiFi"], "new_price": 9800},
+        ],
+        "b650e": [
+            {"id": "mb_asus_rog_strix_b650e_f_gaming_wifi", "name": "ASUS ROG Strix B650E-F Gaming WiFi", "aliases": ["ASUS ROG Strix B650E-F Gaming WiFi", "ROG Strix B650E-F Gaming WiFi"], "new_price": 10500},
+        ],
+        "b650": [
+            {"id": "mb_msi_mag_b650_tomahawk_wifi", "name": "MSI MAG B650 Tomahawk WiFi", "aliases": ["MSI MAG B650 Tomahawk WiFi", "MAG B650 Tomahawk WiFi"], "new_price": 7800},
         ],
     },
-
-    # ── SSD ──────────────────────────────────────
+    # ── SSD ──
     "ssd": {
-        "nvme_pcie5": [
-            {"id":"ssd_crucial_t705_2t","name":"Crucial T705 2TB NVMe PCIe5","aliases":["T705 2TB","Crucial T705"], "new_price":8200,"interface":"PCIe 5.0"},
-            {"id":"ssd_wd_sn850x_2t",   "name":"WD Black SN850X 2TB",        "aliases":["SN850X 2TB","WD SN850X"], "new_price":4800,"interface":"PCIe 4.0"},
+        "pcie5": [
+            {"id": "ssd_crucial_t705_4tb_pcie5", "name": "Crucial T705 4TB PCIe5", "aliases": ["Crucial T705 4TB PCIe5", "T705 4TB PCIe5"], "new_price": 15500},
+            {"id": "ssd_crucial_t705_2tb_pcie5", "name": "Crucial T705 2TB PCIe5", "aliases": ["Crucial T705 2TB PCIe5", "T705 2TB PCIe5"], "new_price": 8200},
         ],
-        "nvme_pcie4": [
-            {"id":"ssd_samsung_990_2t", "name":"Samsung 990 Pro 2TB",         "aliases":["990 Pro 2TB","990Pro"],   "new_price":5500,"interface":"PCIe 4.0"},
-            {"id":"ssd_samsung_990_1t", "name":"Samsung 990 Pro 1TB",         "aliases":["990 Pro 1TB"],            "new_price":3200,"interface":"PCIe 4.0"},
-            {"id":"ssd_wd_sn580_1t",    "name":"WD Blue SN580 1TB",           "aliases":["SN580 1TB"],              "new_price":2200,"interface":"PCIe 4.0"},
-            {"id":"ssd_kingston_kc3000","name":"Kingston KC3000 2TB",         "aliases":["KC3000 2TB"],             "new_price":4500,"interface":"PCIe 4.0"},
+        "pcie4": [
+            {"id": "ssd_samsung_990_pro_2tb", "name": "Samsung 990 Pro 2TB", "aliases": ["Samsung 990 Pro 2TB", "990 Pro 2TB"], "new_price": 5500},
+            {"id": "ssd_samsung_990_pro_1tb", "name": "Samsung 990 Pro 1TB", "aliases": ["Samsung 990 Pro 1TB", "990 Pro 1TB"], "new_price": 3200},
+            {"id": "ssd_wd_black_sn850x_2tb", "name": "WD Black SN850X 2TB", "aliases": ["WD Black SN850X 2TB", "Black SN850X 2TB"], "new_price": 4800},
+            {"id": "ssd_wd_black_sn850x_1tb", "name": "WD Black SN850X 1TB", "aliases": ["WD Black SN850X 1TB", "Black SN850X 1TB"], "new_price": 2800},
+            {"id": "ssd_seagate_firecuda_530_2tb", "name": "Seagate FireCuda 530 2TB", "aliases": ["Seagate FireCuda 530 2TB", "FireCuda 530 2TB"], "new_price": 5200},
+            {"id": "ssd_kingston_kc3000_2tb", "name": "Kingston KC3000 2TB", "aliases": ["Kingston KC3000 2TB", "KC3000 2TB"], "new_price": 4500},
+            {"id": "ssd_adata_xpg_gammix_s70b_2tb", "name": "ADATA XPG Gammix S70B 2TB", "aliases": ["ADATA XPG Gammix S70B 2TB", "XPG Gammix S70B 2TB"], "new_price": 4800},
+            {"id": "ssd_wd_blue_sn580_1tb", "name": "WD Blue SN580 1TB", "aliases": ["WD Blue SN580 1TB", "Blue SN580 1TB"], "new_price": 2200},
+            {"id": "ssd_samsung_980_pro_2tb", "name": "Samsung 980 Pro 2TB", "aliases": ["Samsung 980 Pro 2TB", "980 Pro 2TB"], "new_price": 0},
+            {"id": "ssd_samsung_980_pro_1tb", "name": "Samsung 980 Pro 1TB", "aliases": ["Samsung 980 Pro 1TB", "980 Pro 1TB"], "new_price": 0},
+            {"id": "ssd_wd_black_sn770_2tb", "name": "WD Black SN770 2TB", "aliases": ["WD Black SN770 2TB", "Black SN770 2TB"], "new_price": 3600},
         ],
         "sata": [
-            {"id":"ssd_samsung_870_4t", "name":"Samsung 870 EVO 4TB SATA",   "aliases":["870 EVO 4TB"],            "new_price":7200,"interface":"SATA"},
-            {"id":"ssd_samsung_870_2t", "name":"Samsung 870 EVO 2TB SATA",   "aliases":["870 EVO 2TB"],            "new_price":3800,"interface":"SATA"},
-            {"id":"ssd_crucial_mx500",  "name":"Crucial MX500 1TB SATA",     "aliases":["MX500 1TB"],              "new_price":1800,"interface":"SATA"},
+            {"id": "ssd_samsung_870_evo_4tb", "name": "Samsung 870 EVO 4TB", "aliases": ["Samsung 870 EVO 4TB", "870 EVO 4TB"], "new_price": 7200},
+            {"id": "ssd_samsung_870_evo_2tb", "name": "Samsung 870 EVO 2TB", "aliases": ["Samsung 870 EVO 2TB", "870 EVO 2TB"], "new_price": 3800},
+            {"id": "ssd_crucial_mx500_2tb", "name": "Crucial MX500 2TB", "aliases": ["Crucial MX500 2TB", "MX500 2TB"], "new_price": 2800},
         ],
     },
-
-    # ── HDD ──────────────────────────────────────
+    # ── HDD ──
     "hdd": {
-        "seagate": [
-            {"id":"hdd_sg_ironwolf_20t","name":"Seagate IronWolf Pro 20TB",  "aliases":["IronWolf 20TB"],          "new_price":16500,"rpm":"7200"},
-            {"id":"hdd_sg_barra_8t",    "name":"Seagate Barracuda 8TB",      "aliases":["Barracuda 8TB"],          "new_price":4800, "rpm":"5400"},
-            {"id":"hdd_sg_barra_4t",    "name":"Seagate Barracuda 4TB",      "aliases":["Barracuda 4TB"],          "new_price":2800, "rpm":"5400"},
-        ],
-        "wd": [
-            {"id":"hdd_wd_red_12t",     "name":"WD Red Plus 12TB NAS",       "aliases":["WD Red 12TB"],            "new_price":8900,"rpm":"5400"},
-            {"id":"hdd_wd_blue_4t",     "name":"WD Blue 4TB",                "aliases":["WD Blue 4TB"],            "new_price":3200,"rpm":"5400"},
+        "hdd": [
+            {"id": "hdd_seagate_ironwolf_pro_20tb", "name": "Seagate IronWolf Pro 20TB", "aliases": ["Seagate IronWolf Pro 20TB", "IronWolf Pro 20TB"], "new_price": 16500},
+            {"id": "hdd_seagate_ironwolf_16tb", "name": "Seagate IronWolf 16TB", "aliases": ["Seagate IronWolf 16TB", "IronWolf 16TB"], "new_price": 11500},
+            {"id": "hdd_seagate_barracuda_pro_12tb", "name": "Seagate Barracuda Pro 12TB", "aliases": ["Seagate Barracuda Pro 12TB", "Barracuda Pro 12TB"], "new_price": 8500},
+            {"id": "hdd_seagate_barracuda_8tb", "name": "Seagate Barracuda 8TB", "aliases": ["Seagate Barracuda 8TB", "Barracuda 8TB"], "new_price": 4800},
+            {"id": "hdd_seagate_barracuda_4tb", "name": "Seagate Barracuda 4TB", "aliases": ["Seagate Barracuda 4TB", "Barracuda 4TB"], "new_price": 2800},
+            {"id": "hdd_wd_red_plus_12tb_nas", "name": "WD Red Plus 12TB NAS", "aliases": ["WD Red Plus 12TB NAS", "Red Plus 12TB NAS"], "new_price": 8900},
+            {"id": "hdd_wd_gold_8tb", "name": "WD Gold 8TB", "aliases": ["WD Gold 8TB", "Gold 8TB"], "new_price": 6500},
+            {"id": "hdd_wd_blue_4tb", "name": "WD Blue 4TB", "aliases": ["WD Blue 4TB", "Blue 4TB"], "new_price": 3200},
+            {"id": "hdd_wd_blue_2tb", "name": "WD Blue 2TB", "aliases": ["WD Blue 2TB", "Blue 2TB"], "new_price": 2000},
+            {"id": "hdd_toshiba_x300_4tb", "name": "Toshiba X300 4TB", "aliases": ["Toshiba X300 4TB", "X300 4TB"], "new_price": 2600},
         ],
     },
-
-    # ── 電源 ──────────────────────────────────────
+    # ── 電源 ──
     "psu": {
-        "1000w": [
-            {"id":"psu_seasonic_px1000", "name":"Seasonic Vertex PX-1000",   "aliases":["PX-1000","Seasonic PX1000"], "new_price":6800,"watt":1000,"cert":"Platinum"},
-            {"id":"psu_corsair_hx1000",  "name":"Corsair HX1000",            "aliases":["HX1000"],                    "new_price":5900,"watt":1000,"cert":"Platinum"},
-        ],
-        "850w": [
-            {"id":"psu_asus_thor_850",   "name":"ASUS ROG Thor 850P2",        "aliases":["ROG Thor 850","Thor 850P2"], "new_price":6200,"watt":850,"cert":"Platinum"},
-            {"id":"psu_bequiet_dp13_850","name":"be quiet! Dark Power 13 850W","aliases":["Dark Power 850W"],          "new_price":5800,"watt":850,"cert":"Titanium"},
-        ],
-        "750w": [
-            {"id":"psu_seasonic_gx650",  "name":"Seasonic Focus GX-650",     "aliases":["GX-650","Focus GX 650"],     "new_price":3800,"watt":650,"cert":"Gold"},
-            {"id":"psu_corsair_rm750x",  "name":"Corsair RM750x",            "aliases":["RM750x","RM750"],            "new_price":3500,"watt":750,"cert":"Gold"},
+        "psu": [
+            {"id": "psu_seasonic_vertex_px_1000", "name": "Seasonic Vertex PX-1000", "aliases": ["Seasonic Vertex PX-1000", "Vertex PX-1000"], "new_price": 6800},
+            {"id": "psu_seasonic_vertex_px_850", "name": "Seasonic Vertex PX-850", "aliases": ["Seasonic Vertex PX-850", "Vertex PX-850"], "new_price": 5800},
+            {"id": "psu_seasonic_focus_gx_850", "name": "Seasonic Focus GX-850", "aliases": ["Seasonic Focus GX-850", "Focus GX-850"], "new_price": 4800},
+            {"id": "psu_seasonic_focus_gx_650", "name": "Seasonic Focus GX-650", "aliases": ["Seasonic Focus GX-650", "Focus GX-650"], "new_price": 3800},
+            {"id": "psu_corsair_hx1000", "name": "Corsair HX1000", "aliases": ["Corsair HX1000", "HX1000"], "new_price": 5900},
+            {"id": "psu_corsair_rm850x_2024", "name": "Corsair RM850x (2024)", "aliases": ["Corsair RM850x (2024)", "RM850x (2024)"], "new_price": 4200},
+            {"id": "psu_corsair_rm750x", "name": "Corsair RM750x", "aliases": ["Corsair RM750x", "RM750x"], "new_price": 3500},
+            {"id": "psu_asus_rog_thor_850p2", "name": "ASUS ROG Thor 850P2", "aliases": ["ASUS ROG Thor 850P2", "ROG Thor 850P2"], "new_price": 6200},
+            {"id": "psu_be_quiet_dark_power_13_850w", "name": "be quiet! Dark Power 13 850W", "aliases": ["be quiet! Dark Power 13 850W", "quiet! Dark Power 13 850W"], "new_price": 5800},
+            {"id": "psu_be_quiet_straight_power_12_750w", "name": "be quiet! Straight Power 12 750W", "aliases": ["be quiet! Straight Power 12 750W", "quiet! Straight Power 12 750W"], "new_price": 4800},
+            {"id": "psu_msi_mpg_a850g_pcie5", "name": "MSI MPG A850G PCIE5", "aliases": ["MSI MPG A850G PCIE5", "MPG A850G PCIE5"], "new_price": 4500},
+            {"id": "psu_thermalright_tg_1050w", "name": "Thermalright TG-1050W", "aliases": ["Thermalright TG-1050W", "TG-1050W"], "new_price": 3600},
         ],
     },
-
-    # ── 散熱 ──────────────────────────────────────
+    # ── 散熱 ──
     "cooler": {
         "air": [
-            {"id":"cool_noctua_nh_d15",  "name":"Noctua NH-D15 chromax.black","aliases":["NH-D15","NH D15"],          "new_price":3800,"type":"風冷"},
-            {"id":"cool_bequiet_drp4",   "name":"be quiet! Dark Rock Pro 4",  "aliases":["Dark Rock Pro 4"],          "new_price":3200,"type":"風冷"},
-            {"id":"cool_thermalright_pa","name":"Thermalright Peerless Assassin 120","aliases":["PA120","PA 120 SE"], "new_price":1200,"type":"風冷"},
+            {"id": "cooler_noctua_nh_d15_g2", "name": "Noctua NH-D15 G2", "aliases": ["Noctua NH-D15 G2", "NH-D15 G2"], "new_price": 4500},
+            {"id": "cooler_noctua_nh_d15_chromax_black", "name": "Noctua NH-D15 chromax.black", "aliases": ["Noctua NH-D15 chromax.black", "NH-D15 chromax.black"], "new_price": 3800},
+            {"id": "cooler_noctua_nh_u12a_chromax_black", "name": "Noctua NH-U12A chromax.black", "aliases": ["Noctua NH-U12A chromax.black", "NH-U12A chromax.black"], "new_price": 2800},
+            {"id": "cooler_be_quiet_dark_rock_pro_5", "name": "be quiet! Dark Rock Pro 5", "aliases": ["be quiet! Dark Rock Pro 5", "quiet! Dark Rock Pro 5"], "new_price": 3600},
+            {"id": "cooler_thermalright_pa120_se", "name": "Thermalright PA120 SE", "aliases": ["Thermalright PA120 SE", "PA120 SE"], "new_price": 1200},
+            {"id": "cooler_deepcool_ak620_digital", "name": "DeepCool AK620 Digital", "aliases": ["DeepCool AK620 Digital", "AK620 Digital"], "new_price": 1800},
         ],
-        "aio": [
-            {"id":"cool_asus_ryujin360", "name":"ASUS ROG Ryujin III 360",   "aliases":["Ryujin III 360","ROG 360"],  "new_price":9800,"type":"水冷"},
-            {"id":"cool_corsair_h150i",  "name":"Corsair H150i ELITE XT",    "aliases":["H150i","Corsair H150"],      "new_price":7200,"type":"水冷"},
-            {"id":"cool_corsair_h115i",  "name":"Corsair H115i RGB Platinum", "aliases":["H115i","Corsair H115"],     "new_price":5500,"type":"水冷"},
+        "liquid": [
+            {"id": "cooler_id_cooling_fx360_pro_argb", "name": "ID-Cooling FX360 Pro ARGB", "aliases": ["ID-Cooling FX360 Pro ARGB", "FX360 Pro ARGB"], "new_price": 3200},
+            {"id": "cooler_asus_rog_ryujin_iii_360_argb", "name": "ASUS ROG Ryujin III 360 ARGB", "aliases": ["ASUS ROG Ryujin III 360 ARGB", "ROG Ryujin III 360 ARGB"], "new_price": 12500},
+            {"id": "cooler_asus_rog_strix_lc_ii_360_argb", "name": "ASUS ROG Strix LC II 360 ARGB", "aliases": ["ASUS ROG Strix LC II 360 ARGB", "ROG Strix LC II 360 ARGB"], "new_price": 6800},
+            {"id": "cooler_corsair_h150i_elite_capellix_xt", "name": "Corsair H150i ELITE CAPELLIX XT", "aliases": ["Corsair H150i ELITE CAPELLIX XT", "H150i ELITE CAPELLIX XT"], "new_price": 7200},
+            {"id": "cooler_corsair_icue_h100i_elite_lcd", "name": "Corsair iCUE H100i ELITE LCD", "aliases": ["Corsair iCUE H100i ELITE LCD", "iCUE H100i ELITE LCD"], "new_price": 5200},
+            {"id": "cooler_msi_mag_coreliquid_e360", "name": "MSI MAG CoreLiquid E360", "aliases": ["MSI MAG CoreLiquid E360", "MAG CoreLiquid E360"], "new_price": 5800},
+            {"id": "cooler_lian_li_galahad_ii_360_rgb", "name": "Lian Li GALAHAD II 360 RGB", "aliases": ["Lian Li GALAHAD II 360 RGB", "Li GALAHAD II 360 RGB"], "new_price": 5500},
+            {"id": "cooler_ek_nucleus_aio_cr360_lux_d_rgb", "name": "EK Nucleus AIO CR360 Lux D-RGB", "aliases": ["EK Nucleus AIO CR360 Lux D-RGB", "Nucleus AIO CR360 Lux D-RGB"], "new_price": 6900},
         ],
     },
 }
@@ -763,7 +851,7 @@ async def main():
     db = Database("pc_prices.db")
     scheduler = CrawlerScheduler(db)
 
-    # 可指定分類：cpu / gpu / ram / motherboard / ssd / hdd / psu / cooler
+    # 可指定分類：cpu / gpu / ram / mb / ssd / hdd / psu / cooler
     # 留空 = 全部爬取
     await scheduler.run(
         category_filter=None,   # 改為 ["gpu","cpu"] 可只爬特定分類

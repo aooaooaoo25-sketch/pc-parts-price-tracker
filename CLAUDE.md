@@ -17,19 +17,23 @@
 ```
 pc_price_tracker/
 ├── CLAUDE.md                  # 本文件
-├── pc_price_tracker.html      # 前端介面（純靜態，無需伺服器，直接開啟）
+├── index.html                 # 前端介面（純靜態，無需伺服器，直接開啟）
 ├── pc_scraper_backend.py      # 後端爬蟲主程式（Python 非同步）
+├── tools/
+│   └── sync_parts.py          # 零件目錄同步器：以前端 DB 為主重建後端 PARTS_DB
 ├── pc_prices.db               # SQLite 資料庫（執行後自動產生）
 ├── price_report.json          # 匯出報表（執行後自動產生）
+├── requirements.txt           # Python 依賴
 ├── .env                       # API 金鑰（不得提交至 git）
-└── .gitignore                 # 須包含 .env、*.db、price_report.json
+├── .env.example               # API 金鑰範本
+└── .gitignore                 # 含 .env、*.db、price_report.json
 ```
 
 ---
 
 ## 技術架構
 
-### 前端（pc_price_tracker.html）
+### 前端（index.html）
 
 - **純靜態單頁 HTML**，無框架、無建置步驟，可直接在瀏覽器開啟
 - **Chart.js 4.4.1**（CDN）：繪製二手價格折線圖
@@ -58,7 +62,7 @@ pc_price_tracker/
 每個零件物件結構如下：
 ```javascript
 {
-  id: 'g5090',          // 唯一識別碼，前綴代表分類
+  id: 'gpu_rtx5090',    // 統一識別碼，格式 <cat>_<model>，前後端共用
   cat: 'gpu',           // 分類：cpu / gpu / ram / mb / ssd / hdd / psu / cooler
   name: 'GeForce RTX 5090',
   spec: '21760 CUDA・32GB GDDR7・575W・PCIe5.0・Blackwell・2025',
@@ -67,11 +71,20 @@ pc_price_tracker/
 }
 ```
 
-目前各分類品項數量（前端 DB）：
-- CPU：37 項（Intel Arrow Lake / Raptor Lake / Alder Lake、AMD Ryzen 9000 / 7000 / 5000）
-- GPU：42 項（RTX 50/40/30、RX 9000/7000/6000、Arc Battlemage/Alchemist）
+**ID 命名規則（前後端統一，2026-06-03 起）：**
+- CPU：`cpu_<tier>_<model>` — 例 `cpu_i9_14900k`、`cpu_ultra9_285k`、`cpu_r7_5800x3d`
+- GPU：`gpu_<brand><model>` — 例 `gpu_rtx5090`、`gpu_rx7900xtx`、`gpu_arcb580`
+- 其他（RAM/主機板/SSD/HDD/PSU/散熱）：`<cat>_<完整名稱 slug>` — 例 `ram_corsair_vengeance_ddr5_5600_32gb`、`ssd_samsung_990_pro_2tb`
+  （含品牌，避免同規格不同品牌撞名）
+
+> ⚠️ 前端 `DB` 是**唯一主目錄**。新增/修改零件後執行 `python tools/sync_parts.py`，
+> 即可自動重算 id 並重建後端 `PARTS_DB`，確保兩邊一致。**請勿手動編輯後端 PARTS_DB。**
+
+目前各分類品項數量（前端 DB＝後端 PARTS_DB，共 166 項）：
+- CPU：38 項（Intel Arrow Lake / Raptor Lake / Alder Lake、AMD Ryzen 9000 / 7000 / 5000）
+- GPU：41 項（RTX 50/40/30、RX 9000/7000/6000、Arc Battlemage/Alchemist）
 - RAM：14 項（DDR5 / DDR4）
-- 主機板：20 項（Z890 / Z790 / B760 / X870E / X670E / B650）
+- 主機板：21 項（Z890 / Z790 / B760 / X870E / X670E / B650）
 - SSD：16 項（PCIe5 / PCIe4 / SATA）
 - HDD：10 項
 - 電源：12 項
@@ -92,7 +105,7 @@ pc_price_tracker/
 | `PTTScraper` | PTT BuyTrade / PC_Shopping | HTML + Regex 解析 |
 | `BahaScraper` | 巴哈姆特二手板 | BeautifulSoup HTML 解析 |
 
-**後端零件資料庫（`PARTS_DB`）：** 巢狀 dict，結構為 `{分類: {子分類: [零件列表]}}`，與前端 `DB` 是**各自獨立**的兩份資料，目前**尚未同步**（這是一個待解決的技術債）。
+**後端零件資料庫（`PARTS_DB`）：** 巢狀 dict，結構為 `{分類: {子分類: [零件列表]}}`，每筆含 `id` / `name` / `aliases` / `new_price`。由 `tools/sync_parts.py` **從前端 `DB` 自動產生**，id 與 name 與前端完全一致（原「兩份資料未同步」的技術債已於 2026-06-03 解決，待辦 #2）。
 
 ---
 
@@ -101,7 +114,7 @@ pc_price_tracker/
 ### 🔴 高優先（核心功能缺失）
 
 1. **前後端資料未串接**：前端目前全用模擬數據（`genUsed` / `genHist`），未真正呼叫後端 API，需實作 REST API 或 JSON 檔案讀取橋接層
-2. **前後端零件 ID 不一致**：前端用 `g5090`，後端用 `gpu_4090`，兩者命名規則不同，需統一
+2. ~~**前後端零件 ID 不一致**~~ ✅ 已完成（2026-06-03）：統一為 `<cat>_<model>` 規則，前後端共 166 項 id 完全一致；後端 `PARTS_DB` 改由 `tools/sync_parts.py` 自前端 `DB` 產生
 3. **後端缺少製造商官網爬蟲**：`runDb()` 按鈕在前端有 Modal 動畫，但後端無對應的製造商產品庫更新邏輯
 4. **爬蟲選擇器未驗證**：`LuTianScraper` 與 `BahaScraper` 的 CSS 選擇器（如 `.item-panel`、`.b-list__row`）尚未實際驗證是否符合平台目前 DOM 結構
 
@@ -175,8 +188,8 @@ python pc_scraper_backend.py
 # category_filter=["gpu", "cpu"]
 
 # 直接開啟前端（無需伺服器）
-open pc_price_tracker.html       # macOS
-start pc_price_tracker.html      # Windows
+open index.html       # macOS
+start index.html      # Windows
 ```
 
 ---
@@ -196,5 +209,5 @@ start pc_price_tracker.html      # Windows
 
 - 修改前端時，請**只提供需要修改的函式或 CSS 區塊**，不需貼整個 HTML 檔案
 - 指定修改位置時，可說「`renderChart` 函式」或「`.prow` 樣式」等精確位置
-- 新增零件到前端 DB 時，請確認 `id` 唯一、`cat` 為既有分類之一、`tags` 使用既有標籤
+- 新增零件**只改前端 `DB`**（`id` 欄位需保留、先填任意暫值，跑同步器會依規則重算）、`cat` 為既有分類之一、`tags` 使用既有標籤；改完執行 `python tools/sync_parts.py` 同步後端
 - 討論後端爬蟲修改時，請說明是哪個爬蟲類別（`LuTianScraper` / `ShopeeScraper` 等）
