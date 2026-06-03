@@ -508,40 +508,43 @@ class ShopeeScraper(BaseScraper):
             print(f"[蝦皮] API Error: {e}")
             return listings
 
-        items = data.get("items") or []
-        for item in items:
-            try:
-                info = item.get("item_basic", item)
-                raw_price = info.get("price", 0) // 100000  # 蝦皮價格單位為分*1000
-                if raw_price < 500:
-                    raw_price = info.get("price_min", 0) // 100000
+        return parse_shopee_items(data, part)
 
-                if raw_price < 500 or raw_price > 200000:
-                    continue
 
-                name  = info.get("name", "")
-                shopid = info.get("shopid", "")
-                itemid = info.get("itemid", "")
-                url   = f"https://shopee.tw/product/{shopid}/{itemid}"
-                sold  = info.get("sold", 0) > 0 or info.get("historical_sold", 0) > 0
-
-                if not any(a.lower() in name.lower() for a in part["aliases"]):
-                    continue
-
-                listings.append(Listing(
-                    source    = self.name,
-                    part_id   = part["id"],
-                    title     = name,
-                    price     = raw_price,
-                    condition = self.guess_condition(name),
-                    url       = url,
-                    location  = info.get("shop_location", ""),
-                    date      = datetime.now().strftime("%Y-%m-%d"),
-                    sold      = sold,
-                ))
-            except Exception:
+def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物") -> list[Listing]:
+    """解析蝦皮 search_items JSON → Listing 清單。
+    被 ShopeeScraper（登入後直連）與 tools/import_listings.py（匯入存檔的 JSON）共用。
+    """
+    listings = []
+    for item in data.get("items") or []:
+        try:
+            info = item.get("item_basic", item)
+            raw_price = info.get("price", 0) // 100000  # 蝦皮價格單位為分*1000
+            if raw_price < 500:
+                raw_price = info.get("price_min", 0) // 100000
+            if raw_price < 500 or raw_price > 200000:
                 continue
-        return listings
+
+            name = info.get("name", "")
+            if not any(a.lower() in name.lower() for a in part["aliases"]):
+                continue
+
+            url = f"https://shopee.tw/product/{info.get('shopid','')}/{info.get('itemid','')}"
+            sold = info.get("sold", 0) > 0 or info.get("historical_sold", 0) > 0
+            listings.append(Listing(
+                source    = source_name,
+                part_id   = part["id"],
+                title     = name,
+                price     = raw_price,
+                condition = BaseScraper.guess_condition(name),
+                url       = url,
+                location  = info.get("shop_location", ""),
+                date      = datetime.now().strftime("%Y-%m-%d"),
+                sold      = sold,
+            ))
+        except Exception:
+            continue
+    return listings
 
 
 # ─────────────────────────────────────────────────

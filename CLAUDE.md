@@ -23,7 +23,9 @@ pc_price_tracker/
 ├── tools/
 │   ├── sync_parts.py          # 零件目錄同步器：以前端 DB 為主重建後端 PARTS_DB
 │   ├── seed_demo_data.py      # 產生示範用價格資料寫入 pc_prices.db（開發/展示）
-│   └── validate_selectors.py  # 驗證露天/巴哈爬蟲選擇器是否符合現行 DOM（待辦 #4）
+│   ├── validate_selectors.py  # 驗證爬蟲選擇器是否符合現行 DOM（待辦 #4）
+│   └── import_listings.py     # 匯入式來源（蝦皮/FB）的成交資料匯入器
+├── imports/                   # 匯入資料夾（範本已附；實際資料不提交）
 ├── pc_prices.db               # SQLite 資料庫（執行後自動產生）
 ├── price_report.json          # 匯出報表（執行後自動產生）
 ├── requirements.txt           # Python 依賴
@@ -104,10 +106,14 @@ pc_price_tracker/
 
 | 類別 | 平台 | 方法 | 狀態 |
 |------|------|------|------|
-| `ShopeeScraper` | 蝦皮購物 | 搜尋 API（JSON） | ✅ 主力 |
-| `PTTScraper` | PTT BuyTrade / PC_Shopping | HTML + Regex 解析 | ✅ 啟用 |
-| `FBGroupScraper` | FB 公開二手社團 | 匯入式（FB 需登入、禁自動爬） | 🔶 架構預留，僅保留 90 天 |
+| `PTTScraper` | PTT `PC_Shopping` | HTML + Regex 解析 | ✅ 唯一可匿名自動爬 |
+| `ShopeeScraper` | 蝦皮購物 | 搜尋 API（JSON） | 🔶 匿名被擋(403)→改**匯入式**（登入後存 JSON 用匯入器） |
+| `FBGroupScraper` | FB 公開二手社團 | **匯入式**（CSV，FB 需登入） | 🔶 僅保留 90 天 |
 | `EbayScraper` | eBay 國際站 | 官方 Browse API（需 OAuth token） | 🔶 架構預留，**海外參考價** |
+
+> **匯入式來源**（蝦皮 / FB）：資料豐富但需登入、禁匿名爬取 → 由使用者在自己已登入的
+> 瀏覽器取得資料，再用 `tools/import_listings.py` 寫入 DB（CSV 或蝦皮 search_items JSON）。
+> 解析蝦皮 JSON 與爬蟲共用 `parse_shopee_items()`。匯入後統計／API／前端自動沿用。
 
 > 露天（`LuTianScraper`）、巴哈（`BahaScraper`）已於 2026-06-03 **移除**（資訊量不足／過於分散）。
 > 各來源保留天數見 `SOURCE_RETENTION`（FB＝90 天，其餘預設 365 天）；逾期由 `Database.prune_old_listings` 清除。
@@ -254,15 +260,16 @@ git config core.hooksPath hooks
 
 ### FB 社團資料（待接入）
 
-FB 公開二手社團內容需登入、且自動爬取違反 FB 服務條款，故**不走自動爬蟲**。
-架構已預留 `FBGroupScraper`（`name="FB 社團"`、`RETENTION_DAYS=90`），日後採以下其一接入：
+FB 公開二手社團內容需登入、且自動爬取違反 FB 服務條款，故**不走自動爬蟲**，改走匯入式：
+使用者在自己已登入的瀏覽器整理社團貼文（型號／售價／成色等），存成 CSV 後用匯入器寫入：
 
-1. **匯入式（建議）**：使用者在自己已登入的瀏覽器將社團貼文匯出/貼上，由解析器抽出
-   型號與售價，轉成 `Listing(source="FB 社團", ...)` 後呼叫 `Database.save_listing` 寫入。
-2. **已登入瀏覽器半自動擷取**：透過使用者授權的瀏覽器操作擷取（仍受 FB 條款限制）。
+```bash
+python tools/import_listings.py --csv imports/你的檔.csv
+```
 
-寫入後，統計快照、API、前端來源分布皆自動沿用；逾 90 天資料由 `SOURCE_RETENTION` +
-`Database.prune_old_listings` 於每次爬蟲後清除。
+CSV 欄位與範例見 `imports/README.md`、`imports/sample_listings.csv`。寫入後統計快照、API、
+前端來源分布皆自動沿用；FB 來源逾 90 天資料由 `SOURCE_RETENTION` + `Database.prune_old_listings`
+於匯入/爬蟲後自動清除。`FBGroupScraper` 類別保留作為來源定義與保留天數設定。
 
 ---
 

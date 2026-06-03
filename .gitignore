@@ -6,6 +6,11 @@
 # price_report.json：匯出報表（執行後自動產生）
 price_report.json
 
+# 匯入的原始資料（可能含個資）；僅保留範本與說明
+imports/*
+!imports/sample_listings.csv
+!imports/README.md
+
 # === Python ===
 __pycache__/
 *.py[cod]
