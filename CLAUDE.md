@@ -107,9 +107,11 @@ pc_price_tracker/
 | `ShopeeScraper` | 蝦皮購物 | 搜尋 API（JSON） | ✅ 主力 |
 | `PTTScraper` | PTT BuyTrade / PC_Shopping | HTML + Regex 解析 | ✅ 啟用 |
 | `FBGroupScraper` | FB 公開二手社團 | 匯入式（FB 需登入、禁自動爬） | 🔶 架構預留，僅保留 90 天 |
+| `EbayScraper` | eBay 國際站 | 官方 Browse API（需 OAuth token） | 🔶 架構預留，**海外參考價** |
 
 > 露天（`LuTianScraper`）、巴哈（`BahaScraper`）已於 2026-06-03 **移除**（資訊量不足／過於分散）。
 > 各來源保留天數見 `SOURCE_RETENTION`（FB＝90 天，其餘預設 365 天）；逾期由 `Database.prune_old_listings` 清除。
+> `REFERENCE_SOURCES`（如 eBay）為**海外參考價**：資料仍儲存供對照，但**不計入**台灣二手均價快照。
 
 **後端零件資料庫（`PARTS_DB`）：** 巢狀 dict，結構為 `{分類: {子分類: [零件列表]}}`，每筆含 `id` / `name` / `aliases` / `new_price`。由 `tools/sync_parts.py` **從前端 `DB` 自動產生**，id 與 name 與前端完全一致（原「兩份資料未同步」的技術債已於 2026-06-03 解決，待辦 #2）。
 
@@ -248,6 +250,7 @@ git config core.hooksPath hooks
 | 蝦皮購物 | 使用非公開搜尋 API，需帶正確 Referer；價格單位為分×1000 |
 | PTT BuyTrade | 需帶 cookie `over18=1`；以 Regex 從文章內容解析售價 |
 | FB 社團 | 需登入且禁自動爬取 → 採**匯入式**（已登入瀏覽器匯出貼文後解析寫入）；僅保留近 90 天 |
+| eBay | 匿名爬蟲被反機器人擋（實測 403）→ 僅能走**官方 Browse API**（需 `EBAY_OAUTH_TOKEN`）；定位海外參考價（USD、不計入台灣均價） |
 
 ### FB 社團資料（待接入）
 

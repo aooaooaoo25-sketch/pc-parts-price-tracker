@@ -5,6 +5,7 @@ PC 零件二手市場價格爬蟲後端系統
 
 import asyncio
 import aiohttp
+import os
 import json
 import re
 import time
@@ -638,10 +639,45 @@ class FBGroupScraper(BaseScraper):
         return []
 
 
+# ─────────────────────────────────────────────────
+# eBay（海外參考價，架構預留，需官方 API 金鑰）
+# ─────────────────────────────────────────────────
+
+class EbayScraper(BaseScraper):
+    """eBay 國際站資料來源（海外參考價）。
+
+    ⚠️ eBay 匿名爬蟲會被反機器人系統擋下（實測一律 403 / Error Page），
+       且繞過機器人偵測不被允許。唯一合規途徑為官方 Browse API：
+         GET https://api.ebay.com/buy/browse/v1/item_summary/search?q=<關鍵字>
+       需先於 eBay 開發者後台註冊 App，取得 OAuth token。
+       金鑰一律從環境變數讀取（EBAY_OAUTH_TOKEN），不得寫入程式。
+
+    定位：eBay 為國際站、報價多為美金、含跨境運費關稅，與台灣在地行情基準不同，
+    故列為「海外參考價」（REFERENCE_SOURCES）：**不計入台灣二手均價快照**，僅供對照。
+    幣別：實作時需處理 USD（換算或於前端標註幣別）。
+    """
+    name = "eBay"
+    API = "https://api.ebay.com/buy/browse/v1/item_summary/search"
+
+    def __init__(self, session, db):
+        super().__init__(session, db)
+        self.token = os.environ.get("EBAY_OAUTH_TOKEN", "")
+
+    async def scrape_part(self, part: dict) -> list[Listing]:
+        if not self.token:
+            print(f"[{self.name}] 未設定 EBAY_OAUTH_TOKEN，略過（見 CLAUDE.md）")
+            return []
+        # TODO: 以 Browse API 查詢並轉為 Listing（海外參考價、USD）。
+        return []
+
+
 # 各來源的資料保留天數（未列出者沿用預設 365 天）。FB 依需求僅保留 90 天。
 SOURCE_RETENTION = {
     FBGroupScraper.name: FBGroupScraper.RETENTION_DAYS,
 }
+
+# 海外參考價來源：資料仍會儲存供對照，但**不計入**台灣二手均價快照。
+REFERENCE_SOURCES = {EbayScraper.name}
 
 
 # ─────────────────────────────────────────────────
@@ -694,9 +730,10 @@ class CrawlerScheduler:
                         except Exception as e:
                             print(f"  [{scraper.name}] {part['name']} 錯誤: {e}")
 
-                    # 計算今日均價快照
+                    # 計算今日均價快照（排除海外參考價來源，如 eBay）
                     if all_listings:
-                        prices = [l.price for l in all_listings if not l.sold]
+                        prices = [l.price for l in all_listings
+                                  if not l.sold and l.source not in REFERENCE_SOURCES]
                         if prices:
                             snap = PriceSnapshot(
                                 part_id       = part["id"],
