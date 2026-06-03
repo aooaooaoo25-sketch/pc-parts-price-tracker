@@ -573,9 +573,34 @@ function renderLst(p){document.getElementById('lst').innerHTML=(p._ls||[]).slice
 function getCP(p,r){const m={'1w':7,'1m':30,'3m':90,'6m':180,'1y':365},days=m[r]||90,data=(p._h||[]).slice(-days),step=Math.max(1,Math.floor(data.length/40)),sam=data.filter((_,i)=>i%step===0);const lb=sam.map((_,i)=>{const ago=Math.round((sam.length-1-i)*days/sam.length);if(ago===0)return'今日';if(days<=30)return`-${ago}天`;const w=Math.round(ago/7);return w?`-${w}週`:'今日'});return{lb,data:sam}}
 function renderChart(p,r){const c=document.getElementById('pc');if(pChart){pChart.destroy();pChart=null}const{lb,data}=getCP(p,r),np=p.new_price,ds=[{label:'二手均價',data,borderColor:'#5b8cff',backgroundColor:'rgba(91,140,255,.07)',fill:true,tension:.4,pointRadius:0,borderWidth:2}];if(np>0)ds.push({label:'全新售價',data:data.map(()=>np),borderColor:'rgba(245,166,35,.5)',borderDash:[5,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5});pChart=new Chart(c,{type:'line',data:{labels:lb,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2230',borderColor:'#2e3347',borderWidth:1,titleColor:'#7e88a8',bodyColor:'#dde3f4',callbacks:{label:c=>` NT$${c.parsed.y.toLocaleString()}`}}},scales:{x:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},maxTicksLimit:8},border:{display:false}},y:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},callback:v=>'NT$'+Math.round(v/1000)+'K'},border:{display:false}}}}})}
 function setR(r,el){curRange=r;document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('on'));el.classList.add('on');if(selPart)renderChart(selPart,r)}
-// custom
-function searchUnknown(){const q=Q||document.getElementById('si').value.trim();if(!q)return;const id='c'+Date.now(),bp=estP(q),fake={id,cat:guessCat(q),custom:true,name:q,spec:'自訂搜尋・行情以中文圈二手市場為準',new_price:bp.n,tags:['自訂'],_u:bp.u};fake._ls=genLs(fake);fake._h=genHist(bp.n||bp.u*1.5);selP(id);showToast(`🔍 正在搜尋「${q}」的中文圈二手行情...`);document.getElementById('ub').classList.remove('show');setTimeout(()=>showToast(`✅ 已取得「${q}」行情，共 ${fake._ls.length} 筆`),1800)}
-function addCustom(){const q=Q||document.getElementById('si').value.trim();if(!q)return;const id='c'+Date.now(),bp=estP(q),fake={id,cat:guessCat(q),custom:true,name:q,spec:'自訂追蹤・從中文圈市場爬蟲',new_price:bp.n,tags:['自訂']};fake._u=bp.u;fake._ls=genLs(fake);fake._h=genHist(bp.n||bp.u*1.5);customs.push(fake);updCounts();renderList();showToast(`➕ 已將「${q}」加入自訂追蹤`);document.getElementById('ub').classList.remove('show');clearS()}
+// custom：未收錄零件 → 呼叫後端 /api/estimate 估價（待辦 #7），API 未連線則回退本地 estP
+async function estUnknown(q){
+  try{
+    const r=await fetch(API+'/api/estimate?q='+encodeURIComponent(q));
+    if(!r.ok)throw 0;const d=await r.json();
+    return {n:d.new_price||0,u:d.used||0,cat:d.cat||guessCat(q),basis:d.basis||'後端估算',matched:d.matched,part_id:d.part_id};
+  }catch(e){const bp=estP(q);return {n:bp.n,u:bp.u,cat:guessCat(q),basis:'本地粗估（API 未連線）'};}
+}
+function mkFake(q,est,specPrefix){
+  const fid='c'+Date.now();
+  const fake={id:fid,cat:est.cat,custom:true,name:q,spec:specPrefix+'・'+est.basis,new_price:est.n,tags:['自訂'],_u:est.u||0,_live:false};
+  fake._ls=genLs(fake);fake._h=genHist(est.n||est.u*1.6||9000);return fake;
+}
+async function searchUnknown(){
+  const q=Q||document.getElementById('si').value.trim();if(!q)return;
+  showToast(`🔍 正在估算「${q}」的二手行情...`);document.getElementById('ub').classList.remove('show');
+  const est=await estUnknown(q);
+  if(est.matched&&est.part_id){const p=allP().find(x=>x.id===est.part_id);if(p){selP(est.part_id);showToast(`✅「${q}」目錄已收錄，顯示真實行情`);return;}}
+  selPart=mkFake(q,est,'未收錄');showDp(selPart);
+  showToast(`✅ 已估算「${q}」：${est.basis}`);
+}
+async function addCustom(){
+  const q=Q||document.getElementById('si').value.trim();if(!q)return;
+  const est=await estUnknown(q);
+  customs.push(mkFake(q,est,'自訂追蹤'));updCounts();renderList();
+  showToast(`➕ 已加入「${q}」（${est.basis}）`);
+  document.getElementById('ub').classList.remove('show');clearS();
+}
 function guessCat(q){q=q.toLowerCase();if(/(rtx|gtx|rx\s*\d|radeon|geforce|arc\s*[ab])/.test(q))return'gpu';if(/(core|ryzen|i9|i7|i5|r9|r7|r5|cpu|處理器)/.test(q))return'cpu';if(/(ddr|ram|記憶體)/.test(q))return'ram';if(/(nvme|ssd|固態|sn\d|990|980|870)/.test(q))return'ssd';if(/(hdd|hard|硬碟|barracuda|ironwolf)/.test(q))return'hdd';if(/(主機板|motherboard|z890|z790|x870|b650|b760)/.test(q))return'mb';if(/(psu|電源|watt|瓦|corsair\s*rm|seasonic)/.test(q))return'psu';if(/(散熱|cooler|aio|水冷|風冷|noctua)/.test(q))return'cooler';return'gpu'}
 function estP(q){q=q.toLowerCase();const t=[['5090',89900,72000],['5080',49900,39000],['5070 ti',35900,28000],['5070ti',35900,28000],['5070',25900,19500],['5060 ti',17900,13500],['5060ti',17900,13500],['5060',12900,9800],['4090',59900,46000],['4080 super',36900,28000],['4080',33900,25000],['4070 ti super',26900,20000],['4070ti',23900,18000],['4070 super',19900,15000],['4070',17900,13500],['9070 xt',22900,18000],['9070xt',22900,18000],['9070',18900,15000],['7900 xtx',29900,22000],['7800 xt',15900,12000],['b580',11900,9000],['b570',9500,7500],['285k',17500,13500],['265k',12900,9800],['9950x',20500,16000],['9700x',11500,8800]];for(const[k,n,u]of t)if(q.includes(k))return{n,u};return{n:12000,u:9000}}
 // modal

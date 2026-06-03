@@ -16,10 +16,11 @@
   # 自訂埠：  PORT=8000 python api_server.py
 """
 import os
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 
 from pc_scraper_backend import Database, Reporter, PARTS_DB
 import catalog_updater
+import estimator
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(ROOT, "pc_prices.db")
@@ -69,6 +70,18 @@ def report():
     finally:
         db.conn.close()
     return jsonify(data)
+
+
+@app.route("/api/estimate")
+def estimate():
+    # 估算未收錄零件的行情（待辦 #7），以真實目錄與成交資料為基礎
+    q = request.args.get("q", "")
+    db, rep = _reporter()
+    try:
+        result = estimator.estimate(q, rep)
+    finally:
+        db.conn.close()
+    return jsonify(result)
 
 
 @app.route("/api/update_catalog", methods=["GET", "POST"])

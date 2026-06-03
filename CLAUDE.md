@@ -21,6 +21,7 @@ pc_price_tracker/
 ├── pc_scraper_backend.py      # 後端爬蟲主程式（Python 非同步）
 ├── api_server.py              # 本地 API server（Flask）：前端橋接層
 ├── catalog_updater.py         # 製造商產品庫更新：偵測官網新型號（待辦 #3）
+├── estimator.py               # 未收錄零件行情估算：以真實目錄/成交資料估價（待辦 #7）
 ├── tools/
 │   ├── sync_parts.py          # 零件目錄同步器：以前端 DB 為主重建後端 PARTS_DB
 │   ├── seed_demo_data.py      # 產生示範用價格資料寫入 pc_prices.db（開發/展示）
@@ -52,8 +53,9 @@ pc_price_tracker/
 |------|------|
 | `setCat(cat, el)` | 切換側邊欄分類 |
 | `onSearch()` | 搜尋欄輸入處理，含未收錄零件偵測 |
-| `searchUnknown()` | 對自訂輸入執行模擬行情搜尋 |
-| `addCustom()` | 將未收錄零件加入自訂追蹤清單 |
+| `searchUnknown()` | 未收錄輸入 → 呼叫 `/api/estimate` 估價並顯示詳情預覽（回退 `estP`） |
+| `addCustom()` | 將未收錄零件（後端估價）加入自訂追蹤清單 |
+| `estUnknown(q)` | 向 `/api/estimate` 取估價，失敗回退本地 `estP` |
 | `selP(id)` | 點選零件列表列，展開詳情面板 |
 | `showDp(p)` | 渲染右側詳情面板（統計卡 + 圖表 + 來源 + 成交記錄） |
 | `renderChart(p, range)` | 以 Chart.js 繪製特定時間區間折線圖 |
@@ -140,7 +142,7 @@ pc_price_tracker/
 
 5. ~~**缺少 Flask/FastAPI 後端伺服器**~~ ✅ 已完成（2026-06-03）：新增 `api_server.py`，提供 `/api/health`、`/api/report`、`/api/part/<id>`，並在 `/` 直接服務前端
 6. **價格歷史資料為空**：`price_snapshots` 資料表在首次執行前無資料，折線圖需要累積數天才有意義（開發/展示可先跑 `tools/seed_demo_data.py` 產生示範資料）
-7. **搜尋未收錄零件的行情估算過於粗糙**：`estP()` 函式用關鍵字硬比對估價，應改為呼叫後端實際爬蟲
+7. ~~**搜尋未收錄零件的行情估算過於粗糙**~~ ✅ 已完成（2026-06-03）：新增 `estimator.py` + `/api/estimate`，以真實 166 項目錄與成交資料估價（目錄比對→相近型號→兜底），附 basis/confidence；前端 `searchUnknown/addCustom` 改呼叫後端、API 未連線回退 `estP`。順帶修好 `searchUnknown` 原本詳情面板不顯示的 bug
 8. ~~**`Reporter.export_json()` 與前端 DB 結構不匹配**~~ ✅ 已處理（2026-06-03）：新增 `Reporter.get_detail()` / `build_report()` 產生與前端一致的扁平 `{part_id: detail}` 結構，供 API 使用
 
 ### 🟢 低優先（體驗優化）
@@ -222,7 +224,7 @@ python api_server.py
 # 或直接開 index.html（file://）：前端會連 127.0.0.1:5000 的 API
 ```
 
-- 端點：`/api/health`、`/api/report`（全部）、`/api/part/<id>`（單一）、`/api/update_catalog`（製造商新品偵測，待辦 #3）
+- 端點：`/api/health`、`/api/report`（全部）、`/api/part/<id>`（單一）、`/api/update_catalog`（製造商新品偵測，待辦 #3）、`/api/estimate?q=`（未收錄估價，待辦 #7）
 - 前端載入時自動呼叫 `/api/report`；連線成功右上角顯示「🟢 真實資料」，
   失敗顯示「🟡 模擬資料」並回退本地模擬（`genUsed/genLs/genHist`）
 - 真實資料由 `Reporter.get_detail()` 產生，形狀為 `{used, diff_pct, history{1w..1y}, sources[], listings[]}`
