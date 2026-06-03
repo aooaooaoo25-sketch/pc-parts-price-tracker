@@ -581,43 +581,36 @@ function estP(q){q=q.toLowerCase();const t=[['5090',89900,72000],['5080',49900,3
 // modal
 function openDbModal(){document.getElementById('mbg').classList.add('show')}
 function closeMdl(){document.getElementById('mbg').classList.remove('show')}
-const MFG_SOURCES=[
-  {name:'NVIDIA GeForce (GPU 新品)',     cat:'gpu'},
-  {name:'AMD Radeon + Ryzen (CPU/GPU)',  cat:'gpu_cpu'},
-  {name:'Intel Core + Arc (CPU/GPU)',    cat:'cpu_gpu'},
-  {name:'Samsung 記憶體 + SSD',          cat:'ram_ssd'},
-  {name:'ASUS ROG/Prime 主機板',         cat:'mb'},
-  {name:'MSI Gaming 主機板',             cat:'mb'},
-  {name:'Gigabyte AORUS 主機板',         cat:'mb'},
-  {name:'Corsair 記憶體 / 電源 / 散熱', cat:'ram_psu_cool'},
-  {name:'Seasonic 電源供應器',           cat:'psu'},
-  {name:'Noctua / DeepCool 散熱',        cat:'cooler'},
-  {name:'WD / Seagate 儲存裝置',         cat:'ssd_hdd'},
-];
+// 製造商產品庫更新（待辦 #3）：呼叫後端 /api/update_catalog 偵測「官網有、目錄未收錄」的新型號
 function runDb(){
-  document.getElementById('startDbBtn').disabled=true;document.getElementById('startDbBtn').textContent='更新中...';
-  document.getElementById('progL').innerHTML=MFG_SOURCES.map((s,i)=>`<div class="pi" id="pi${i}"><div class="piname"><span>${s.name}</span><span id="ps${i}" style="color:var(--text3)">等待中</span></div><div class="pbg"><div class="pb" id="pb${i}" style="width:0%"></div></div><div class="psub" id="psb${i}">—</div></div>`).join('');
-  let idx=0,np=[];
-  const step=()=>{
-    if(idx>=MFG_SOURCES.length){finDb(np);return}
-    document.getElementById(`ps${idx}`).textContent='爬蟲中...';document.getElementById(`ps${idx}`).style.color='var(--amber)';
-    let pct=0;const iv=setInterval(()=>{pct=Math.min(pct+Math.random()*18+5,95);document.getElementById(`pb${idx}`).style.width=pct+'%'},200);
-    setTimeout(()=>{
-      clearInterval(iv);document.getElementById(`pb${idx}`).style.width='100%';
-      const nc=Math.floor(Math.random()*3);
-      const pool=['RTX 5090 Ti (傳聞)','Ryzen 9 9950X3D','Core Ultra 9 295K (傳聞)','RX 9080 XT','Arc B770 (未發售)','Ryzen AI Max 395','DDR5-7200 G.Skill','RTX 5050'];
-      for(let n=0;n<nc;n++){const x=pool[Math.floor(Math.random()*pool.length)];if(!np.includes(x))np.push(x)}
-      const found=28+Math.floor(Math.random()*22);
-      document.getElementById(`ps${idx}`).textContent='✓ 完成';document.getElementById(`ps${idx}`).style.color='var(--green)';
-      document.getElementById(`psb${idx}`).textContent=`掃描 ${found} 個品項，新增 ${nc} 個`;document.getElementById(`psb${idx}`).style.color='var(--teal)';
-      idx++;setTimeout(step,150)
-    },900+Math.random()*900)
-  };step()
+  const btn=document.getElementById('startDbBtn');
+  btn.disabled=true;btn.textContent='掃描中...';
+  document.getElementById('newSec').style.display='none';
+  document.getElementById('progL').innerHTML='<div class="psub" style="padding:14px;text-align:center">正在掃描製造商官網（NVIDIA / AMD / Intel）...</div>';
+  fetch(API+'/api/update_catalog',{method:'POST'}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(rep=>{
+    document.getElementById('progL').innerHTML=rep.sources.map(s=>{
+      const stat=s.ok?`掃描 ${s.scanned} 型號，發現新增 ${s.new.length} 個`:`✕ 無法連線（已略過）`;
+      const col=s.ok?(s.new.length?'var(--teal)':'var(--green)'):'var(--text3)';
+      return `<div class="pi"><div class="piname"><span>${s.name}</span><span style="color:${col}">${s.ok?'✓ 完成':'略過'}</span></div><div class="pbg"><div class="pb" style="width:${s.ok?100:0}%"></div></div><div class="psub" style="color:${col}">${stat}</div></div>`;
+  }).join('');
+    finDb(rep.sources.flatMap(s=>s.new));
+    btn.disabled=false;btn.textContent='✅ 完成';
+  }).catch(e=>{
+    document.getElementById('progL').innerHTML='<div class="psub" style="padding:14px;color:var(--amber)">⚠️ 無法連線後端 API，請先啟動 api_server.py（python api_server.py）</div>';
+    btn.disabled=false;btn.textContent='重試';
+  });
 }
 function finDb(np){
-  document.getElementById('startDbBtn').textContent='✅ 更新完成';
-  if(np.length){document.getElementById('newSec').style.display='block';document.getElementById('newCnt').textContent=`(${np.length} 個)`;document.getElementById('npL').innerHTML=np.map(n=>`<div class="npitem"><span class="npb">NEW</span>${n}</div>`).join('')}
-  showToast('✅ 產品庫更新完成！')
+  const sec=document.getElementById('newSec');
+  if(np&&np.length){
+    sec.style.display='block';
+    document.getElementById('newCnt').textContent=`(${np.length} 個)`;
+    document.getElementById('npL').innerHTML=np.map(n=>`<div class="npitem"><span class="npb">NEW</span>${n}<span style="color:var(--text3);font-size:11px;margin-left:6px">官網有・目錄未收錄（價格待填）</span></div>`).join('');
+    showToast(`✅ 偵測到 ${np.length} 個官網新型號（目錄尚未收錄）`);
+  }else{
+    sec.style.display='none';
+    showToast('✅ 產品庫已是最新，未發現新型號');
+  }
 }
 let crawling=false;
 function startCrawl(){if(crawling)return;crawling=true;const b=document.getElementById('crawlBtn');b.textContent='⏳ 連線中...';b.className='btn warn';showToast('🔄 正在向後端同步最新行情...');

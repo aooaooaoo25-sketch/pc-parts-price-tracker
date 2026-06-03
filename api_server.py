@@ -19,6 +19,7 @@ import os
 from flask import Flask, jsonify, send_from_directory
 
 from pc_scraper_backend import Database, Reporter, PARTS_DB
+import catalog_updater
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(ROOT, "pc_prices.db")
@@ -68,6 +69,12 @@ def report():
     finally:
         db.conn.close()
     return jsonify(data)
+
+
+@app.route("/api/update_catalog", methods=["GET", "POST"])
+def update_catalog():
+    # 掃描製造商官網，回報「已上市但目錄尚未收錄」的新型號（待辦 #3）
+    return jsonify(catalog_updater.run())
 
 
 @app.route("/api/part/<part_id>")
