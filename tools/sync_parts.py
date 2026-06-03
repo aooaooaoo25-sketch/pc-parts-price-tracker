@@ -23,7 +23,7 @@ ID 規則
   # 若專案路徑含中文且在 Windows 執行失敗，請設 PYTHONUTF8=1，
   # 或先 `chcp 65001`，或在 ASCII 路徑下執行。
 """
-import re, os, json
+import re, os, sys
 from collections import OrderedDict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -140,10 +140,9 @@ def pyq(s):
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-def main():
-    html = open(HTML, encoding="utf-8").read()
-    backend = open(BACKEND, encoding="utf-8").read()
-
+def build(html, backend):
+    """依前端 DB 計算統一 id，回傳 (新 index.html 內容, 新 backend 內容, 品項數)。
+    不寫檔；同時負責撞名 / 解析失敗的防呆檢查。"""
     items = [m.groupdict() for m in ITEM_RE.finditer(html)]
     for it in items:
         it["price"] = int(it["price"])
@@ -165,7 +164,6 @@ def main():
                               lambda m: f"id:'{mapping.get(m.group(1), m.group(1))}'", html)
     if n_sub != len(items):
         raise SystemExit(f"id 替換數不符：預期 {len(items)}，實際 {n_sub}")
-    open(HTML, "w", encoding="utf-8").write(new_html)
 
     # 2) 重建後端 PARTS_DB
     tree = OrderedDict((c, OrderedDict()) for c in CAT_ORDER)
@@ -196,9 +194,34 @@ def main():
     if n != 1:
         raise SystemExit("在 pc_scraper_backend.py 找不到 PARTS_DB 區塊")
     new_backend = new_backend.replace("motherboard / ssd", "mb / ssd")
-    open(BACKEND, "w", encoding="utf-8").write(new_backend)
+    return new_html, new_backend, len(items)
 
-    print(f"同步完成：{len(items)} 筆品項，前端改寫 {n_sub} 個 id，後端 PARTS_DB 已重建。")
+
+def main():
+    check = "--check" in sys.argv[1:]
+    html = open(HTML, encoding="utf-8").read()
+    backend = open(BACKEND, encoding="utf-8").read()
+    new_html, new_backend, n = build(html, backend)
+
+    if check:
+        # 只驗證、不寫檔：有落差即視為前後端不同步
+        drift = []
+        if new_html != html:
+            drift.append("index.html（前端 id 與規則不符）")
+        if new_backend != backend:
+            drift.append("pc_scraper_backend.py（PARTS_DB 與前端不同步）")
+        if drift:
+            print("✗ 前後端零件資料不同步：")
+            for d in drift:
+                print("   - " + d)
+            print("  請執行：python tools/sync_parts.py")
+            sys.exit(1)
+        print(f"✓ 前後端已同步（{n} 筆品項，id 一致）")
+        return
+
+    open(HTML, "w", encoding="utf-8").write(new_html)
+    open(BACKEND, "w", encoding="utf-8").write(new_backend)
+    print(f"同步完成：{n} 筆品項，後端 PARTS_DB 已依前端重建。")
 
 
 if __name__ == "__main__":

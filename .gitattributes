@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Git hooks 必須是 LF，否則 sh 會因 CRLF 的 \r 報錯
+hooks/** text eol=lf

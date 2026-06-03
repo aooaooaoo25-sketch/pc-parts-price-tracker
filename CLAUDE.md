@@ -192,6 +192,27 @@ open index.html       # macOS
 start index.html      # Windows
 ```
 
+### 零件目錄同步（前後端一致性）
+
+```bash
+# 改完前端 DB 後，重建後端 PARTS_DB
+python tools/sync_parts.py
+
+# 只驗證前後端是否同步（不改檔；不一致回傳非 0）
+python tools/sync_parts.py --check
+```
+
+**首次 clone 後執行一次**，啟用自動把關的 git pre-commit hook（位於 `hooks/`）：
+
+```bash
+git config core.hooksPath hooks
+```
+
+啟用後，每次 `git commit` 會自動跑 `--check`，前後端若不同步會**擋下 commit**，
+確保不可能提交出 ID 不一致的狀態。
+
+> Windows + 中文路徑：若 `python` 出現路徑亂碼，請先設定 `PYTHONUTF8=1`（hook 內已自動設定）。
+
 ---
 
 ## 爬蟲平台說明
