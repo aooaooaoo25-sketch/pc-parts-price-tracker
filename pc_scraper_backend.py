@@ -471,6 +471,10 @@ class BaseScraper:
 # ─────────────────────────────────────────────────
 
 class ShopeeScraper(BaseScraper):
+    # ⚠️ 待辦 #4 驗證（2026-06-03）：此搜尋 API 現以反爬蟲擋下匿名請求，
+    #    實測回 HTTP 403 + {"error":90309999,"is_login":false}（即使先取 cookie 也一樣）。
+    #    匿名請求無法取得資料。可行途徑：登入後帶有效 cookie/簽章，或改用蝦皮
+    #    Open Platform 官方 API（需註冊夥伴）。目前遇非 200 會安全回傳空清單。
     name = "蝦皮購物"
     SEARCH_API = "https://shopee.tw/api/v4/search/search_items"
 
@@ -546,7 +550,10 @@ class ShopeeScraper(BaseScraper):
 
 class PTTScraper(BaseScraper):
     name = "PTT BuyTrade"
-    BOARDS = ["BuyTrade", "PC_Shopping"]
+    # 待辦 #4 驗證：板名 "BuyTrade" 不存在（/bbs/BuyTrade 回 404）已移除。
+    # PTT 並無單一 PC 二手板，硬體交易多以 [賣]/[售] tag 發於 PC_Shopping。
+    # 選擇器 .r-ent / .title a / #main-content 經實測有效。可視需要再加其他板。
+    BOARDS = ["PC_Shopping"]
     BASE = "https://www.ptt.cc"
 
     async def scrape_part(self, part: dict) -> list[Listing]:
