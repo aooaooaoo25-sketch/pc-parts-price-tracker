@@ -1,6 +1,6 @@
 """
 PC 零件二手市場價格爬蟲後端系統
-支援平台：露天拍賣、蝦皮購物、PTT BuyTrade/電腦版、巴哈姆特、591電腦板
+資料來源：蝦皮購物（API）、PTT BuyTrade/電腦版；FB 公開二手社團（架構預留，需匯入）
 """
 
 import asyncio
@@ -400,6 +400,15 @@ class Database:
         return [{"source":r[0], "title":r[1], "price":r[2], "condition":r[3],
                  "location":r[4], "date":r[5]} for r in rows]
 
+    def prune_old_listings(self, source: str, days: int) -> int:
+        """刪除指定來源中早於保留天數的成交資料（如 FB 來源僅保留近 90 天）。"""
+        cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+        cur = self.conn.execute(
+            "DELETE FROM listings WHERE source=? AND date<?", (source, cutoff)
+        )
+        self.conn.commit()
+        return cur.rowcount
+
 
 # ─────────────────────────────────────────────────
 # 爬蟲工具函式
@@ -454,64 +463,6 @@ class BaseScraper:
 
     async def scrape_part(self, part: dict) -> list[Listing]:
         raise NotImplementedError
-
-
-# ─────────────────────────────────────────────────
-# 露天拍賣爬蟲
-# ─────────────────────────────────────────────────
-
-class LuTianScraper(BaseScraper):
-    name = "露天拍賣"
-    BASE_URL = "https://www.ruten.com.tw"
-
-    async def scrape_part(self, part: dict) -> list[Listing]:
-        listings = []
-        for alias in part["aliases"][:2]:
-            url = f"{self.BASE_URL}/find/?q={quote(alias)}&sort=prc%2Fasc&catg=11"
-            html = await self.fetch(url)
-            if not html:
-                continue
-            soup = BeautifulSoup(html, "html.parser")
-            # ⚠️ 待辦 #4 驗證結果：露天搜尋頁已改為 SPA，初始 HTML 不含商品卡片，
-            #    下列選擇器在現行 DOM 命中 0。正解需改用露天搜尋 API（端點待以瀏覽器
-            #    devtools 攔截確認），再以 JSON 解析。暫時保留結構以便日後改寫。
-            cards = soup.select(".item-panel, .rt-grid-item, [data-item-id]")[:20]
-            for card in cards:
-                try:
-                    title_el = card.select_one(".item-title, .rt-item-title, h3")
-                    price_el = card.select_one(".price, .rt-price, .item-price")
-                    link_el  = card.select_one("a[href]")
-
-                    if not (title_el and price_el):
-                        continue
-
-                    price = self.clean_price(price_el.get_text())
-                    if not price or price < 500 or price > 200000:
-                        continue
-
-                    href = link_el["href"] if link_el else ""
-                    if href and not href.startswith("http"):
-                        href = urljoin(self.BASE_URL, href)
-
-                    title = title_el.get_text(strip=True)
-                    # 過濾：確認標題包含零件關鍵字
-                    if not any(a.lower() in title.lower() for a in part["aliases"]):
-                        continue
-
-                    listings.append(Listing(
-                        source    = self.name,
-                        part_id   = part["id"],
-                        title     = title,
-                        price     = price,
-                        condition = self.guess_condition(title),
-                        url       = href,
-                        location  = "",
-                        date      = datetime.now().strftime("%Y-%m-%d"),
-                        sold      = False,
-                    ))
-                except Exception:
-                    continue
-        return listings
 
 
 # ─────────────────────────────────────────────────
@@ -662,74 +613,35 @@ class PTTScraper(BaseScraper):
 
 
 # ─────────────────────────────────────────────────
-# 巴哈姆特哈拉版/交易所爬蟲
+# Facebook 公開二手社團（架構預留，尚未啟用）
 # ─────────────────────────────────────────────────
 
-class BahaScraper(BaseScraper):
-    name = "巴哈姆特"
-    BASE = "https://forum.gamer.com.tw"
-    # ⚠️ 待辦 #4 驗證結果：原值 "C_115" 為無效板號（B.php 回傳空頁）。
-    #    bsn 必須是「數字」哈拉板 id；且巴哈並無單一「二手」板，交易散見於各硬體
-    #    哈拉板。請填入目標板的數字 bsn（未設定則自動略過巴哈來源）。
-    BOARD_ID = ""  # 例：某硬體哈拉板的數字 bsn
+class FBGroupScraper(BaseScraper):
+    """FB 公開二手零件社團資料來源。
+
+    ⚠️ FB 社團內容需登入且有強力反爬蟲，無法像蝦皮那樣以匿名請求自動抓取，
+       且自動爬取違反 FB 服務條款。因此本來源不走 self.fetch 自動爬蟲，預計改以下列
+       其一接入（見 CLAUDE.md「FB 社團資料」）：
+         (a) 匯入器：由使用者在已登入的瀏覽器匯出/貼上社團貼文，解析後寫入 DB
+         (b) 已登入瀏覽器半自動擷取
+    保留策略：FB 來源僅保留近 RETENTION_DAYS 天（見 SOURCE_RETENTION）。
+
+    日後接入時，將解析後的貼文轉成 Listing（source=self.name）並呼叫
+    Database.save_listing 寫入即可，其餘統計／API／前端皆可自動沿用。
+    """
+    name = "FB 社團"
+    RETENTION_DAYS = 90              # FB 來源只保留近 90 天價格資料
+    GROUPS: list[str] = []           # 目標公開社團（待填）
 
     async def scrape_part(self, part: dict) -> list[Listing]:
-        listings = []
-        if not self.BOARD_ID:
-            print(f"[{self.name}] 未設定有效 bsn（BOARD_ID），略過。詳見待辦 #4")
-            return listings
-        keyword = part["aliases"][0]
-        url = f"{self.BASE}/B.php?bsn={self.BOARD_ID}&q={quote(keyword)}&search=content"
-        html = await self.fetch(url)
-        if not html:
-            return listings
+        # 尚未啟用：FB 需登入，無法自動爬取；資料改由匯入路徑進入（待辦）。
+        return []
 
-        soup = BeautifulSoup(html, "html.parser")
-        # 待辦 #4 驗證：.b-list__row 為現行有效選擇器；.b-forum__title 已過時（命中 0）已移除
-        posts = soup.select(".b-list__row")[:15]
 
-        for post in posts:
-            try:
-                # 標題連結：優先用 .b-list__main__title（現行有效），退而求其次抓含 C.php 的連結
-                link = post.select_one("a.b-list__main__title") or post.select_one("a[href*='C.php']")
-                if not link:
-                    continue
-                title = link.get_text(strip=True)
-                href = urljoin(self.BASE, link["href"])
-
-                post_html = await self.fetch(href)
-                if not post_html:
-                    continue
-                post_soup = BeautifulSoup(post_html, "html.parser")
-                content_el = post_soup.select_one(".c-article__content, .content")
-                if not content_el:
-                    continue
-
-                text = content_el.get_text()
-                price_match = re.search(r'(?:售價|叫價|賣出|\$|NT)[：:\s]*(\d{3,6})', text)
-                if not price_match:
-                    continue
-                price = int(price_match.group(1))
-                if price < 500 or price > 200000:
-                    continue
-
-                if not any(a.lower() in (title+text).lower() for a in part["aliases"]):
-                    continue
-
-                listings.append(Listing(
-                    source    = self.name,
-                    part_id   = part["id"],
-                    title     = title,
-                    price     = price,
-                    condition = self.guess_condition(title + text[:200]),
-                    url       = href,
-                    location  = "",
-                    date      = datetime.now().strftime("%Y-%m-%d"),
-                    sold      = "已售" in text or "sold" in text.lower(),
-                ))
-            except Exception:
-                continue
-        return listings
+# 各來源的資料保留天數（未列出者沿用預設 365 天）。FB 依需求僅保留 90 天。
+SOURCE_RETENTION = {
+    FBGroupScraper.name: FBGroupScraper.RETENTION_DAYS,
+}
 
 
 # ─────────────────────────────────────────────────
@@ -759,11 +671,11 @@ class CrawlerScheduler:
 
         connector = aiohttp.TCPConnector(limit=max_concurrent, ssl=False)
         async with aiohttp.ClientSession(connector=connector) as session:
+            # 主力來源：蝦皮（API）＋ PTT。露天/巴哈已移除（資訊量不足/過於分散）。
+            # FB 社團（FBGroupScraper）需登入，改由匯入路徑接入，不在自動爬蟲清單內。
             scrapers = [
-                LuTianScraper(session, self.db),
                 ShopeeScraper(session, self.db),
                 PTTScraper(session, self.db),
-                BahaScraper(session, self.db),
             ]
 
             sem = asyncio.Semaphore(max_concurrent)
@@ -798,6 +710,12 @@ class CrawlerScheduler:
                             self.db.save_snapshot(snap)
 
             await asyncio.gather(*[scrape_one(p) for p in parts])
+
+        # 套用各來源保留天數（如 FB 僅保留近 90 天）
+        for src, days in SOURCE_RETENTION.items():
+            removed = self.db.prune_old_listings(src, days)
+            if removed:
+                print(f"[保留策略] {src} 清除 {removed} 筆逾 {days} 天資料")
 
         print("[調度器] 爬蟲完成！")
 

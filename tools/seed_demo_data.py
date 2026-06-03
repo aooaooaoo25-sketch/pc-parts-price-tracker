@@ -18,7 +18,8 @@ from pc_scraper_backend import Database, Listing, PriceSnapshot, PARTS_DB
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(ROOT, "pc_prices.db")
 
-SOURCES = ["露天拍賣", "蝦皮購物", "PTT BuyTrade", "巴哈姆特"]
+# 主力來源（與排程器一致）；FB 社團需匯入，示範資料暫不含 FB
+SOURCES = ["蝦皮購物", "PTT BuyTrade"]
 CONDITIONS = ["九成新", "八成新", "盒裝完整", "無盒", "公司貨", "水貨九成新"]
 LOCATIONS = ["台北板橋", "高雄左營", "台中西屯", "新北中和", "桃園八德", "台南永康", "基隆信義"]
 
@@ -57,7 +58,7 @@ def seed(days: int):
                 part_id=pid, date=date, avg_price=avg,
                 min_price=avg - spread, max_price=avg + spread,
                 listing_count=rng.randint(3, 18),
-                sources=rng.sample(SOURCES, rng.randint(2, 4)),
+                sources=rng.sample(SOURCES, rng.randint(1, len(SOURCES))),
             ))
             n_snaps += 1
 

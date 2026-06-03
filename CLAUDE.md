@@ -6,7 +6,7 @@
 
 ## 專案概述
 
-**目標**：追蹤台灣中文圈二手市場（露天、蝦皮、PTT、巴哈姆特）中，消費級 PC 零件的二手成交價格，並與全新定價做差價比較，產生歷史折線圖。
+**目標**：追蹤台灣中文圈二手市場（蝦皮、PTT、FB 公開二手社團）中，消費級 PC 零件的二手成交價格，並與全新定價做差價比較，產生歷史折線圖。
 
 **定位**：個人研究 / 學術用途，非商業產品。請求頻率已加入隨機延遲以避免對平台造成負擔。
 
@@ -100,14 +100,16 @@ pc_price_tracker/
 
 - **Python 3.11+**，使用 `asyncio` + `aiohttp` 非同步爬蟲
 - **資料庫**：SQLite（`pc_prices.db`），三張資料表：`listings`、`price_snapshots`、`crawl_log`
-- **爬蟲來源**（四個，繼承自 `BaseScraper`）：
+- **資料來源**（繼承自 `BaseScraper`）：
 
-| 類別 | 平台 | 方法 |
-|------|------|------|
-| `LuTianScraper` | 露天拍賣 | BeautifulSoup HTML 解析 |
-| `ShopeeScraper` | 蝦皮購物 | 搜尋 API（JSON） |
-| `PTTScraper` | PTT BuyTrade / PC_Shopping | HTML + Regex 解析 |
-| `BahaScraper` | 巴哈姆特二手板 | BeautifulSoup HTML 解析 |
+| 類別 | 平台 | 方法 | 狀態 |
+|------|------|------|------|
+| `ShopeeScraper` | 蝦皮購物 | 搜尋 API（JSON） | ✅ 主力 |
+| `PTTScraper` | PTT BuyTrade / PC_Shopping | HTML + Regex 解析 | ✅ 啟用 |
+| `FBGroupScraper` | FB 公開二手社團 | 匯入式（FB 需登入、禁自動爬） | 🔶 架構預留，僅保留 90 天 |
+
+> 露天（`LuTianScraper`）、巴哈（`BahaScraper`）已於 2026-06-03 **移除**（資訊量不足／過於分散）。
+> 各來源保留天數見 `SOURCE_RETENTION`（FB＝90 天，其餘預設 365 天）；逾期由 `Database.prune_old_listings` 清除。
 
 **後端零件資料庫（`PARTS_DB`）：** 巢狀 dict，結構為 `{分類: {子分類: [零件列表]}}`，每筆含 `id` / `name` / `aliases` / `new_price`。由 `tools/sync_parts.py` **從前端 `DB` 自動產生**，id 與 name 與前端完全一致（原「兩份資料未同步」的技術債已於 2026-06-03 解決，待辦 #2）。
 
@@ -120,9 +122,10 @@ pc_price_tracker/
 1. ~~**前後端資料未串接**~~ ✅ 已完成（2026-06-03）：新增 `api_server.py`（Flask），前端載入時呼叫 `/api/report` 取真實資料；`genUsed/genLs/genHist` 改為「有真實資料用真實、否則回退模擬」。API 未啟動時直接開啟 `index.html` 仍可降級運作
 2. ~~**前後端零件 ID 不一致**~~ ✅ 已完成（2026-06-03）：統一為 `<cat>_<model>` 規則，前後端共 166 項 id 完全一致；後端 `PARTS_DB` 改由 `tools/sync_parts.py` 自前端 `DB` 產生
 3. **後端缺少製造商官網爬蟲**：`runDb()` 按鈕在前端有 Modal 動畫，但後端無對應的製造商產品庫更新邏輯
-4. **爬蟲選擇器** 🔶 已驗證（2026-06-03，`tools/validate_selectors.py`），部分修正、部分待後續：
-   - **露天**：搜尋頁已改為 **SPA**，初始 HTML 不含商品卡片，`.item-panel` 等選擇器命中 0 → 現行 HTML 解析法**已失效**，需改用露天搜尋 API（端點待以瀏覽器 devtools 攔截）。已在程式碼標註 ⚠️。
-   - **巴哈**：`.b-list__row`、`.b-list__main__title`、`.c-article__content` **選擇器有效**；已移除過時的 `.b-forum__title`、改用 `.b-list__main__title` 取標題。但板號 `bsn="C_115"` **無效**（回空頁），且巴哈無單一二手板 → `BOARD_ID` 改為需手動填入數字 bsn，未設定則自動略過。
+4. ~~**爬蟲選擇器未驗證**~~ ✅ 已驗證並依結果調整來源策略（2026-06-03，`tools/validate_selectors.py`）：
+   - **露天**：搜尋頁已改為 **SPA**，`.item-panel` 等選擇器命中 0（HTML 解析法失效）。
+   - **巴哈**：選擇器有效但板號 `C_115` 無效，且無單一二手板。
+   - 結論：兩者資訊量不足／過於分散，**已移除**；改以蝦皮 + PTT 為主、規劃 FB 公開二手社團（匯入式、保留 90 天）。
 
 ### 🟡 中優先（功能完善）
 
@@ -242,10 +245,21 @@ git config core.hooksPath hooks
 
 | 平台 | 注意事項 |
 |------|----------|
-| 露天拍賣 | CSS 選擇器需定期驗證；分類 ID `catg=11` 為電腦零組件 |
 | 蝦皮購物 | 使用非公開搜尋 API，需帶正確 Referer；價格單位為分×1000 |
 | PTT BuyTrade | 需帶 cookie `over18=1`；以 Regex 從文章內容解析售價 |
-| 巴哈姆特 | 板號 `C_115` 為二手交易板；需進入文章頁面才能取得價格 |
+| FB 社團 | 需登入且禁自動爬取 → 採**匯入式**（已登入瀏覽器匯出貼文後解析寫入）；僅保留近 90 天 |
+
+### FB 社團資料（待接入）
+
+FB 公開二手社團內容需登入、且自動爬取違反 FB 服務條款，故**不走自動爬蟲**。
+架構已預留 `FBGroupScraper`（`name="FB 社團"`、`RETENTION_DAYS=90`），日後採以下其一接入：
+
+1. **匯入式（建議）**：使用者在自己已登入的瀏覽器將社團貼文匯出/貼上，由解析器抽出
+   型號與售價，轉成 `Listing(source="FB 社團", ...)` 後呼叫 `Database.save_listing` 寫入。
+2. **已登入瀏覽器半自動擷取**：透過使用者授權的瀏覽器操作擷取（仍受 FB 條款限制）。
+
+寫入後，統計快照、API、前端來源分布皆自動沿用；逾 90 天資料由 `SOURCE_RETENTION` +
+`Database.prune_old_listings` 於每次爬蟲後清除。
 
 ---
 
@@ -254,4 +268,4 @@ git config core.hooksPath hooks
 - 修改前端時，請**只提供需要修改的函式或 CSS 區塊**，不需貼整個 HTML 檔案
 - 指定修改位置時，可說「`renderChart` 函式」或「`.prow` 樣式」等精確位置
 - 新增零件**只改前端 `DB`**（`id` 欄位需保留、先填任意暫值，跑同步器會依規則重算）、`cat` 為既有分類之一、`tags` 使用既有標籤；改完執行 `python tools/sync_parts.py` 同步後端
-- 討論後端爬蟲修改時，請說明是哪個爬蟲類別（`LuTianScraper` / `ShopeeScraper` 等）
+- 討論後端爬蟲修改時，請說明是哪個爬蟲類別（`ShopeeScraper` / `PTTScraper` / `FBGroupScraper`）
