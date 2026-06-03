@@ -26,7 +26,8 @@ ENV/
 .mypy_cache/
 .ruff_cache/
 
-# === 編輯器 / 作業系統 ===
+# === 編輯器 / 作業系統 / 工具 ===
+.claude/
 .vscode/
 .idea/
 *.swp

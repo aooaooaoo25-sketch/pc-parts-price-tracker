@@ -390,6 +390,16 @@ class Database:
         ).fetchall()
         return [{"date":r[0], "avg":r[1], "min":r[2], "max":r[3], "count":r[4]} for r in rows]
 
+    def get_recent_listings(self, part_id: str, days: int = 7, limit: int = 12) -> list:
+        since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+        rows = self.conn.execute(
+            "SELECT source, title, price, condition, location, date FROM listings "
+            "WHERE part_id=? AND date>=? ORDER BY date DESC, price ASC LIMIT ?",
+            (part_id, since, limit)
+        ).fetchall()
+        return [{"source":r[0], "title":r[1], "price":r[2], "condition":r[3],
+                 "location":r[4], "date":r[5]} for r in rows]
+
 
 # ─────────────────────────────────────────────────
 # 爬蟲工具函式
@@ -827,6 +837,66 @@ class Reporter:
             "price_1m":   prices[-30:],
             "price_1w":   prices[-7:],
         }
+
+    def _find_part(self, part_id: str):
+        for cat_data in PARTS_DB.values():
+            for subcat_data in cat_data.values():
+                for p in subcat_data:
+                    if p["id"] == part_id:
+                        return p
+        return None
+
+    def get_detail(self, part_id: str) -> dict:
+        """產生前端 detail panel 所需的完整資料（含歷史、來源分布、成交明細）。
+        無任何歷史資料時回傳 None。"""
+        history = self.db.get_price_history(part_id, 365)
+        if not history:
+            return None
+
+        prices = [h["avg"] for h in history]
+        last = history[-1]
+        part = self._find_part(part_id)
+        new_price = part["new_price"] if part else 0
+        diff_pct = round((last["avg"] - new_price) / new_price * 100, 1) if new_price > 0 else None
+
+        listings = self.db.get_recent_listings(part_id, days=7, limit=12)
+
+        # 依來源彙整（筆數 / 均價）
+        agg = {}
+        for lst in listings:
+            a = agg.setdefault(lst["source"], {"name": lst["source"], "count": 0, "_sum": 0})
+            a["count"] += 1
+            a["_sum"] += lst["price"]
+        sources = [{"name": a["name"], "count": a["count"],
+                    "avg": round(a["_sum"] / a["count"])} for a in agg.values()]
+
+        return {
+            "id":         part_id,
+            "name":       part["name"] if part else part_id,
+            "new_price":  new_price,
+            "used":       last["avg"],
+            "used_min":   last["min"],
+            "used_max":   last["max"],
+            "diff_pct":   diff_pct,
+            "listings_count": last["count"],
+            "history": {
+                "1w": prices[-7:],   "1m": prices[-30:],  "3m": prices[-90:],
+                "6m": prices[-180:], "1y": prices,
+            },
+            "sources":  sources,
+            "listings": listings,
+        }
+
+    def build_report(self) -> dict:
+        """攤平成 {part_id: detail}，供 API / 靜態檔輸出。"""
+        report = {}
+        for cat_data in PARTS_DB.values():
+            for parts in cat_data.values():
+                for part in parts:
+                    detail = self.get_detail(part["id"])
+                    if detail:
+                        report[part["id"]] = detail
+        return report
 
     def export_json(self, output_path: str = "price_report.json"):
         report = {}

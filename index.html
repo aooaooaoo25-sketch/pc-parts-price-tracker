@@ -155,9 +155,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 <div class="hdr">
   <div class="logo"><div class="logo-ico">⚡</div>PC 二手行情追蹤</div>
   <div class="hdr-r">
-    <div class="htag"><div class="sdot"></div><span id="lastUp">尚未爬蟲</span></div>
+    <div class="htag"><div class="sdot"></div><span id="lastUp">連線中…</span></div>
     <button class="btn" onclick="openDbModal()">🔄 更新產品庫</button>
-    <button class="btn pri" id="crawlBtn" onclick="startCrawl()">▶ 立即爬蟲</button>
+    <button class="btn pri" id="crawlBtn" onclick="startCrawl()">🔄 重新整理</button>
   </div>
 </div>
 <div class="layout">
@@ -480,10 +480,37 @@ const CHIPS={
 };
 // ─────────────────────────────────
 let customs=[], curCat='all', curFilters=[], selPart=null, pChart=null, curRange='3m', Q='';
+// ── 後端 API 橋接（待辦 #1）──
+// 若本頁由 Flask server 提供（http），用同源相對路徑；若以 file:// 直接開啟，連本機 API。
+const API=(location.protocol==='http:'||location.protocol==='https:')?'':'http://127.0.0.1:5000';
+let RPT=null, LIVE=false;   // RPT: {part_id: detail}；LIVE: 是否已連到真實資料
+function srcInfo(n){return SRCS.find(s=>n===s.name||n.includes(s.s))||{name:n,s:n.slice(0,2),c:'#7e88a8',bg:'rgba(126,136,168,.14)'}}
 function allP(){return [...Object.values(DB).flat(),...customs]}
 function genUsed(p){
-  if(!p._u){const b=p.new_price>500?p.new_price:8000;p._u=Math.round(b*(.52+Math.random()*.22));p._ls=genLs(p);p._h=genHist(b)}return p._u
+  if(p._u==null){
+    const r=RPT&&RPT[p.id];
+    if(r){  // 真實資料
+      p._u=r.used;
+      p._h=(r.history&&r.history['1y'])||[];
+      p._ls=(r.listings||[]).map(l=>({source:l.source,c:srcInfo(l.source).c,title:l.title,price:l.price,date:l.date}));
+      p._src=r.sources||null; p._live=true;
+    }else{  // 模擬資料（無對應真實資料或 API 未連線）
+      const b=p.new_price>500?p.new_price:8000;
+      p._u=Math.round(b*(.52+Math.random()*.22));p._ls=genLs(p);p._h=genHist(b);p._src=null;p._live=false;
+    }
+  }
+  return p._u
 }
+// 向後端 API 取真實資料；失敗則維持模擬（直接開啟仍可用）
+async function loadLive(){
+  try{const r=await fetch(API+'/api/report',{cache:'no-store'});if(!r.ok)throw 0;RPT=await r.json();LIVE=true;}
+  catch(e){RPT=null;LIVE=false;}
+  allP().forEach(p=>{p._u=null;p._ls=null;p._h=null;p._src=null;p._live=false});
+  setLiveBadge();renderList();
+  if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
+}
+function setLiveBadge(){const el=document.getElementById('lastUp');if(!el)return;
+  el.textContent=LIVE?`🟢 真實資料 ${Object.keys(RPT||{}).length} 項`:'🟡 模擬資料（API 未連線）';}
 function getDiff(p){if(!p.new_price)return null;return((genUsed(p)-p.new_price)/p.new_price*100).toFixed(1)}
 function genLs(p){
   const b=p.new_price>500?p.new_price:8000;
@@ -536,7 +563,14 @@ function showDp(p){
   renderSrc(p);renderLst(p);renderChart(p,curRange)
 }
 function closeDp(){document.getElementById('dp').classList.add('closed');selPart=null;renderList()}
-function renderSrc(p){const u=genUsed(p);document.getElementById('src').innerHTML=SRCS.map(s=>{const n=3+Math.floor(Math.random()*6),sp=Math.round(u*(.91+Math.random()*.18));return`<div class="srcrow"><div style="display:flex;align-items:center;gap:8px"><div class="srcico" style="background:${s.bg};color:${s.c}">${s.s[0]}</div><div><div class="srcname">${s.name}</div><div class="srccnt">${n} 筆資料</div></div></div><div class="srcp" style="color:${s.c}">NT$${sp.toLocaleString()}</div></div>`}).join('')}
+function renderSrc(p){const u=genUsed(p);
+  let rows;
+  if(p._live&&p._src&&p._src.length){
+    rows=p._src.map(s=>{const i=srcInfo(s.name);return{name:s.name,c:i.c,bg:i.bg,s:i.s,n:s.count,sp:s.avg}});
+  }else{
+    rows=SRCS.map(s=>({name:s.name,c:s.c,bg:s.bg,s:s.s,n:3+Math.floor(Math.random()*6),sp:Math.round(u*(.91+Math.random()*.18))}));
+  }
+  document.getElementById('src').innerHTML=rows.map(s=>`<div class="srcrow"><div style="display:flex;align-items:center;gap:8px"><div class="srcico" style="background:${s.bg};color:${s.c}">${s.s[0]}</div><div><div class="srcname">${s.name}</div><div class="srccnt">${s.n} 筆資料</div></div></div><div class="srcp" style="color:${s.c}">NT$${s.sp.toLocaleString()}</div></div>`).join('')}
 function renderLst(p){document.getElementById('lst').innerHTML=(p._ls||[]).slice(0,8).map(l=>`<div class="litem"><div><div class="lt">${l.title}</div><div class="lm" style="color:${l.c}">${l.source}</div><div class="lm">${l.date}</div></div><div class="lp">NT$${l.price.toLocaleString()}</div></div>`).join('')}
 function getCP(p,r){const m={'1w':7,'1m':30,'3m':90,'6m':180,'1y':365},days=m[r]||90,data=(p._h||[]).slice(-days),step=Math.max(1,Math.floor(data.length/40)),sam=data.filter((_,i)=>i%step===0);const lb=sam.map((_,i)=>{const ago=Math.round((sam.length-1-i)*days/sam.length);if(ago===0)return'今日';if(days<=30)return`-${ago}天`;const w=Math.round(ago/7);return w?`-${w}週`:'今日'});return{lb,data:sam}}
 function renderChart(p,r){const c=document.getElementById('pc');if(pChart){pChart.destroy();pChart=null}const{lb,data}=getCP(p,r),np=p.new_price,ds=[{label:'二手均價',data,borderColor:'#5b8cff',backgroundColor:'rgba(91,140,255,.07)',fill:true,tension:.4,pointRadius:0,borderWidth:2}];if(np>0)ds.push({label:'全新售價',data:data.map(()=>np),borderColor:'rgba(245,166,35,.5)',borderDash:[5,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5});pChart=new Chart(c,{type:'line',data:{labels:lb,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2230',borderColor:'#2e3347',borderWidth:1,titleColor:'#7e88a8',bodyColor:'#dde3f4',callbacks:{label:c=>` NT$${c.parsed.y.toLocaleString()}`}}},scales:{x:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},maxTicksLimit:8},border:{display:false}},y:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},callback:v=>'NT$'+Math.round(v/1000)+'K'},border:{display:false}}}}})}
@@ -588,10 +622,13 @@ function finDb(np){
   showToast('✅ 產品庫更新完成！')
 }
 let crawling=false;
-function startCrawl(){if(crawling)return;crawling=true;const b=document.getElementById('crawlBtn');b.textContent='⏳ 爬蟲中...';b.className='btn warn';showToast('🕷 爬蟲啟動，正在掃描各平台...');setTimeout(()=>{allP().forEach(p=>{p._u=null;p._ls=null;p._h=null});renderList();if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}crawling=false;b.textContent='▶ 立即爬蟲';b.className='btn pri';const now=new Date();document.getElementById('lastUp').textContent=`更新 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;showToast(`✅ 爬蟲完成，已更新 ${allP().length} 項零件行情`)},3000)}
+function startCrawl(){if(crawling)return;crawling=true;const b=document.getElementById('crawlBtn');b.textContent='⏳ 連線中...';b.className='btn warn';showToast('🔄 正在向後端同步最新行情...');
+  loadLive().then(()=>{crawling=false;b.textContent='🔄 重新整理';b.className='btn pri';
+    showToast(LIVE?`✅ 已同步真實資料，共 ${Object.keys(RPT).length} 項`:'🟡 後端 API 未連線，顯示模擬資料（請先啟動 api_server.py）');});}
 let tt=null;
 function showToast(m){const t=document.getElementById('toast');document.getElementById('tmsg').textContent=m;t.classList.add('show');if(tt)clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3200)}
 updCounts();renderChips();renderList();
+loadLive();   // 載入時嘗試連後端真實資料（失敗則維持模擬）
 </script>
 </body>
 </html>

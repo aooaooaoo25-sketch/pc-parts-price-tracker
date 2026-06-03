@@ -17,10 +17,12 @@
 ```
 pc_price_tracker/
 ├── CLAUDE.md                  # 本文件
-├── index.html                 # 前端介面（純靜態，無需伺服器，直接開啟）
+├── index.html                 # 前端介面（純靜態可直接開啟；有 API 時自動取真實資料）
 ├── pc_scraper_backend.py      # 後端爬蟲主程式（Python 非同步）
+├── api_server.py              # 本地 API server（Flask）：前端橋接層
 ├── tools/
-│   └── sync_parts.py          # 零件目錄同步器：以前端 DB 為主重建後端 PARTS_DB
+│   ├── sync_parts.py          # 零件目錄同步器：以前端 DB 為主重建後端 PARTS_DB
+│   └── seed_demo_data.py      # 產生示範用價格資料寫入 pc_prices.db（開發/展示）
 ├── pc_prices.db               # SQLite 資料庫（執行後自動產生）
 ├── price_report.json          # 匯出報表（執行後自動產生）
 ├── requirements.txt           # Python 依賴
@@ -53,9 +55,10 @@ pc_price_tracker/
 | `renderChart(p, range)` | 以 Chart.js 繪製特定時間區間折線圖 |
 | `runDb()` | 模擬製造商產品庫更新流程（Modal 動畫） |
 | `startCrawl()` | 模擬觸發爬蟲（目前為前端模擬，待串接後端） |
-| `genUsed(p)` | **【暫時模擬】** 產生二手均價，上線後須替換 |
-| `genHist(base)` | **【暫時模擬】** 產生365天歷史數據，上線後須替換 |
-| `genLs(p)` | **【暫時模擬】** 產生成交列表，上線後須替換 |
+| `loadLive()` | 向 `/api/report` 取真實資料存入 `RPT`，設定 `LIVE` 並重繪；失敗則維持模擬 |
+| `genUsed(p)` | 取二手均價：`RPT[p.id]` 有資料用真實（含 `_ls`/`_h`/`_src`），否則模擬回退 |
+| `genHist(base)` | **【模擬回退】** 無真實資料時產生 365 天歷史 |
+| `genLs(p)` | **【模擬回退】** 無真實資料時產生成交列表 |
 
 **前端零件資料庫（`DB` 物件）：**
 
@@ -113,17 +116,17 @@ pc_price_tracker/
 
 ### 🔴 高優先（核心功能缺失）
 
-1. **前後端資料未串接**：前端目前全用模擬數據（`genUsed` / `genHist`），未真正呼叫後端 API，需實作 REST API 或 JSON 檔案讀取橋接層
+1. ~~**前後端資料未串接**~~ ✅ 已完成（2026-06-03）：新增 `api_server.py`（Flask），前端載入時呼叫 `/api/report` 取真實資料；`genUsed/genLs/genHist` 改為「有真實資料用真實、否則回退模擬」。API 未啟動時直接開啟 `index.html` 仍可降級運作
 2. ~~**前後端零件 ID 不一致**~~ ✅ 已完成（2026-06-03）：統一為 `<cat>_<model>` 規則，前後端共 166 項 id 完全一致；後端 `PARTS_DB` 改由 `tools/sync_parts.py` 自前端 `DB` 產生
 3. **後端缺少製造商官網爬蟲**：`runDb()` 按鈕在前端有 Modal 動畫，但後端無對應的製造商產品庫更新邏輯
 4. **爬蟲選擇器未驗證**：`LuTianScraper` 與 `BahaScraper` 的 CSS 選擇器（如 `.item-panel`、`.b-list__row`）尚未實際驗證是否符合平台目前 DOM 結構
 
 ### 🟡 中優先（功能完善）
 
-5. **缺少 Flask/FastAPI 後端伺服器**：目前後端只能直接執行輸出 JSON，前端無法即時取得資料，需加一層 API server
-6. **價格歷史資料為空**：`price_snapshots` 資料表在首次執行前無資料，折線圖需要累積數天才有意義
+5. ~~**缺少 Flask/FastAPI 後端伺服器**~~ ✅ 已完成（2026-06-03）：新增 `api_server.py`，提供 `/api/health`、`/api/report`、`/api/part/<id>`，並在 `/` 直接服務前端
+6. **價格歷史資料為空**：`price_snapshots` 資料表在首次執行前無資料，折線圖需要累積數天才有意義（開發/展示可先跑 `tools/seed_demo_data.py` 產生示範資料）
 7. **搜尋未收錄零件的行情估算過於粗糙**：`estP()` 函式用關鍵字硬比對估價，應改為呼叫後端實際爬蟲
-8. **`Reporter.export_json()` 與前端 DB 結構不匹配**：後端 JSON 鍵名與前端讀取方式不同
+8. ~~**`Reporter.export_json()` 與前端 DB 結構不匹配**~~ ✅ 已處理（2026-06-03）：新增 `Reporter.get_detail()` / `build_report()` 產生與前端一致的扁平 `{part_id: detail}` 結構，供 API 使用
 
 ### 🟢 低優先（體驗優化）
 
@@ -187,10 +190,27 @@ python pc_scraper_backend.py
 # 只爬特定分類（修改 main() 內的 category_filter 參數）
 # category_filter=["gpu", "cpu"]
 
-# 直接開啟前端（無需伺服器）
+# 直接開啟前端（無需伺服器；API 未啟動則顯示模擬資料）
 open index.html       # macOS
 start index.html      # Windows
 ```
+
+### 前後端串接（API server）
+
+```bash
+# （首次/開發）產生示範價格資料，讓前端有東西可顯示
+python tools/seed_demo_data.py
+
+# 啟動 API server（預設 http://127.0.0.1:5000）
+python api_server.py
+# 然後瀏覽器開 http://127.0.0.1:5000  （同源，免 CORS）
+# 或直接開 index.html（file://）：前端會連 127.0.0.1:5000 的 API
+```
+
+- 端點：`/api/health`、`/api/report`（全部）、`/api/part/<id>`（單一）
+- 前端載入時自動呼叫 `/api/report`；連線成功右上角顯示「🟢 真實資料」，
+  失敗顯示「🟡 模擬資料」並回退本地模擬（`genUsed/genLs/genHist`）
+- 真實資料由 `Reporter.get_detail()` 產生，形狀為 `{used, diff_pct, history{1w..1y}, sources[], listings[]}`
 
 ### 零件目錄同步（前後端一致性）
 
