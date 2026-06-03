@@ -472,7 +472,9 @@ class LuTianScraper(BaseScraper):
             if not html:
                 continue
             soup = BeautifulSoup(html, "html.parser")
-            # 露天商品卡片選擇器 (依實際頁面結構調整)
+            # ⚠️ 待辦 #4 驗證結果：露天搜尋頁已改為 SPA，初始 HTML 不含商品卡片，
+            #    下列選擇器在現行 DOM 命中 0。正解需改用露天搜尋 API（端點待以瀏覽器
+            #    devtools 攔截確認），再以 JSON 解析。暫時保留結構以便日後改寫。
             cards = soup.select(".item-panel, .rt-grid-item, [data-item-id]")[:20]
             for card in cards:
                 try:
@@ -666,10 +668,16 @@ class PTTScraper(BaseScraper):
 class BahaScraper(BaseScraper):
     name = "巴哈姆特"
     BASE = "https://forum.gamer.com.tw"
-    BOARD_ID = "C_115"  # 二手交易板
+    # ⚠️ 待辦 #4 驗證結果：原值 "C_115" 為無效板號（B.php 回傳空頁）。
+    #    bsn 必須是「數字」哈拉板 id；且巴哈並無單一「二手」板，交易散見於各硬體
+    #    哈拉板。請填入目標板的數字 bsn（未設定則自動略過巴哈來源）。
+    BOARD_ID = ""  # 例：某硬體哈拉板的數字 bsn
 
     async def scrape_part(self, part: dict) -> list[Listing]:
         listings = []
+        if not self.BOARD_ID:
+            print(f"[{self.name}] 未設定有效 bsn（BOARD_ID），略過。詳見待辦 #4")
+            return listings
         keyword = part["aliases"][0]
         url = f"{self.BASE}/B.php?bsn={self.BOARD_ID}&q={quote(keyword)}&search=content"
         html = await self.fetch(url)
@@ -677,11 +685,13 @@ class BahaScraper(BaseScraper):
             return listings
 
         soup = BeautifulSoup(html, "html.parser")
-        posts = soup.select(".b-list__row, .b-forum__title")[:15]
+        # 待辦 #4 驗證：.b-list__row 為現行有效選擇器；.b-forum__title 已過時（命中 0）已移除
+        posts = soup.select(".b-list__row")[:15]
 
         for post in posts:
             try:
-                link = post.select_one("a[href*='C.php']")
+                # 標題連結：優先用 .b-list__main__title（現行有效），退而求其次抓含 C.php 的連結
+                link = post.select_one("a.b-list__main__title") or post.select_one("a[href*='C.php']")
                 if not link:
                     continue
                 title = link.get_text(strip=True)

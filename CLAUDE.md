@@ -22,7 +22,8 @@ pc_price_tracker/
 ├── api_server.py              # 本地 API server（Flask）：前端橋接層
 ├── tools/
 │   ├── sync_parts.py          # 零件目錄同步器：以前端 DB 為主重建後端 PARTS_DB
-│   └── seed_demo_data.py      # 產生示範用價格資料寫入 pc_prices.db（開發/展示）
+│   ├── seed_demo_data.py      # 產生示範用價格資料寫入 pc_prices.db（開發/展示）
+│   └── validate_selectors.py  # 驗證露天/巴哈爬蟲選擇器是否符合現行 DOM（待辦 #4）
 ├── pc_prices.db               # SQLite 資料庫（執行後自動產生）
 ├── price_report.json          # 匯出報表（執行後自動產生）
 ├── requirements.txt           # Python 依賴
@@ -119,7 +120,9 @@ pc_price_tracker/
 1. ~~**前後端資料未串接**~~ ✅ 已完成（2026-06-03）：新增 `api_server.py`（Flask），前端載入時呼叫 `/api/report` 取真實資料；`genUsed/genLs/genHist` 改為「有真實資料用真實、否則回退模擬」。API 未啟動時直接開啟 `index.html` 仍可降級運作
 2. ~~**前後端零件 ID 不一致**~~ ✅ 已完成（2026-06-03）：統一為 `<cat>_<model>` 規則，前後端共 166 項 id 完全一致；後端 `PARTS_DB` 改由 `tools/sync_parts.py` 自前端 `DB` 產生
 3. **後端缺少製造商官網爬蟲**：`runDb()` 按鈕在前端有 Modal 動畫，但後端無對應的製造商產品庫更新邏輯
-4. **爬蟲選擇器未驗證**：`LuTianScraper` 與 `BahaScraper` 的 CSS 選擇器（如 `.item-panel`、`.b-list__row`）尚未實際驗證是否符合平台目前 DOM 結構
+4. **爬蟲選擇器** 🔶 已驗證（2026-06-03，`tools/validate_selectors.py`），部分修正、部分待後續：
+   - **露天**：搜尋頁已改為 **SPA**，初始 HTML 不含商品卡片，`.item-panel` 等選擇器命中 0 → 現行 HTML 解析法**已失效**，需改用露天搜尋 API（端點待以瀏覽器 devtools 攔截）。已在程式碼標註 ⚠️。
+   - **巴哈**：`.b-list__row`、`.b-list__main__title`、`.c-article__content` **選擇器有效**；已移除過時的 `.b-forum__title`、改用 `.b-list__main__title` 取標題。但板號 `bsn="C_115"` **無效**（回空頁），且巴哈無單一二手板 → `BOARD_ID` 改為需手動填入數字 bsn，未設定則自動略過。
 
 ### 🟡 中優先（功能完善）
 
