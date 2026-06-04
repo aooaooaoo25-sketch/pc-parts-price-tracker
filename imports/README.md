@@ -17,6 +17,16 @@ python tools/import_listings.py --shopee imports/shopee_xxx.json --part gpu_rtx5
 - `price` 須為 TWD 整數，範圍 500–200000；其餘欄位可留空
 - 範例見 `sample_listings.csv`
 
+## 蝦皮：用已登入瀏覽器擷取（Claude-in-Chrome）
+
+匿名爬蟲被蝦皮反爬蟲擋（403）。改在**你已登入的瀏覽器**內，同源呼叫蝦皮搜尋 API
+（`/api/v4/search/search_items`）即可取得 200 與真實資料。流程：
+1. 在已登入的蝦皮分頁，於頁面內 `fetch` 該 API、過濾（價格 500–200000、排除組合包/工作站）
+2. 組成 CSV（或蝦皮 JSON）→ 經剪貼簿/檔案帶出（下載在自動化環境可能不穩，剪貼簿較可靠）
+3. `python tools/import_listings.py --csv imports/shopee_xxx.csv`
+
+匯入後會自動依今日成交**重算均價快照**（排除海外參考價來源），均價即反映真實行情。
+
 ## 注意
 - 本資料夾的 `*.csv` / `*.json`（範本除外）已被 `.gitignore` 忽略，**不會提交**（可能含個資）。
 - FB 來源僅保留近 90 天（見 `SOURCE_RETENTION`），匯入後逾期資料會自動清除。

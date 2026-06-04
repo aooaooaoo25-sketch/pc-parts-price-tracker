@@ -23,7 +23,8 @@ import argparse
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from pc_scraper_backend import (Database, Listing, PARTS_DB, SOURCE_RETENTION,
+from pc_scraper_backend import (Database, Listing, PriceSnapshot, PARTS_DB,
+                                SOURCE_RETENTION, REFERENCE_SOURCES,
                                 parse_shopee_items)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -76,6 +77,26 @@ def import_shopee_json(db: Database, path: str, part_id: str) -> int:
     return len(listings)
 
 
+def rebuild_today_snapshots(db: Database) -> int:
+    """依今日成交資料重算各零件的均價快照（排除海外參考價來源，如 eBay），
+    讓 get_detail 的二手均價反映剛匯入的真實資料。"""
+    today = datetime.now().strftime("%Y-%m-%d")
+    ref = list(REFERENCE_SOURCES)
+    ph = ",".join("?" * len(ref)) if ref else "''"
+    rows = db.conn.execute(
+        f"SELECT part_id, AVG(price), MIN(price), MAX(price), COUNT(*), "
+        f"GROUP_CONCAT(DISTINCT source) FROM listings "
+        f"WHERE date>=? AND source NOT IN ({ph}) GROUP BY part_id",
+        [today] + ref
+    ).fetchall()
+    for pid, avg, mn, mx, cnt, srcs in rows:
+        db.save_snapshot(PriceSnapshot(
+            part_id=pid, date=today, avg_price=int(round(avg)),
+            min_price=int(mn), max_price=int(mx), listing_count=cnt,
+            sources=(srcs or "").split(",")))
+    return len(rows)
+
+
 def main():
     ap = argparse.ArgumentParser(description="成交資料匯入器")
     ap.add_argument("--csv", help="通用 CSV 檔路徑")
@@ -101,8 +122,9 @@ def main():
         if removed:
             print(f"[保留策略] {src} 清除 {removed} 筆逾 {days} 天資料")
 
+    snaps = rebuild_today_snapshots(db)
     db.conn.close()
-    print(f"匯入完成：寫入 {total} 筆成交資料 → {DB_PATH}")
+    print(f"匯入完成：寫入 {total} 筆成交資料、重算 {snaps} 個零件今日均價 → {DB_PATH}")
 
 
 if __name__ == "__main__":
