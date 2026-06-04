@@ -128,6 +128,16 @@ pc_price_tracker/
 
 ## 已知問題與待辦事項
 
+> **進度摘要（2026-06-03 ~ 06-04）**
+> - ✅ 已完成：#1 前後端串接、#2 ID 統一、#3 製造商新品偵測、#4 選擇器驗證、
+>   #5 API server、#7 未收錄估價、#8 報表結構、#9 .gitignore/requirements
+> - 🔶 進行中：#6 價格歷史（已可匯入真實資料，待累積天數）
+> - ⬜ 未開始：#10 自訂追蹤持久化、#11 圖表區間陰影、#12 行動版面
+> - **資料來源現況**：PTT 可匿名自動爬；蝦皮/FB 走「登入瀏覽器擷取 → 匯入」（已實證蝦皮可行）；
+>   eBay 官方 API 架構預留（海外參考價）。露天/巴哈已移除。
+> - **新增模組**：`api_server.py`、`catalog_updater.py`、`estimator.py`、
+>   `tools/{sync_parts,seed_demo_data,validate_selectors,import_listings}.py`、`hooks/pre-commit`
+
 ### 🔴 高優先（核心功能缺失）
 
 1. ~~**前後端資料未串接**~~ ✅ 已完成（2026-06-03）：新增 `api_server.py`（Flask），前端載入時呼叫 `/api/report` 取真實資料；`genUsed/genLs/genHist` 改為「有真實資料用真實、否則回退模擬」。API 未啟動時直接開啟 `index.html` 仍可降級運作
@@ -141,7 +151,9 @@ pc_price_tracker/
 ### 🟡 中優先（功能完善）
 
 5. ~~**缺少 Flask/FastAPI 後端伺服器**~~ ✅ 已完成（2026-06-03）：新增 `api_server.py`，提供 `/api/health`、`/api/report`、`/api/part/<id>`，並在 `/` 直接服務前端
-6. **價格歷史資料為空**：`price_snapshots` 資料表在首次執行前無資料，折線圖需要累積數天才有意義（開發/展示可先跑 `tools/seed_demo_data.py` 產生示範資料）
+6. 🔶 **價格歷史資料**：`price_snapshots` 首次執行前為空，折線圖需累積數天才有意義。
+   - 開發/展示可先跑 `tools/seed_demo_data.py` 產生示範資料（⚠️ 會清空重建，勿在有真實資料時執行）。
+   - 已實證可匯入**真實**資料：以 Claude-in-Chrome 從登入蝦皮擷取 RTX 5090 共 40 筆 → `import_listings.py` → 二手均價更新為真實 139,150。匯入後自動依今日成交重算快照。
 7. ~~**搜尋未收錄零件的行情估算過於粗糙**~~ ✅ 已完成（2026-06-03）：新增 `estimator.py` + `/api/estimate`，以真實 166 項目錄與成交資料估價（目錄比對→相近型號→兜底），附 basis/confidence；前端 `searchUnknown/addCustom` 改呼叫後端、API 未連線回退 `estP`。順帶修好 `searchUnknown` 原本詳情面板不顯示的 bug
 8. ~~**`Reporter.export_json()` 與前端 DB 結構不匹配**~~ ✅ 已處理（2026-06-03）：新增 `Reporter.get_detail()` / `build_report()` 產生與前端一致的扁平 `{part_id: detail}` 結構，供 API 使用
 
