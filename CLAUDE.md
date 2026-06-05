@@ -26,7 +26,8 @@ pc_price_tracker/
 │   ├── sync_parts.py          # 零件目錄同步器：以前端 DB 為主重建後端 PARTS_DB
 │   ├── seed_demo_data.py      # 產生示範用價格資料寫入 pc_prices.db（開發/展示）
 │   ├── validate_selectors.py  # 驗證爬蟲選擇器是否符合現行 DOM（待辦 #4）
-│   └── import_listings.py     # 匯入式來源（蝦皮/FB）的成交資料匯入器
+│   ├── import_listings.py     # 匯入式來源（蝦皮/FB）的成交資料匯入器
+│   └── clear_imports.py       # 一鍵清理 imports/ 累積的暫存檔（保留範本）
 ├── imports/                   # 匯入資料夾（範本已附；實際資料不提交）
 ├── pc_prices.db               # SQLite 資料庫（執行後自動產生）
 ├── price_report.json          # 匯出報表（執行後自動產生）

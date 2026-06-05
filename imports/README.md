@@ -27,6 +27,14 @@ python tools/import_listings.py --shopee imports/shopee_xxx.json --part gpu_rtx5
 
 匯入後會自動依今日成交**重算均價快照**（排除海外參考價來源），均價即反映真實行情。
 
+## 清理暫存檔
+匯入後這些 csv/json 就沒作用了（DB 才是真資料），累積太多可一鍵清理（保留範本）：
+```bash
+python tools/clear_imports.py            # 直接刪除
+python tools/clear_imports.py --archive  # 改為移到 imports/archive/<時間戳>/
+python tools/clear_imports.py --dry-run  # 只列出，不動手
+```
+
 ## 注意
 - 本資料夾的 `*.csv` / `*.json`（範本除外）已被 `.gitignore` 忽略，**不會提交**（可能含個資）。
-- FB 來源僅保留近 90 天（見 `SOURCE_RETENTION`），匯入後逾期資料會自動清除。
+- listings 各來源預設保留 365 天、FB 90 天，匯入/爬蟲後由 `prune_by_retention()` 自動清除逾期。
