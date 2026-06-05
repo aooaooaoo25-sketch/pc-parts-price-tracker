@@ -24,7 +24,7 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pc_scraper_backend import (Database, Listing, PriceSnapshot, PARTS_DB,
-                                SOURCE_RETENTION, REFERENCE_SOURCES,
+                                REFERENCE_SOURCES, prune_by_retention,
                                 parse_shopee_items)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -116,11 +116,8 @@ def main():
             ap.error("--shopee 需搭配 --part <part_id>")
         total += import_shopee_json(db, args.shopee, args.part)
 
-    # 套用各來源保留天數（如 FB 僅保留 90 天）
-    for src, days in SOURCE_RETENTION.items():
-        removed = db.prune_old_listings(src, days)
-        if removed:
-            print(f"[保留策略] {src} 清除 {removed} 筆逾 {days} 天資料")
+    # 套用保留策略（各來源預設 365 天，FB 90 天）
+    prune_by_retention(db)
 
     snaps = rebuild_today_snapshots(db)
     db.conn.close()

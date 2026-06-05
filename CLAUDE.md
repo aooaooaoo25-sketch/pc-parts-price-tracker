@@ -119,7 +119,8 @@ pc_price_tracker/
 > 解析蝦皮 JSON 與爬蟲共用 `parse_shopee_items()`。匯入後統計／API／前端自動沿用。
 
 > 露天（`LuTianScraper`）、巴哈（`BahaScraper`）已於 2026-06-03 **移除**（資訊量不足／過於分散）。
-> 各來源保留天數見 `SOURCE_RETENTION`（FB＝90 天，其餘預設 365 天）；逾期由 `Database.prune_old_listings` 清除。
+> 各來源保留天數：`SOURCE_RETENTION` 指定（FB＝90 天），未列出者用 `DEFAULT_RETENTION_DAYS`（365 天）；
+> 每次爬蟲/匯入後由 `prune_by_retention()` 對 DB 中所有來源自動清除逾期 listings。
 > `REFERENCE_SOURCES`（如 eBay）為**海外參考價**：資料仍儲存供對照，但**不計入**台灣二手均價快照。
 
 **後端零件資料庫（`PARTS_DB`）：** 巢狀 dict，結構為 `{分類: {子分類: [零件列表]}}`，每筆含 `id` / `name` / `aliases` / `new_price`。由 `tools/sync_parts.py` **從前端 `DB` 自動產生**，id 與 name 與前端完全一致（原「兩份資料未同步」的技術債已於 2026-06-03 解決，待辦 #2）。

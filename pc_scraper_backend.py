@@ -681,13 +681,30 @@ class EbayScraper(BaseScraper):
         return []
 
 
-# 各來源的資料保留天數（未列出者沿用預設 365 天）。FB 依需求僅保留 90 天。
+# 各來源的資料保留天數：未列出者沿用 DEFAULT_RETENTION_DAYS。FB 依需求僅保留 90 天。
+DEFAULT_RETENTION_DAYS = 365
 SOURCE_RETENTION = {
     FBGroupScraper.name: FBGroupScraper.RETENTION_DAYS,
 }
 
 # 海外參考價來源：資料仍會儲存供對照，但**不計入**台灣二手均價快照。
 REFERENCE_SOURCES = {EbayScraper.name}
+
+
+def prune_by_retention(db: "Database") -> int:
+    """依保留策略清除過舊的 listings：對 DB 中現有的每個來源，
+    用 SOURCE_RETENTION 指定的天數，未指定者用 DEFAULT_RETENTION_DAYS（365）。
+    回傳清除總筆數。爬蟲與匯入後皆呼叫，確保各來源舊資料都會自動過期。"""
+    sources = [r[0] for r in db.conn.execute(
+        "SELECT DISTINCT source FROM listings").fetchall()]
+    total = 0
+    for src in sources:
+        days = SOURCE_RETENTION.get(src, DEFAULT_RETENTION_DAYS)
+        removed = db.prune_old_listings(src, days)
+        if removed:
+            print(f"[保留策略] {src} 清除 {removed} 筆逾 {days} 天資料")
+        total += removed
+    return total
 
 
 # ─────────────────────────────────────────────────
@@ -758,11 +775,8 @@ class CrawlerScheduler:
 
             await asyncio.gather(*[scrape_one(p) for p in parts])
 
-        # 套用各來源保留天數（如 FB 僅保留近 90 天）
-        for src, days in SOURCE_RETENTION.items():
-            removed = self.db.prune_old_listings(src, days)
-            if removed:
-                print(f"[保留策略] {src} 清除 {removed} 筆逾 {days} 天資料")
+        # 套用保留策略（各來源預設 365 天，FB 90 天）
+        prune_by_retention(self.db)
 
         print("[調度器] 爬蟲完成！")
 
