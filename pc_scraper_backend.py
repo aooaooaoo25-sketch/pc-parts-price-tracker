@@ -6,6 +6,7 @@ PC 零件二手市場價格爬蟲後端系統
 import asyncio
 import aiohttp
 import os
+import sys
 import json
 import re
 import time
@@ -710,6 +711,26 @@ def prune_by_retention(db: "Database") -> int:
     return total
 
 
+def rebuild_today_snapshots(db: "Database") -> int:
+    """依「今日所有來源」的成交資料重算各零件均價快照（排除海外參考價，如 eBay）。
+    爬蟲與匯入皆呼叫，確保快照反映當天 PTT＋蝦皮匯入等所有真實資料（而非單一來源）。"""
+    today = datetime.now().strftime("%Y-%m-%d")
+    ref = list(REFERENCE_SOURCES)
+    ph = ",".join("?" * len(ref)) if ref else "''"
+    rows = db.conn.execute(
+        f"SELECT part_id, AVG(price), MIN(price), MAX(price), COUNT(*), "
+        f"GROUP_CONCAT(DISTINCT source) FROM listings "
+        f"WHERE date>=? AND source NOT IN ({ph}) GROUP BY part_id",
+        [today] + ref
+    ).fetchall()
+    for pid, avg, mn, mx, cnt, srcs in rows:
+        db.save_snapshot(PriceSnapshot(
+            part_id=pid, date=today, avg_price=int(round(avg)),
+            min_price=int(mn), max_price=int(mx), listing_count=cnt,
+            sources=(srcs or "").split(",")))
+    return len(rows)
+
+
 # ─────────────────────────────────────────────────
 # 爬蟲調度器
 # ─────────────────────────────────────────────────
@@ -777,8 +798,9 @@ class CrawlerScheduler:
 
             await asyncio.gather(*[scrape_one(p) for p in parts])
 
-        # 套用保留策略（各來源預設 365 天，FB 90 天）
+        # 套用保留策略 + 依今日所有來源（PTT＋當天匯入的蝦皮等）重算均價快照
         prune_by_retention(self.db)
+        rebuild_today_snapshots(self.db)
 
         print("[調度器] 爬蟲完成！")
 
@@ -909,18 +931,16 @@ class Reporter:
 # ─────────────────────────────────────────────────
 
 async def main():
+    # 可由命令列指定分類：python pc_scraper_backend.py gpu cpu
+    # 留空 = 全部分類
+    cats = sys.argv[1:] or None
     db = Database("pc_prices.db")
     scheduler = CrawlerScheduler(db)
-
-    # 可指定分類：cpu / gpu / ram / mb / ssd / hdd / psu / cooler
-    # 留空 = 全部爬取
-    await scheduler.run(
-        category_filter=None,   # 改為 ["gpu","cpu"] 可只爬特定分類
-        max_concurrent=2        # 降低並發數以避免被封鎖
-    )
+    await scheduler.run(category_filter=cats, max_concurrent=2)
 
     reporter = Reporter(db)
     reporter.export_json("price_report.json")
+    print(f"[完成] 爬取分類 = {cats or '全部'}")
 
 
 if __name__ == "__main__":

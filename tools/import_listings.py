@@ -23,9 +23,8 @@ import argparse
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from pc_scraper_backend import (Database, Listing, PriceSnapshot, PARTS_DB,
-                                REFERENCE_SOURCES, prune_by_retention,
-                                parse_shopee_items)
+from pc_scraper_backend import (Database, Listing, PARTS_DB, prune_by_retention,
+                                rebuild_today_snapshots, parse_shopee_items)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(ROOT, "pc_prices.db")
@@ -75,26 +74,6 @@ def import_shopee_json(db: Database, path: str, part_id: str) -> int:
     for l in listings:
         db.save_listing(l)
     return len(listings)
-
-
-def rebuild_today_snapshots(db: Database) -> int:
-    """依今日成交資料重算各零件的均價快照（排除海外參考價來源，如 eBay），
-    讓 get_detail 的二手均價反映剛匯入的真實資料。"""
-    today = datetime.now().strftime("%Y-%m-%d")
-    ref = list(REFERENCE_SOURCES)
-    ph = ",".join("?" * len(ref)) if ref else "''"
-    rows = db.conn.execute(
-        f"SELECT part_id, AVG(price), MIN(price), MAX(price), COUNT(*), "
-        f"GROUP_CONCAT(DISTINCT source) FROM listings "
-        f"WHERE date>=? AND source NOT IN ({ph}) GROUP BY part_id",
-        [today] + ref
-    ).fetchall()
-    for pid, avg, mn, mx, cnt, srcs in rows:
-        db.save_snapshot(PriceSnapshot(
-            part_id=pid, date=today, avg_price=int(round(avg)),
-            min_price=int(mn), max_price=int(mx), listing_count=cnt,
-            sources=(srcs or "").split(",")))
-    return len(rows)
 
 
 def main():
