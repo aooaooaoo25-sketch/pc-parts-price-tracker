@@ -540,7 +540,7 @@ function renderList(){
       <div><div class="pname">${isN?'<span class="badge nb">NEW</span>':''}${p.custom?'<span class="badge cb">自訂</span>':''}${(p.tags||[]).includes('旗艦')?'<span class="badge hb">旗艦</span>':''}${p.name}</div><div class="pspec">${p.spec}</div></div>
       <div class="pnew">${p.new_price>0?'NT$'+p.new_price.toLocaleString():'—'}</div>
       <div class="pused">NT$${u.toLocaleString()}</div>
-      <div>${d!==null?`<span class="diff dn">▼ ${Math.abs(d)}%</span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</div>
+      <div>${d!==null?`<span class="diff ${parseFloat(d)<0?'dn':'up'}">${parseFloat(d)<0?'▼':'▲'} ${Math.abs(d)}%</span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</div>
       <div style="font-size:11px;color:var(--text3)">${(p._ls||[]).length} 筆</div>
       <div style="font-size:10.5px;color:${isN?'var(--teal)':'var(--text3)'}">${isN?'今日':'近7日'}</div>
     </div>`
@@ -556,8 +556,13 @@ function showDp(p){
   const u=genUsed(p);
   document.getElementById('dp-up').textContent='NT$'+u.toLocaleString();
   document.getElementById('dp-ct').textContent=`共 ${(p._ls||[]).length} 筆`;
-  const d=getDiff(p);const de=document.getElementById('dp-df');de.textContent=d!==null?`▼ ${Math.abs(d)}%`:'—';de.className='sv '+(d!==null&&parseFloat(d)<0?'g':'r');
-  const h=p._h||[];const pr=h.slice(-21,-7),rc=h.slice(-7);const pa=pr.reduce((a,b)=>a+b,0)/pr.length,ra=rc.reduce((a,b)=>a+b,0)/rc.length;const tr=((ra-pa)/pa*100).toFixed(1);const te=document.getElementById('dp-tr');te.textContent=parseFloat(tr)<0?`▼ ${Math.abs(tr)}%`:`▲ ${tr}%`;te.className='sv '+(parseFloat(tr)<0?'g':'r');
+  const d=getDiff(p);const de=document.getElementById('dp-df');
+  if(d===null){de.textContent='—';de.className='sv';}
+  else{const dn=parseFloat(d)<0;de.textContent=(dn?'▼ ':'▲ ')+Math.abs(d)+'%';de.className='sv '+(dn?'g':'r');}
+  const h=p._h||[];const pr=h.slice(-21,-7),rc=h.slice(-7);const te=document.getElementById('dp-tr');
+  const pa=pr.length?pr.reduce((a,b)=>a+b,0)/pr.length:0,ra=rc.length?rc.reduce((a,b)=>a+b,0)/rc.length:0;
+  if(pr.length&&rc.length&&pa>0){const tr=((ra-pa)/pa*100).toFixed(1);const dn=parseFloat(tr)<0;te.textContent=(dn?'▼ ':'▲ ')+Math.abs(tr)+'%';te.className='sv '+(dn?'g':'r');}
+  else{te.textContent='—';te.className='sv';}
   renderSrc(p);renderLst(p);renderChart(p,curRange)
 }
 function closeDp(){document.getElementById('dp').classList.add('closed');selPart=null;renderList()}
