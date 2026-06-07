@@ -552,11 +552,11 @@ def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物"
 # ─────────────────────────────────────────────────
 
 class PTTScraper(BaseScraper):
-    name = "PTT BuyTrade"
-    # 待辦 #4 驗證：板名 "BuyTrade" 不存在（/bbs/BuyTrade 回 404）已移除。
-    # PTT 並無單一 PC 二手板，硬體交易多以 [賣]/[售] tag 發於 PC_Shopping。
-    # 選擇器 .r-ent / .title a / #main-content 經實測有效。可視需要再加其他板。
-    BOARDS = ["PC_Shopping"]
+    name = "PTT 硬體交易"
+    # PTT hardwaresale＝硬體買賣板（實測有大量買賣文）。[賣]/[售] 為出售文（要的），
+    # [徵] 為收購（排除）、標題含（已售出）視為已成交。選擇器 .r-ent / .title a /
+    # #main-content 經實測有效。（先前誤用不存在的 BuyTrade、討論板 PC_Shopping → 已更正）
+    BOARDS = ["hardwaresale"]
     BASE = "https://www.ptt.cc"
 
     async def scrape_part(self, part: dict) -> list[Listing]:
@@ -576,8 +576,11 @@ class PTTScraper(BaseScraper):
                         continue
 
                     title = title_el.get_text(strip=True)
-                    # PTT 格式：[賣/WTS] [買/WTB]
+                    # 只收出售文（[賣]/[售]/WTS），排除收購文（[徵]）
                     if not re.search(r'\[賣|WTS|出售\]', title, re.I):
+                        continue
+                    # 排除整機/組合貼文（價格非單一零件，會汙染均價）
+                    if re.search(r'整機|主機|套裝|準系統|組合|\+', title):
                         continue
 
                     href = urljoin(self.BASE, title_el["href"])
@@ -615,7 +618,7 @@ class PTTScraper(BaseScraper):
                         url       = href,
                         location  = loc,
                         date      = datetime.now().strftime("%Y-%m-%d"),
-                        sold      = "[已售]" in title or "[sold]" in title.lower(),
+                        sold      = ("已售" in title) or ("售出" in title) or ("sold" in title.lower()),
                         raw_text  = text[:500],
                     ))
                 except Exception:
@@ -734,10 +737,9 @@ class CrawlerScheduler:
 
         connector = aiohttp.TCPConnector(limit=max_concurrent, ssl=False)
         async with aiohttp.ClientSession(connector=connector) as session:
-            # 主力來源：蝦皮（API）＋ PTT。露天/巴哈已移除（資訊量不足/過於分散）。
-            # FB 社團（FBGroupScraper）需登入，改由匯入路徑接入，不在自動爬蟲清單內。
+            # 自動爬蟲只跑 PTT（hardwaresale，匿名可爬、可排程）。
+            # 蝦皮匿名被擋(403)→改匯入式；FB 需登入→匯入式；皆不在自動清單。露天/巴哈已移除。
             scrapers = [
-                ShopeeScraper(session, self.db),
                 PTTScraper(session, self.db),
             ]
 

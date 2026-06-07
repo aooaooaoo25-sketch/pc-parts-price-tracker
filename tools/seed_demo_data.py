@@ -19,7 +19,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(ROOT, "pc_prices.db")
 
 # 主力來源（與排程器一致）；FB 社團需匯入，示範資料暫不含 FB
-SOURCES = ["蝦皮購物", "PTT BuyTrade"]
+SOURCES = ["蝦皮購物", "PTT 硬體交易"]
 CONDITIONS = ["九成新", "八成新", "盒裝完整", "無盒", "公司貨", "水貨九成新"]
 LOCATIONS = ["台北板橋", "高雄左營", "台中西屯", "新北中和", "桃園八德", "台南永康", "基隆信義"]
 
