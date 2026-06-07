@@ -20,6 +20,7 @@ pc_price_tracker/
 ├── index.html                 # 前端介面（純靜態可直接開啟；有 API 時自動取真實資料）
 ├── pc_scraper_backend.py      # 後端爬蟲主程式（Python 非同步）
 ├── api_server.py              # 本地 API server（Flask）：前端橋接層
+├── crawl_daily.ps1            # 每日 PTT 自動爬取包裝腳本（Windows 工作排程器呼叫）
 ├── catalog_updater.py         # 製造商產品庫更新：偵測官網新型號（待辦 #3）
 ├── estimator.py               # 未收錄零件行情估算：以真實目錄/成交資料估價（待辦 #7）
 ├── tools/
@@ -110,7 +111,7 @@ pc_price_tracker/
 
 | 類別 | 平台 | 方法 | 狀態 |
 |------|------|------|------|
-| `PTTScraper` | PTT `PC_Shopping` | HTML + Regex 解析 | ✅ 唯一可匿名自動爬 |
+| `PTTScraper` | PTT `hardwaresale`（硬體買賣板） | HTML + Regex 解析 | ✅ 匿名可爬、**每日排程**（唯一全自動真實來源） |
 | `ShopeeScraper` | 蝦皮購物 | 搜尋 API（JSON） | 🔶 匿名被擋(403)→改**匯入式**（登入後存 JSON 用匯入器） |
 | `FBGroupScraper` | FB 公開二手社團 | **匯入式**（CSV，FB 需登入） | 🔶 僅保留 90 天 |
 | `EbayScraper` | eBay 國際站 | 官方 Browse API（需 OAuth token） | 🔶 架構預留，**海外參考價** |
@@ -135,7 +136,8 @@ pc_price_tracker/
 >   #5 API server、#7 未收錄估價、#8 報表結構、#9 .gitignore/requirements
 > - 🔶 進行中：#6 價格歷史（已可匯入真實資料，待累積天數）
 > - ⬜ 未開始：#10 自訂追蹤持久化、#11 圖表區間陰影、#12 行動版面
-> - **資料來源現況**：PTT 可匿名自動爬；蝦皮/FB 走「登入瀏覽器擷取 → 匯入」（已實證蝦皮可行）；
+> - **資料來源現況**：PTT `hardwaresale` 可匿名自動爬（**已設每日排程**，累積真實歷史）；
+>   蝦皮/FB 走「登入瀏覽器擷取 → 匯入」（已實證蝦皮可行，但有反爬蟲節流）；
 >   eBay 官方 API 架構預留（海外參考價）。露天/巴哈已移除。
 > - **新增模組**：`api_server.py`、`catalog_updater.py`、`estimator.py`、
 >   `tools/{sync_parts,seed_demo_data,validate_selectors,import_listings}.py`、`hooks/pre-commit`
@@ -156,6 +158,7 @@ pc_price_tracker/
 6. 🔶 **價格歷史資料**：`price_snapshots` 首次執行前為空，折線圖需累積數天才有意義。
    - 開發/展示可先跑 `tools/seed_demo_data.py` 產生示範資料（⚠️ 會清空重建，勿在有真實資料時執行）。
    - 已實證可匯入**真實**資料：以 Claude-in-Chrome 從登入蝦皮擷取 RTX 5090 共 40 筆 → `import_listings.py` → 二手均價更新為真實 139,150。匯入後自動依今日成交重算快照。
+   - **PTT `hardwaresale` 已設每日排程自動爬**（`crawl_daily.ps1` + 工作排程 `PCPriceTracker_PTTCrawl`）→ 真實歷史逐日累積中。
 7. ~~**搜尋未收錄零件的行情估算過於粗糙**~~ ✅ 已完成（2026-06-03）：新增 `estimator.py` + `/api/estimate`，以真實 166 項目錄與成交資料估價（目錄比對→相近型號→兜底），附 basis/confidence；前端 `searchUnknown/addCustom` 改呼叫後端、API 未連線回退 `estP`。順帶修好 `searchUnknown` 原本詳情面板不顯示的 bug
 8. ~~**`Reporter.export_json()` 與前端 DB 結構不匹配**~~ ✅ 已處理（2026-06-03）：新增 `Reporter.get_detail()` / `build_report()` 產生與前端一致的扁平 `{part_id: detail}` 結構，供 API 使用
 
@@ -215,16 +218,35 @@ ANTHROPIC_API_KEY=sk-ant-你的學校金鑰
 ### 執行方式
 
 ```bash
-# 執行爬蟲（全部分類）
+# 執行爬蟲（全部分類；只跑 PTT hardwaresale）
 python pc_scraper_backend.py
 
-# 只爬特定分類（修改 main() 內的 category_filter 參數）
-# category_filter=["gpu", "cpu"]
+# 只爬特定分類（命令列指定）
+python pc_scraper_backend.py gpu cpu
 
 # 直接開啟前端（無需伺服器；API 未啟動則顯示模擬資料）
 open index.html       # macOS
 start index.html      # Windows
 ```
+
+### PTT 每日自動排程（Windows 工作排程器）
+
+PTT `hardwaresale` 是唯一可匿名自動爬的真實來源 → 設成每日自動跑、逐日累積歷史（待辦 #6）。
+
+- 包裝腳本：`crawl_daily.ps1`（設 `PYTHONUTF8=1`、跑 `gpu cpu`、輸出到 `logs/crawl_<date>.log`）
+- 已註冊工作排程 **`PCPriceTracker_PTTCrawl`**（每日 10:00、登入時執行、錯過補跑）
+
+```powershell
+# 立即手動跑一次
+powershell -ExecutionPolicy Bypass -File .\crawl_daily.ps1
+# 查看 / 改時間 / 移除排程
+Get-ScheduledTask -TaskName PCPriceTracker_PTTCrawl
+Set-ScheduledTask  -TaskName PCPriceTracker_PTTCrawl -Trigger (New-ScheduledTaskTrigger -Daily -At 9:00am)
+Unregister-ScheduledTask -TaskName PCPriceTracker_PTTCrawl -Confirm:$false
+```
+
+> 爬蟲與匯入皆呼叫共用的 `rebuild_today_snapshots()`，今日均價會合併**當天所有來源**
+> （PTT 自動 ＋ 當天手動匯入的蝦皮）一起算，不會互相覆蓋。
 
 ### 前後端串接（API server）
 
