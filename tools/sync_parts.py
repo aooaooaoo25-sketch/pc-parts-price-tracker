@@ -30,9 +30,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HTML = os.path.join(ROOT, "index.html")
 BACKEND = os.path.join(ROOT, "pc_scraper_backend.py")
 
-CAT_ORDER = ["cpu", "gpu", "ram", "mb", "ssd", "hdd", "psu", "cooler"]
-CAT_LABEL = {"cpu": "CPU", "gpu": "GPU", "ram": "RAM", "mb": "主機板",
-             "ssd": "SSD", "hdd": "HDD", "psu": "電源", "cooler": "散熱"}
+CAT_ORDER = ["cpu", "gpu", "ram", "ssd", "hdd"]
+CAT_LABEL = {"cpu": "CPU", "gpu": "GPU", "ram": "RAM", "ssd": "SSD", "hdd": "HDD"}
 
 ITEM_RE = re.compile(
     r"\{id:'(?P<id>[^']*)',\s*cat:'(?P<cat>[^']*)',\s*name:'(?P<name>[^']*)',"

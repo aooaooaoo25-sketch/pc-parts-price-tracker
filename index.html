@@ -169,15 +169,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   <div class="sbi" onclick="setCat('cpu',this)">🔲 CPU<span class="cnt" id="cnt-cpu">0</span></div>
   <div class="sbi" onclick="setCat('gpu',this)">🎮 GPU<span class="cnt" id="cnt-gpu">0</span></div>
   <div class="sbi" onclick="setCat('ram',this)">💾 RAM<span class="cnt" id="cnt-ram">0</span></div>
-  <div class="sbi" onclick="setCat('mb',this)">🔧 主機板<span class="cnt" id="cnt-mb">0</span></div>
   <div class="sdiv"></div>
   <div class="sbt">儲存裝置</div>
   <div class="sbi" onclick="setCat('ssd',this)">⚡ SSD<span class="cnt" id="cnt-ssd">0</span></div>
   <div class="sbi" onclick="setCat('hdd',this)">💿 HDD<span class="cnt" id="cnt-hdd">0</span></div>
-  <div class="sdiv"></div>
-  <div class="sbt">電源 / 散熱</div>
-  <div class="sbi" onclick="setCat('psu',this)">🔌 電源<span class="cnt" id="cnt-psu">0</span></div>
-  <div class="sbi" onclick="setCat('cooler',this)">❄ 散熱<span class="cnt" id="cnt-cooler">0</span></div>
   <div class="sdiv"></div>
   <div class="sbt">自訂追蹤</div>
   <div class="sbi" onclick="setCat('custom',this)">🔍 自訂搜尋<span class="cnt" id="cnt-custom">0</span></div>
@@ -372,34 +367,6 @@ ram:[
   {id:'ram_corsair_vengeance_lpx_ddr4_3200_16gb', cat:'ram',name:'Corsair Vengeance LPX DDR4-3200 16GB',spec:'8GBx2・CL16・XMP2.0',            new_price:1400,tags:[]},
   {id:'ram_kingston_fury_beast_ddr4_3200_32gb', cat:'ram',name:'Kingston Fury Beast DDR4-3200 32GB',  spec:'16GBx2・CL16・XMP2.0',            new_price:2200,tags:[]},
 ],
-mb:[
-  // Intel Z890 (Arrow Lake, 2024)
-  {id:'mb_asus_rog_maximus_z890_extreme', cat:'mb',name:'ASUS ROG Maximus Z890 Extreme',       spec:'Z890・LGA1851・DDR5・ATX・Wi-Fi7・TB5・2024', new_price:29900,tags:['NEW','2024']},
-  {id:'mb_asus_rog_strix_z890_f_gaming_wifi', cat:'mb',name:'ASUS ROG Strix Z890-F Gaming WiFi',   spec:'Z890・LGA1851・DDR5・ATX・Wi-Fi7・2024',      new_price:16500,tags:['NEW','2024']},
-  {id:'mb_msi_meg_z890_ace',  cat:'mb',name:'MSI MEG Z890 ACE',                    spec:'Z890・LGA1851・DDR5・ATX・Wi-Fi7・TB5・2024', new_price:22900,tags:['NEW','2024']},
-  {id:'mb_gigabyte_z890_aorus_master_x',   cat:'mb',name:'Gigabyte Z890 AORUS Master X',        spec:'Z890・LGA1851・DDR5・ATX・Wi-Fi7・2024',      new_price:18900,tags:['NEW','2024']},
-  {id:'mb_asrock_z890_taichi_aqua',  cat:'mb',name:'ASRock Z890 Taichi Aqua',             spec:'Z890・LGA1851・DDR5・ATX・Wi-Fi7・TB5・2024', new_price:21500,tags:['NEW','2024']},
-  // Intel Z790 (Raptor Lake, 2022-2023)
-  {id:'mb_asus_rog_maximus_z790_hero', cat:'mb',name:'ASUS ROG Maximus Z790 Hero',          spec:'Z790・LGA1700・DDR5・ATX・Wi-Fi6E・TB4',      new_price:18500,tags:['熱門']},
-  {id:'mb_asus_rog_strix_z790_e_gaming_wifi', cat:'mb',name:'ASUS ROG Strix Z790-E Gaming WiFi',   spec:'Z790・LGA1700・DDR5・ATX・Wi-Fi6E',           new_price:14500,tags:[]},
-  {id:'mb_msi_meg_z790_ace', cat:'mb',name:'MSI MEG Z790 ACE',                    spec:'Z790・LGA1700・DDR5・ATX・TB4',               new_price:15900,tags:[]},
-  {id:'mb_gigabyte_z790_aorus_master',  cat:'mb',name:'Gigabyte Z790 AORUS Master',          spec:'Z790・LGA1700・DDR5・ATX・Wi-Fi6E',           new_price:14500,tags:[]},
-  {id:'mb_asrock_z790_taichi_carrara',cat:'mb',name:'ASRock Z790 Taichi Carrara',          spec:'Z790・LGA1700・DDR5・ATX・Wi-Fi6E・TB5',      new_price:16800,tags:[]},
-  // Intel B760
-  {id:'mb_asus_rog_strix_b760_f_gaming_wifi', cat:'mb',name:'ASUS ROG Strix B760-F Gaming WiFi',   spec:'B760・LGA1700・DDR5・ATX・Wi-Fi6E',           new_price:8900, tags:['熱門']},
-  {id:'mb_msi_mag_b760m_mortar_wifi_ddr5', cat:'mb',name:'MSI MAG B760M Mortar WiFi DDR5',      spec:'B760・LGA1700・DDR5・mATX・Wi-Fi6',           new_price:5800, tags:['熱門','CP值']},
-  {id:'mb_gigabyte_b760_aorus_elite_ax_ddr5',   cat:'mb',name:'Gigabyte B760 AORUS Elite AX DDR5',   spec:'B760・LGA1700・DDR5・ATX・Wi-Fi6E',           new_price:7200, tags:[]},
-  // AMD X870E (Ryzen 9000, 2024)
-  {id:'mb_asus_rog_crosshair_x870e_hero', cat:'mb',name:'ASUS ROG Crosshair X870E Hero',       spec:'X870E・AM5・DDR5・ATX・Wi-Fi7・USB4・2024',   new_price:22900,tags:['NEW','2024']},
-  {id:'mb_msi_meg_x870e_ace', cat:'mb',name:'MSI MEG X870E ACE',                   spec:'X870E・AM5・DDR5・ATX・Wi-Fi7・USB4・2024',   new_price:21500,tags:['NEW','2024']},
-  {id:'mb_gigabyte_x870e_aorus_master',  cat:'mb',name:'Gigabyte X870E AORUS Master',         spec:'X870E・AM5・DDR5・ATX・Wi-Fi7・2024',         new_price:18900,tags:['NEW','2024']},
-  {id:'mb_asrock_x870e_taichi', cat:'mb',name:'ASRock X870E Taichi',                 spec:'X870E・AM5・DDR5・ATX・Wi-Fi7・USB4・2024',   new_price:19500,tags:['NEW','2024']},
-  // AMD X670E / B650 (Ryzen 7000)
-  {id:'mb_asus_rog_crosshair_x670e_hero', cat:'mb',name:'ASUS ROG Crosshair X670E Hero',       spec:'X670E・AM5・DDR5・ATX・Wi-Fi6E',              new_price:17800,tags:['熱門']},
-  {id:'mb_msi_mag_x670e_tomahawk_wifi', cat:'mb',name:'MSI MAG X670E Tomahawk WiFi',         spec:'X670E・AM5・DDR5・ATX・Wi-Fi6',               new_price:9800, tags:['熱門']},
-  {id:'mb_asus_rog_strix_b650e_f_gaming_wifi', cat:'mb',name:'ASUS ROG Strix B650E-F Gaming WiFi',  spec:'B650E・AM5・DDR5・ATX・Wi-Fi6E',              new_price:10500,tags:[]},
-  {id:'mb_msi_mag_b650_tomahawk_wifi',  cat:'mb',name:'MSI MAG B650 Tomahawk WiFi',          spec:'B650・AM5・DDR5・ATX・Wi-Fi6',                new_price:7800, tags:['熱門','CP值']},
-],
 ssd:[
   {id:'ssd_crucial_t705_4tb_pcie5', cat:'ssd',name:'Crucial T705 4TB PCIe5',     spec:'PCIe5.0 x4・14500/12700 MB/s・M.2 2280',  new_price:15500,tags:['頂級']},
   {id:'ssd_crucial_t705_2tb_pcie5', cat:'ssd',name:'Crucial T705 2TB PCIe5',     spec:'PCIe5.0 x4・14500/12700 MB/s・M.2 2280',  new_price:8200, tags:['頂級']},
@@ -430,36 +397,6 @@ hdd:[
   {id:'hdd_wd_blue_2tb', cat:'hdd',name:'WD Blue 2TB',                spec:'7200RPM・SATA 6Gb/s・256MB',        new_price:2000, tags:[]},
   {id:'hdd_toshiba_x300_4tb', cat:'hdd',name:'Toshiba X300 4TB',           spec:'7200RPM・SATA 6Gb/s・128MB',        new_price:2600, tags:[]},
 ],
-psu:[
-  {id:'psu_seasonic_vertex_px_1000',cat:'psu',name:'Seasonic Vertex PX-1000',          spec:'1000W・80+Platinum・全模組・ATX3.0', new_price:6800,tags:['旗艦']},
-  {id:'psu_seasonic_vertex_px_850', cat:'psu',name:'Seasonic Vertex PX-850',           spec:'850W・80+Platinum・全模組・ATX3.0',  new_price:5800,tags:[]},
-  {id:'psu_seasonic_focus_gx_850', cat:'psu',name:'Seasonic Focus GX-850',            spec:'850W・80+Gold・全模組・10年保固',     new_price:4800,tags:['熱門']},
-  {id:'psu_seasonic_focus_gx_650', cat:'psu',name:'Seasonic Focus GX-650',            spec:'650W・80+Gold・全模組・10年保固',     new_price:3800,tags:['熱門','CP值']},
-  {id:'psu_corsair_hx1000',cat:'psu',name:'Corsair HX1000',                   spec:'1000W・80+Platinum・全模組・10年',    new_price:5900,tags:[]},
-  {id:'psu_corsair_rm850x_2024',cat:'psu',name:'Corsair RM850x (2024)',             spec:'850W・80+Gold・全模組・10年・ATX3.0', new_price:4200,tags:['熱門']},
-  {id:'psu_corsair_rm750x',cat:'psu',name:'Corsair RM750x',                   spec:'750W・80+Gold・全模組・10年保固',     new_price:3500,tags:[]},
-  {id:'psu_asus_rog_thor_850p2',cat:'psu',name:'ASUS ROG Thor 850P2',             spec:'850W・80+Platinum・OLED・全模組',     new_price:6200,tags:[]},
-  {id:'psu_be_quiet_dark_power_13_850w', cat:'psu',name:'be quiet! Dark Power 13 850W',     spec:'850W・80+Titanium・全模組・10年',     new_price:5800,tags:['旗艦']},
-  {id:'psu_be_quiet_straight_power_12_750w', cat:'psu',name:'be quiet! Straight Power 12 750W', spec:'750W・80+Platinum・全模組',          new_price:4800,tags:[]},
-  {id:'psu_msi_mpg_a850g_pcie5',cat:'psu',name:'MSI MPG A850G PCIE5',              spec:'850W・80+Gold・全模組・ATX3.0・2024', new_price:4500,tags:['NEW']},
-  {id:'psu_thermalright_tg_1050w',cat:'psu',name:'Thermalright TG-1050W',            spec:'1050W・80+Gold・全模組・ATX3.0',      new_price:3600,tags:['CP值']},
-],
-cooler:[
-  {id:'cooler_noctua_nh_d15_g2', cat:'cooler',name:'Noctua NH-D15 G2',              spec:'雙塔雙扇・AM5/LGA1851・TDP300W・2024',   new_price:4500,tags:['NEW','旗艦']},
-  {id:'cooler_noctua_nh_d15_chromax_black',  cat:'cooler',name:'Noctua NH-D15 chromax.black',   spec:'雙塔雙扇・AM5/LGA1700・TDP280W',         new_price:3800,tags:['熱門']},
-  {id:'cooler_noctua_nh_u12a_chromax_black',  cat:'cooler',name:'Noctua NH-U12A chromax.black',  spec:'單塔雙扇・120mm・TDP200W',               new_price:2800,tags:[]},
-  {id:'cooler_be_quiet_dark_rock_pro_5',   cat:'cooler',name:'be quiet! Dark Rock Pro 5',     spec:'雙塔雙扇・AM5/LGA1851・TDP270W・2024',   new_price:3600,tags:['NEW']},
-  {id:'cooler_thermalright_pa120_se',cat:'cooler',name:'Thermalright PA120 SE',         spec:'雙塔雙扇・AM5/LGA1700・TDP280W',         new_price:1200,tags:['CP值','熱門']},
-  {id:'cooler_deepcool_ak620_digital', cat:'cooler',name:'DeepCool AK620 Digital',        spec:'雙塔雙扇・AM5/LGA1700・TDP260W',         new_price:1800,tags:['熱門']},
-  {id:'cooler_id_cooling_fx360_pro_argb',  cat:'cooler',name:'ID-Cooling FX360 Pro ARGB',     spec:'360mm AIO・3x120mm・ARGB・AM5',          new_price:3200,tags:[]},
-  {id:'cooler_asus_rog_ryujin_iii_360_argb',cat:'cooler',name:'ASUS ROG Ryujin III 360 ARGB', spec:'360mm AIO・3x120mm・LCD顯示・AM5/LGA1851・2024', new_price:12500,tags:['NEW','旗艦']},
-  {id:'cooler_asus_rog_strix_lc_ii_360_argb',cat:'cooler',name:'ASUS ROG Strix LC II 360 ARGB', spec:'360mm AIO・3x120mm・ARGB・AM5/LGA1700', new_price:6800, tags:[]},
-  {id:'cooler_corsair_h150i_elite_capellix_xt',cat:'cooler',name:'Corsair H150i ELITE CAPELLIX XT',spec:'360mm AIO・3x120mm・iCUE・AM5',        new_price:7200, tags:['熱門']},
-  {id:'cooler_corsair_icue_h100i_elite_lcd',cat:'cooler',name:'Corsair iCUE H100i ELITE LCD',  spec:'240mm AIO・2x120mm・LCD・AM5/LGA1700',  new_price:5200, tags:[]},
-  {id:'cooler_msi_mag_coreliquid_e360',cat:'cooler',name:'MSI MAG CoreLiquid E360',        spec:'360mm AIO・3x120mm・LCD・AM5/LGA1851・2024', new_price:5800,tags:['NEW']},
-  {id:'cooler_lian_li_galahad_ii_360_rgb', cat:'cooler',name:'Lian Li GALAHAD II 360 RGB',     spec:'360mm AIO・3x120mm・RGB・AM5/LGA1700',  new_price:5500, tags:[]},
-  {id:'cooler_ek_nucleus_aio_cr360_lux_d_rgb',   cat:'cooler',name:'EK Nucleus AIO CR360 Lux D-RGB', spec:'360mm AIO・3x120mm・D-RGB・AM5',        new_price:6900, tags:[]},
-],
 };
 const SRCS=[
   {name:'蝦皮購物', s:'蝦皮',c:'#f0a030',bg:'rgba(240,160,48,.14)'},
@@ -470,11 +407,8 @@ const CHIPS={
   gpu:['RTX 50系','RTX 40系','RTX 30系','RX 9000系','RX 7000系','RX 6000系','Arc Battlemage','NVIDIA','AMD','Intel'],
   cpu:['Arrow Lake','Raptor Lake','Alder Lake','Ryzen 9000','Ryzen 7000','Ryzen 5000','Intel','AMD','3D V-Cache'],
   ram:['DDR5','DDR4','G.Skill','Corsair','Kingston','TeamGroup','ADATA'],
-  mb:['Z890','Z790','B760','X870E','X670E','B650','ASUS','MSI','Gigabyte','ASRock'],
   ssd:['PCIe 5.0','PCIe 4.0','SATA','Samsung','WD','Crucial','Kingston','Seagate','ADATA'],
   hdd:['Seagate','WD','Toshiba','NAS級'],
-  psu:['Seasonic','Corsair','ASUS','be quiet!','MSI','Thermalright','Platinum','Gold','Titanium','ATX3.0'],
-  cooler:['風冷','水冷 AIO','Noctua','Corsair','ASUS','be quiet!','Thermalright','DeepCool','360mm','240mm'],
 };
 // ─────────────────────────────────
 let customs=[], curCat='all', curFilters=[], selPart=null, pChart=null, curRange='3m', Q='';
@@ -519,7 +453,7 @@ function genLs(p){
 function genHist(base){const a=[];let c=base*.82;for(let i=365;i>=0;i--){c+=(Math.random()-.47)*base*.009;c=Math.max(base*.3,Math.min(base*.95,c));a.push(Math.round(c))}return a}
 // sidebar
 function setCat(c,el){curCat=c;curFilters=[];document.querySelectorAll('.sbi').forEach(x=>x.classList.remove('on'));el.classList.add('on');renderChips();renderList()}
-function updCounts(){const a=allP();document.getElementById('cnt-all').textContent=a.length;['cpu','gpu','ram','mb','ssd','hdd','psu','cooler'].forEach(c=>{const e=document.getElementById('cnt-'+c);if(e)e.textContent=(DB[c]||[]).length});document.getElementById('cnt-custom').textContent=customs.length}
+function updCounts(){const a=allP();document.getElementById('cnt-all').textContent=a.length;['cpu','gpu','ram','ssd','hdd'].forEach(c=>{const e=document.getElementById('cnt-'+c);if(e)e.textContent=(DB[c]||[]).length});document.getElementById('cnt-custom').textContent=customs.length}
 function renderChips(){const cs=CHIPS[curCat]||[];document.getElementById('chips').innerHTML=cs.map(c=>`<span class="chip${curFilters.includes(c)?' on':''}" onclick="togFilter('${c}')">${c}</span>`).join('')}
 function togFilter(f){const i=curFilters.indexOf(f);i>=0?curFilters.splice(i,1):curFilters.push(f);renderChips();renderList()}
 // search
@@ -606,7 +540,7 @@ async function addCustom(){
   showToast(`➕ 已加入「${q}」（${est.basis}）`);
   document.getElementById('ub').classList.remove('show');clearS();
 }
-function guessCat(q){q=q.toLowerCase();if(/(rtx|gtx|rx\s*\d|radeon|geforce|arc\s*[ab])/.test(q))return'gpu';if(/(core|ryzen|i9|i7|i5|r9|r7|r5|cpu|處理器)/.test(q))return'cpu';if(/(ddr|ram|記憶體)/.test(q))return'ram';if(/(nvme|ssd|固態|sn\d|990|980|870)/.test(q))return'ssd';if(/(hdd|hard|硬碟|barracuda|ironwolf)/.test(q))return'hdd';if(/(主機板|motherboard|z890|z790|x870|b650|b760)/.test(q))return'mb';if(/(psu|電源|watt|瓦|corsair\s*rm|seasonic)/.test(q))return'psu';if(/(散熱|cooler|aio|水冷|風冷|noctua)/.test(q))return'cooler';return'gpu'}
+function guessCat(q){q=q.toLowerCase();if(/(rtx|gtx|rx\s*\d|radeon|geforce|arc\s*[ab])/.test(q))return'gpu';if(/(core|ryzen|i9|i7|i5|r9|r7|r5|cpu|處理器)/.test(q))return'cpu';if(/(ddr|ram|記憶體)/.test(q))return'ram';if(/(nvme|ssd|固態|sn\d|990|980|870)/.test(q))return'ssd';if(/(hdd|hard|硬碟|barracuda|ironwolf)/.test(q))return'hdd';return'gpu'}
 function estP(q){q=q.toLowerCase();const t=[['5090',89900,72000],['5080',49900,39000],['5070 ti',35900,28000],['5070ti',35900,28000],['5070',25900,19500],['5060 ti',17900,13500],['5060ti',17900,13500],['5060',12900,9800],['4090',59900,46000],['4080 super',36900,28000],['4080',33900,25000],['4070 ti super',26900,20000],['4070ti',23900,18000],['4070 super',19900,15000],['4070',17900,13500],['9070 xt',22900,18000],['9070xt',22900,18000],['9070',18900,15000],['7900 xtx',29900,22000],['7800 xt',15900,12000],['b580',11900,9000],['b570',9500,7500],['285k',17500,13500],['265k',12900,9800],['9950x',20500,16000],['9700x',11500,8800]];for(const[k,n,u]of t)if(q.includes(k))return{n,u};return{n:12000,u:9000}}
 // modal
 function openDbModal(){document.getElementById('mbg').classList.add('show')}

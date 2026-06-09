@@ -16,8 +16,7 @@ import re
 from pc_scraper_backend import PARTS_DB
 
 # 各分類「二手/全新」預設比例（無真實資料時的兜底）
-DEFAULT_RATIO = {"gpu": 0.62, "cpu": 0.60, "ram": 0.55, "mb": 0.55,
-                 "ssd": 0.55, "hdd": 0.50, "psu": 0.60, "cooler": 0.55}
+DEFAULT_RATIO = {"gpu": 0.62, "cpu": 0.60, "ram": 0.55, "ssd": 0.55, "hdd": 0.50}
 
 # 註：短代號（i5/r5…）需加詞界，否則 "ddr5" 會誤判為 cpu。RAM/SSD 規則排在 cpu 前。
 _CAT_RULES = [
@@ -25,9 +24,6 @@ _CAT_RULES = [
     ("ram", r"(ddr\d|記憶體|\bram\b|dimm)"),
     ("ssd", r"(nvme|\bssd\b|固態|\bsn\d|\bpcie|990\s*pro|980\s*pro|870\s*evo)"),
     ("hdd", r"(\bhdd\b|硬碟|barracuda|ironwolf|toshiba|red\s*plus)"),
-    ("mb", r"(主機板|motherboard|z890|z790|b760|x870|x670|b650|tomahawk|aorus|taichi)"),
-    ("psu", r"(電源|\bpsu\b|\bwatt\b|瓦|\brm\d|seasonic|focus|vertex)"),
-    ("cooler", r"(散熱|cooler|\baio\b|水冷|風冷|noctua|nh-|liquid)"),
     ("cpu", r"(\bcore\b|ryzen|ultra|\bi[3579]\b|\br[3579]\b|處理器|\bcpu\b)"),
 ]
 

@@ -74,7 +74,7 @@ pc_price_tracker/
 ```javascript
 {
   id: 'gpu_rtx5090',    // 統一識別碼，格式 <cat>_<model>，前後端共用
-  cat: 'gpu',           // 分類：cpu / gpu / ram / mb / ssd / hdd / psu / cooler
+  cat: 'gpu',           // 分類：cpu / gpu / ram / ssd / hdd
   name: 'GeForce RTX 5090',
   spec: '21760 CUDA・32GB GDDR7・575W・PCIe5.0・Blackwell・2025',
   new_price: 89900,     // 全新建議售價 TWD，停售品填 0
@@ -85,21 +85,21 @@ pc_price_tracker/
 **ID 命名規則（前後端統一，2026-06-03 起）：**
 - CPU：`cpu_<tier>_<model>` — 例 `cpu_i9_14900k`、`cpu_ultra9_285k`、`cpu_r7_5800x3d`
 - GPU：`gpu_<brand><model>` — 例 `gpu_rtx5090`、`gpu_rx7900xtx`、`gpu_arcb580`
-- 其他（RAM/主機板/SSD/HDD/PSU/散熱）：`<cat>_<完整名稱 slug>` — 例 `ram_corsair_vengeance_ddr5_5600_32gb`、`ssd_samsung_990_pro_2tb`
+- 其他（RAM/SSD/HDD）：`<cat>_<完整名稱 slug>` — 例 `ram_corsair_vengeance_ddr5_5600_32gb`、`ssd_samsung_990_pro_2tb`
   （含品牌，避免同規格不同品牌撞名）
 
 > ⚠️ 前端 `DB` 是**唯一主目錄**。新增/修改零件後執行 `python tools/sync_parts.py`，
 > 即可自動重算 id 並重建後端 `PARTS_DB`，確保兩邊一致。**請勿手動編輯後端 PARTS_DB。**
 
-目前各分類品項數量（前端 DB＝後端 PARTS_DB，共 166 項）：
+目前各分類品項數量（前端 DB＝後端 PARTS_DB，共 119 項）：
 - CPU：38 項（Intel Arrow Lake / Raptor Lake / Alder Lake、AMD Ryzen 9000 / 7000 / 5000）
 - GPU：41 項（RTX 50/40/30、RX 9000/7000/6000、Arc Battlemage/Alchemist）
 - RAM：14 項（DDR5 / DDR4）
-- 主機板：21 項（Z890 / Z790 / B760 / X870E / X670E / B650）
 - SSD：16 項（PCIe5 / PCIe4 / SATA）
 - HDD：10 項
-- 電源：12 項
-- 散熱：14 項
+
+> 主機板 / 電源 / 散熱 已於 2026-06-08 **移除**（廠牌眾多、二手價格帶穩定波動小），
+> 聚焦 GPU / CPU / RAM / SSD / HDD 五類。
 
 ---
 

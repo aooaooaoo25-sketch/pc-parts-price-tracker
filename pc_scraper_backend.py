@@ -188,44 +188,6 @@ PARTS_DB = {
             {"id": "ram_kingston_fury_beast_ddr4_3200_32gb", "name": "Kingston Fury Beast DDR4-3200 32GB", "aliases": ["Kingston Fury Beast DDR4-3200 32GB", "Fury Beast DDR4-3200 32GB"], "new_price": 2200},
         ],
     },
-    # ── 主機板 ──
-    "mb": {
-        "z890": [
-            {"id": "mb_asus_rog_maximus_z890_extreme", "name": "ASUS ROG Maximus Z890 Extreme", "aliases": ["ASUS ROG Maximus Z890 Extreme", "ROG Maximus Z890 Extreme"], "new_price": 29900},
-            {"id": "mb_asus_rog_strix_z890_f_gaming_wifi", "name": "ASUS ROG Strix Z890-F Gaming WiFi", "aliases": ["ASUS ROG Strix Z890-F Gaming WiFi", "ROG Strix Z890-F Gaming WiFi"], "new_price": 16500},
-            {"id": "mb_msi_meg_z890_ace", "name": "MSI MEG Z890 ACE", "aliases": ["MSI MEG Z890 ACE", "MEG Z890 ACE"], "new_price": 22900},
-            {"id": "mb_gigabyte_z890_aorus_master_x", "name": "Gigabyte Z890 AORUS Master X", "aliases": ["Gigabyte Z890 AORUS Master X", "Z890 AORUS Master X"], "new_price": 18900},
-            {"id": "mb_asrock_z890_taichi_aqua", "name": "ASRock Z890 Taichi Aqua", "aliases": ["ASRock Z890 Taichi Aqua", "Z890 Taichi Aqua"], "new_price": 21500},
-        ],
-        "z790": [
-            {"id": "mb_asus_rog_maximus_z790_hero", "name": "ASUS ROG Maximus Z790 Hero", "aliases": ["ASUS ROG Maximus Z790 Hero", "ROG Maximus Z790 Hero"], "new_price": 18500},
-            {"id": "mb_asus_rog_strix_z790_e_gaming_wifi", "name": "ASUS ROG Strix Z790-E Gaming WiFi", "aliases": ["ASUS ROG Strix Z790-E Gaming WiFi", "ROG Strix Z790-E Gaming WiFi"], "new_price": 14500},
-            {"id": "mb_msi_meg_z790_ace", "name": "MSI MEG Z790 ACE", "aliases": ["MSI MEG Z790 ACE", "MEG Z790 ACE"], "new_price": 15900},
-            {"id": "mb_gigabyte_z790_aorus_master", "name": "Gigabyte Z790 AORUS Master", "aliases": ["Gigabyte Z790 AORUS Master", "Z790 AORUS Master"], "new_price": 14500},
-            {"id": "mb_asrock_z790_taichi_carrara", "name": "ASRock Z790 Taichi Carrara", "aliases": ["ASRock Z790 Taichi Carrara", "Z790 Taichi Carrara"], "new_price": 16800},
-        ],
-        "b760": [
-            {"id": "mb_asus_rog_strix_b760_f_gaming_wifi", "name": "ASUS ROG Strix B760-F Gaming WiFi", "aliases": ["ASUS ROG Strix B760-F Gaming WiFi", "ROG Strix B760-F Gaming WiFi"], "new_price": 8900},
-            {"id": "mb_msi_mag_b760m_mortar_wifi_ddr5", "name": "MSI MAG B760M Mortar WiFi DDR5", "aliases": ["MSI MAG B760M Mortar WiFi DDR5", "MAG B760M Mortar WiFi DDR5"], "new_price": 5800},
-            {"id": "mb_gigabyte_b760_aorus_elite_ax_ddr5", "name": "Gigabyte B760 AORUS Elite AX DDR5", "aliases": ["Gigabyte B760 AORUS Elite AX DDR5", "B760 AORUS Elite AX DDR5"], "new_price": 7200},
-        ],
-        "x870e": [
-            {"id": "mb_asus_rog_crosshair_x870e_hero", "name": "ASUS ROG Crosshair X870E Hero", "aliases": ["ASUS ROG Crosshair X870E Hero", "ROG Crosshair X870E Hero"], "new_price": 22900},
-            {"id": "mb_msi_meg_x870e_ace", "name": "MSI MEG X870E ACE", "aliases": ["MSI MEG X870E ACE", "MEG X870E ACE"], "new_price": 21500},
-            {"id": "mb_gigabyte_x870e_aorus_master", "name": "Gigabyte X870E AORUS Master", "aliases": ["Gigabyte X870E AORUS Master", "X870E AORUS Master"], "new_price": 18900},
-            {"id": "mb_asrock_x870e_taichi", "name": "ASRock X870E Taichi", "aliases": ["ASRock X870E Taichi", "X870E Taichi"], "new_price": 19500},
-        ],
-        "x670e": [
-            {"id": "mb_asus_rog_crosshair_x670e_hero", "name": "ASUS ROG Crosshair X670E Hero", "aliases": ["ASUS ROG Crosshair X670E Hero", "ROG Crosshair X670E Hero"], "new_price": 17800},
-            {"id": "mb_msi_mag_x670e_tomahawk_wifi", "name": "MSI MAG X670E Tomahawk WiFi", "aliases": ["MSI MAG X670E Tomahawk WiFi", "MAG X670E Tomahawk WiFi"], "new_price": 9800},
-        ],
-        "b650e": [
-            {"id": "mb_asus_rog_strix_b650e_f_gaming_wifi", "name": "ASUS ROG Strix B650E-F Gaming WiFi", "aliases": ["ASUS ROG Strix B650E-F Gaming WiFi", "ROG Strix B650E-F Gaming WiFi"], "new_price": 10500},
-        ],
-        "b650": [
-            {"id": "mb_msi_mag_b650_tomahawk_wifi", "name": "MSI MAG B650 Tomahawk WiFi", "aliases": ["MSI MAG B650 Tomahawk WiFi", "MAG B650 Tomahawk WiFi"], "new_price": 7800},
-        ],
-    },
     # ── SSD ──
     "ssd": {
         "pcie5": [
@@ -264,44 +226,6 @@ PARTS_DB = {
             {"id": "hdd_wd_blue_4tb", "name": "WD Blue 4TB", "aliases": ["WD Blue 4TB", "Blue 4TB"], "new_price": 3200},
             {"id": "hdd_wd_blue_2tb", "name": "WD Blue 2TB", "aliases": ["WD Blue 2TB", "Blue 2TB"], "new_price": 2000},
             {"id": "hdd_toshiba_x300_4tb", "name": "Toshiba X300 4TB", "aliases": ["Toshiba X300 4TB", "X300 4TB"], "new_price": 2600},
-        ],
-    },
-    # ── 電源 ──
-    "psu": {
-        "psu": [
-            {"id": "psu_seasonic_vertex_px_1000", "name": "Seasonic Vertex PX-1000", "aliases": ["Seasonic Vertex PX-1000", "Vertex PX-1000"], "new_price": 6800},
-            {"id": "psu_seasonic_vertex_px_850", "name": "Seasonic Vertex PX-850", "aliases": ["Seasonic Vertex PX-850", "Vertex PX-850"], "new_price": 5800},
-            {"id": "psu_seasonic_focus_gx_850", "name": "Seasonic Focus GX-850", "aliases": ["Seasonic Focus GX-850", "Focus GX-850"], "new_price": 4800},
-            {"id": "psu_seasonic_focus_gx_650", "name": "Seasonic Focus GX-650", "aliases": ["Seasonic Focus GX-650", "Focus GX-650"], "new_price": 3800},
-            {"id": "psu_corsair_hx1000", "name": "Corsair HX1000", "aliases": ["Corsair HX1000", "HX1000"], "new_price": 5900},
-            {"id": "psu_corsair_rm850x_2024", "name": "Corsair RM850x (2024)", "aliases": ["Corsair RM850x (2024)", "RM850x (2024)"], "new_price": 4200},
-            {"id": "psu_corsair_rm750x", "name": "Corsair RM750x", "aliases": ["Corsair RM750x", "RM750x"], "new_price": 3500},
-            {"id": "psu_asus_rog_thor_850p2", "name": "ASUS ROG Thor 850P2", "aliases": ["ASUS ROG Thor 850P2", "ROG Thor 850P2"], "new_price": 6200},
-            {"id": "psu_be_quiet_dark_power_13_850w", "name": "be quiet! Dark Power 13 850W", "aliases": ["be quiet! Dark Power 13 850W", "quiet! Dark Power 13 850W"], "new_price": 5800},
-            {"id": "psu_be_quiet_straight_power_12_750w", "name": "be quiet! Straight Power 12 750W", "aliases": ["be quiet! Straight Power 12 750W", "quiet! Straight Power 12 750W"], "new_price": 4800},
-            {"id": "psu_msi_mpg_a850g_pcie5", "name": "MSI MPG A850G PCIE5", "aliases": ["MSI MPG A850G PCIE5", "MPG A850G PCIE5"], "new_price": 4500},
-            {"id": "psu_thermalright_tg_1050w", "name": "Thermalright TG-1050W", "aliases": ["Thermalright TG-1050W", "TG-1050W"], "new_price": 3600},
-        ],
-    },
-    # ── 散熱 ──
-    "cooler": {
-        "air": [
-            {"id": "cooler_noctua_nh_d15_g2", "name": "Noctua NH-D15 G2", "aliases": ["Noctua NH-D15 G2", "NH-D15 G2"], "new_price": 4500},
-            {"id": "cooler_noctua_nh_d15_chromax_black", "name": "Noctua NH-D15 chromax.black", "aliases": ["Noctua NH-D15 chromax.black", "NH-D15 chromax.black"], "new_price": 3800},
-            {"id": "cooler_noctua_nh_u12a_chromax_black", "name": "Noctua NH-U12A chromax.black", "aliases": ["Noctua NH-U12A chromax.black", "NH-U12A chromax.black"], "new_price": 2800},
-            {"id": "cooler_be_quiet_dark_rock_pro_5", "name": "be quiet! Dark Rock Pro 5", "aliases": ["be quiet! Dark Rock Pro 5", "quiet! Dark Rock Pro 5"], "new_price": 3600},
-            {"id": "cooler_thermalright_pa120_se", "name": "Thermalright PA120 SE", "aliases": ["Thermalright PA120 SE", "PA120 SE"], "new_price": 1200},
-            {"id": "cooler_deepcool_ak620_digital", "name": "DeepCool AK620 Digital", "aliases": ["DeepCool AK620 Digital", "AK620 Digital"], "new_price": 1800},
-        ],
-        "liquid": [
-            {"id": "cooler_id_cooling_fx360_pro_argb", "name": "ID-Cooling FX360 Pro ARGB", "aliases": ["ID-Cooling FX360 Pro ARGB", "FX360 Pro ARGB"], "new_price": 3200},
-            {"id": "cooler_asus_rog_ryujin_iii_360_argb", "name": "ASUS ROG Ryujin III 360 ARGB", "aliases": ["ASUS ROG Ryujin III 360 ARGB", "ROG Ryujin III 360 ARGB"], "new_price": 12500},
-            {"id": "cooler_asus_rog_strix_lc_ii_360_argb", "name": "ASUS ROG Strix LC II 360 ARGB", "aliases": ["ASUS ROG Strix LC II 360 ARGB", "ROG Strix LC II 360 ARGB"], "new_price": 6800},
-            {"id": "cooler_corsair_h150i_elite_capellix_xt", "name": "Corsair H150i ELITE CAPELLIX XT", "aliases": ["Corsair H150i ELITE CAPELLIX XT", "H150i ELITE CAPELLIX XT"], "new_price": 7200},
-            {"id": "cooler_corsair_icue_h100i_elite_lcd", "name": "Corsair iCUE H100i ELITE LCD", "aliases": ["Corsair iCUE H100i ELITE LCD", "iCUE H100i ELITE LCD"], "new_price": 5200},
-            {"id": "cooler_msi_mag_coreliquid_e360", "name": "MSI MAG CoreLiquid E360", "aliases": ["MSI MAG CoreLiquid E360", "MAG CoreLiquid E360"], "new_price": 5800},
-            {"id": "cooler_lian_li_galahad_ii_360_rgb", "name": "Lian Li GALAHAD II 360 RGB", "aliases": ["Lian Li GALAHAD II 360 RGB", "Li GALAHAD II 360 RGB"], "new_price": 5500},
-            {"id": "cooler_ek_nucleus_aio_cr360_lux_d_rgb", "name": "EK Nucleus AIO CR360 Lux D-RGB", "aliases": ["EK Nucleus AIO CR360 Lux D-RGB", "Nucleus AIO CR360 Lux D-RGB"], "new_price": 6900},
         ],
     },
 }
