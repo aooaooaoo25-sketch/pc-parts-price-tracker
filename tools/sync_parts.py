@@ -35,7 +35,8 @@ CAT_LABEL = {"cpu": "CPU", "gpu": "GPU", "ram": "RAM", "ssd": "SSD", "hdd": "HDD
 
 ITEM_RE = re.compile(
     r"\{id:'(?P<id>[^']*)',\s*cat:'(?P<cat>[^']*)',\s*name:'(?P<name>[^']*)',"
-    r"\s*spec:'(?P<spec>[^']*)',\s*new_price:(?P<price>\d+),\s*tags:\[(?P<tags>[^\]]*)\]\}"
+    r"\s*spec:'(?P<spec>[^']*)',\s*new_price:(?P<price>\d+),\s*tags:\[(?P<tags>[^\]]*)\]"
+    r"(?:,\s*aliases:\[(?P<aliases>[^\]]*)\])?\}"
 )
 
 
@@ -83,7 +84,10 @@ def canonical_id(cat, name):
 
 
 # ─────────────────────── aliases / subcat ───────────────────────
-def aliases_for(cat, name):
+def aliases_for(cat, name, fe_aliases=None):
+    # 前端若提供 aliases（如 RAM 規格帶的市場用語）優先採用
+    if fe_aliases:
+        return fe_aliases
     if cat == "cpu":
         if "Core Ultra" in name:
             return [name.replace("Core ", ""), name.split()[-1]]
@@ -145,6 +149,8 @@ def build(html, backend):
     items = [m.groupdict() for m in ITEM_RE.finditer(html)]
     for it in items:
         it["price"] = int(it["price"])
+        # 前端選填 aliases（市場用語），解析成清單供後端比對用
+        it["fe_aliases"] = re.findall(r"'([^']*)'", it.get("aliases") or "")
     if not items:
         raise SystemExit("未從 index.html 解析到任何品項，請檢查 DB 格式")
 
@@ -177,7 +183,7 @@ def build(html, backend):
         for sub, lst in tree[cat].items():
             lines.append(f"        {pyq(sub)}: [")
             for it in lst:
-                al = "[" + ", ".join(pyq(a) for a in aliases_for(cat, it["name"])) + "]"
+                al = "[" + ", ".join(pyq(a) for a in aliases_for(cat, it["name"], it.get("fe_aliases"))) + "]"
                 lines.append(
                     f'            {{"id": {pyq(it["new_id"])}, '
                     f'"name": {pyq(it["name"])}, '

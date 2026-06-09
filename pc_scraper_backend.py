@@ -170,22 +170,14 @@ PARTS_DB = {
     # ── RAM ──
     "ram": {
         "ddr5": [
-            {"id": "ram_g_skill_trident_z5_rgb_ddr5_6400_32gb", "name": "G.Skill Trident Z5 RGB DDR5-6400 32GB", "aliases": ["G.Skill Trident Z5 RGB DDR5-6400 32GB", "Trident Z5 RGB DDR5-6400 32GB"], "new_price": 5500},
-            {"id": "ram_g_skill_ripjaws_m5_ddr5_6000_32gb", "name": "G.Skill Ripjaws M5 DDR5-6000 32GB", "aliases": ["G.Skill Ripjaws M5 DDR5-6000 32GB", "Ripjaws M5 DDR5-6000 32GB"], "new_price": 4800},
-            {"id": "ram_g_skill_ripjaws_m5_ddr5_5600_32gb", "name": "G.Skill Ripjaws M5 DDR5-5600 32GB", "aliases": ["G.Skill Ripjaws M5 DDR5-5600 32GB", "Ripjaws M5 DDR5-5600 32GB"], "new_price": 3900},
-            {"id": "ram_corsair_vengeance_ddr5_5600_32gb", "name": "Corsair Vengeance DDR5-5600 32GB", "aliases": ["Corsair Vengeance DDR5-5600 32GB", "Vengeance DDR5-5600 32GB"], "new_price": 3600},
-            {"id": "ram_corsair_dominator_titan_ddr5_6000_64gb", "name": "Corsair Dominator Titan DDR5-6000 64GB", "aliases": ["Corsair Dominator Titan DDR5-6000 64GB", "Dominator Titan DDR5-6000 64GB"], "new_price": 9500},
-            {"id": "ram_kingston_fury_beast_ddr5_5200_32gb", "name": "Kingston Fury Beast DDR5-5200 32GB", "aliases": ["Kingston Fury Beast DDR5-5200 32GB", "Fury Beast DDR5-5200 32GB"], "new_price": 3200},
-            {"id": "ram_kingston_fury_renegade_ddr5_6000_32gb", "name": "Kingston Fury Renegade DDR5-6000 32GB", "aliases": ["Kingston Fury Renegade DDR5-6000 32GB", "Fury Renegade DDR5-6000 32GB"], "new_price": 4600},
-            {"id": "ram_teamgroup_t_force_delta_ddr5_5600_32gb", "name": "TeamGroup T-Force Delta DDR5-5600 32GB", "aliases": ["TeamGroup T-Force Delta DDR5-5600 32GB", "T-Force Delta DDR5-5600 32GB"], "new_price": 3500},
-            {"id": "ram_adata_xpg_lancer_ddr5_5600_32gb", "name": "ADATA XPG Lancer DDR5-5600 32GB", "aliases": ["ADATA XPG Lancer DDR5-5600 32GB", "XPG Lancer DDR5-5600 32GB"], "new_price": 3400},
+            {"id": "ram_ddr5_32gb", "name": "DDR5 32GB", "aliases": ["DDR5 32G", "DDR5 32GB"], "new_price": 3400},
+            {"id": "ram_ddr5_16gb", "name": "DDR5 16GB", "aliases": ["DDR5 16G", "DDR5 16GB"], "new_price": 1700},
+            {"id": "ram_ddr5_64gb", "name": "DDR5 64GB", "aliases": ["DDR5 64G", "DDR5 64GB"], "new_price": 6500},
         ],
         "ddr4": [
-            {"id": "ram_g_skill_ripjaws_v_ddr4_3600_32gb", "name": "G.Skill Ripjaws V DDR4-3600 32GB", "aliases": ["G.Skill Ripjaws V DDR4-3600 32GB", "Ripjaws V DDR4-3600 32GB"], "new_price": 2400},
-            {"id": "ram_g_skill_trident_z_rgb_ddr4_3600_32gb", "name": "G.Skill Trident Z RGB DDR4-3600 32GB", "aliases": ["G.Skill Trident Z RGB DDR4-3600 32GB", "Trident Z RGB DDR4-3600 32GB"], "new_price": 2600},
-            {"id": "ram_corsair_vengeance_lpx_ddr4_3600_32gb", "name": "Corsair Vengeance LPX DDR4-3600 32GB", "aliases": ["Corsair Vengeance LPX DDR4-3600 32GB", "Vengeance LPX DDR4-3600 32GB"], "new_price": 2200},
-            {"id": "ram_corsair_vengeance_lpx_ddr4_3200_16gb", "name": "Corsair Vengeance LPX DDR4-3200 16GB", "aliases": ["Corsair Vengeance LPX DDR4-3200 16GB", "Vengeance LPX DDR4-3200 16GB"], "new_price": 1400},
-            {"id": "ram_kingston_fury_beast_ddr4_3200_32gb", "name": "Kingston Fury Beast DDR4-3200 32GB", "aliases": ["Kingston Fury Beast DDR4-3200 32GB", "Fury Beast DDR4-3200 32GB"], "new_price": 2200},
+            {"id": "ram_ddr4_32gb", "name": "DDR4 32GB", "aliases": ["DDR4 32G", "DDR4 32GB"], "new_price": 2300},
+            {"id": "ram_ddr4_16gb", "name": "DDR4 16GB", "aliases": ["DDR4 16G", "DDR4 16GB"], "new_price": 1400},
+            {"id": "ram_ddr4_8gb", "name": "DDR4 8GB", "aliases": ["DDR4 8G", "DDR4 8GB"], "new_price": 700},
         ],
     },
     # ── SSD ──
@@ -504,8 +496,13 @@ class PTTScraper(BaseScraper):
                     # 只收出售文（[賣]/[售]/WTS），排除收購文（[徵]）
                     if not re.search(r'\[賣|WTS|出售\]', title, re.I):
                         continue
-                    # 排除整機/組合貼文（價格非單一零件，會汙染均價）
-                    if re.search(r'整機|主機|套裝|準系統|組合|\+', title):
+                    # 排除整機/組合/半套貼文（價格非單一零件，會汙染均價）
+                    if re.search(r'整機|主機|套裝|準系統|組合|半套|一套|\+', title):
+                        continue
+                    # RAM 專屬：排除「夾帶其他零件的組合」與筆電記憶體（否則均價失真）
+                    if part["id"].startswith("ram_") and re.search(
+                            r'顯卡|\bgpu\b|rtx|gtx|rx\s?\d|cpu|處理器|主機板|筆電|nb|sodimm|'
+                            r'i[3579]-|\br[3579]\b|[bzx]\d{3}', title, re.I):
                         continue
 
                     href = urljoin(self.BASE, title_el["href"])

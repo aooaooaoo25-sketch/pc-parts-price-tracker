@@ -91,15 +91,21 @@ pc_price_tracker/
 > ⚠️ 前端 `DB` 是**唯一主目錄**。新增/修改零件後執行 `python tools/sync_parts.py`，
 > 即可自動重算 id 並重建後端 `PARTS_DB`，確保兩邊一致。**請勿手動編輯後端 PARTS_DB。**
 
-目前各分類品項數量（前端 DB＝後端 PARTS_DB，共 119 項）：
+目前各分類品項數量（前端 DB＝後端 PARTS_DB，共 111 項）：
 - CPU：38 項（Intel Arrow Lake / Raptor Lake / Alder Lake、AMD Ryzen 9000 / 7000 / 5000）
 - GPU：41 項（RTX 50/40/30、RX 9000/7000/6000、Arc Battlemage/Alchemist）
-- RAM：14 項（DDR5 / DDR4）
+- RAM：6 項（**規格帶**：DDR5 32/16/64GB、DDR4 32/16/8GB；非品牌型號，見下）
 - SSD：16 項（PCIe5 / PCIe4 / SATA）
 - HDD：10 項
 
 > 主機板 / 電源 / 散熱 已於 2026-06-08 **移除**（廠牌眾多、二手價格帶穩定波動小），
 > 聚焦 GPU / CPU / RAM / SSD / HDD 五類。
+>
+> **RAM 改為規格帶**（2026-06-08）：市場多以「DDR5 32G」這種規格賣、少寫品牌型號，故 RAM
+> 不用品牌 SKU，改用容量+世代帶。前端 DB 的 RAM 項目加了**選填 `aliases` 欄位**（市場用語，
+> 如 `['DDR5 32G','DDR5 32GB']`），`sync_parts.py` 會優先採用它當後端 aliases / PTT 搜尋詞。
+> PTT 抓 RAM 時另排除「夾帶其他零件的組合」與筆電記憶體（`PTTScraper` 內 RAM 專屬過濾），
+> 確保均價只算純 RAM 賣文（較乾淨但較稀疏）。
 
 ---
 
@@ -233,7 +239,7 @@ start index.html      # Windows
 
 PTT `hardwaresale` 是唯一可匿名自動爬的真實來源 → 設成每日自動跑、逐日累積歷史（待辦 #6）。
 
-- 包裝腳本：`crawl_daily.ps1`（設 `PYTHONUTF8=1`、跑 `gpu cpu`、輸出到 `logs/crawl_<date>.log`）
+- 包裝腳本：`crawl_daily.ps1`（設 `PYTHONUTF8=1`、跑 `gpu cpu ram ssd hdd`、輸出到 `logs/crawl_<date>.log`）
 - 已註冊工作排程 **`PCPriceTracker_PTTCrawl`**（每日 10:00、登入時執行、錯過補跑）
 
 ```powershell
