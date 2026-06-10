@@ -68,6 +68,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .diff{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:2px 7px;border-radius:12px}
 .diff.dn{background:rgba(31,209,122,.1);color:var(--green)}
 .diff.up{background:rgba(240,78,96,.1);color:var(--red)}
+.rmx{margin-left:7px;color:var(--text3);cursor:pointer;font-size:11px;font-weight:700;opacity:.6}
+.rmx:hover{color:var(--red);opacity:1}
 .empty{text-align:center;padding:60px 20px;color:var(--text3)}
 .empty .ei{font-size:40px;margin-bottom:12px}
 .detail{width:460px;min-width:460px;background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;transition:width .28s,min-width .28s;flex-shrink:0}
@@ -405,6 +407,10 @@ const CHIPS={
 };
 // ─────────────────────────────────
 let customs=[], curCat='all', curFilters=[], selPart=null, pChart=null, curRange='3m', Q='';
+// 自訂追蹤持久化（待辦 #10）：存/讀 localStorage，重整不消失
+function saveCustoms(){try{localStorage.setItem('pc_customs',JSON.stringify(customs))}catch(e){}}
+function loadCustoms(){try{const s=localStorage.getItem('pc_customs');if(s)customs=JSON.parse(s)||[]}catch(e){customs=[]}}
+function removeCustom(id){customs=customs.filter(c=>c.id!==id);saveCustoms();if(selPart&&selPart.id===id){selPart=null;document.getElementById('dp').classList.add('closed')}updCounts();renderList();}
 // ── 後端 API 橋接（待辦 #1）──
 // 若本頁由 Flask server 提供（http），用同源相對路徑；若以 file:// 直接開啟，連本機 API。
 const API=(location.protocol==='http:'||location.protocol==='https:')?'':'http://127.0.0.1:5000';
@@ -430,7 +436,7 @@ function genUsed(p){
 async function loadLive(){
   try{const r=await fetch(API+'/api/report',{cache:'no-store'});if(!r.ok)throw 0;RPT=await r.json();LIVE=true;}
   catch(e){RPT=null;LIVE=false;}
-  allP().forEach(p=>{p._u=null;p._ls=null;p._h=null;p._src=null;p._live=false});
+  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._src=null;p._live=false});
   setLiveBadge();renderList();
   if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
 }
@@ -464,7 +470,7 @@ function renderList(){
   el.innerHTML=pts.map(p=>{
     const u=genUsed(p),d=getDiff(p),isN=(p.tags||[]).includes('NEW')||p.custom;
     return `<div class="prow${selPart&&selPart.id===p.id?' sel':''}${p.custom?' cust':''}" onclick="selP('${p.id}')">
-      <div><div class="pname">${isN?'<span class="badge nb">NEW</span>':''}${p.custom?'<span class="badge cb">自訂</span>':''}${(p.tags||[]).includes('旗艦')?'<span class="badge hb">旗艦</span>':''}${p.name}</div><div class="pspec">${p.spec}</div></div>
+      <div><div class="pname">${isN?'<span class="badge nb">NEW</span>':''}${p.custom?'<span class="badge cb">自訂</span>':''}${(p.tags||[]).includes('旗艦')?'<span class="badge hb">旗艦</span>':''}${p.name}${p.custom?`<span class="rmx" onclick="event.stopPropagation();removeCustom('${p.id}')" title="移除自訂追蹤">✕</span>`:''}</div><div class="pspec">${p.spec}</div></div>
       <div class="pnew">${p.new_price>0?'NT$'+p.new_price.toLocaleString():'—'}</div>
       <div class="pused">NT$${u.toLocaleString()}</div>
       <div>${d!==null?`<span class="diff ${parseFloat(d)<0?'dn':'up'}">${parseFloat(d)<0?'▼':'▲'} ${Math.abs(d)}%</span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</div>
@@ -529,7 +535,7 @@ async function searchUnknown(){
 async function addCustom(){
   const q=Q||document.getElementById('si').value.trim();if(!q)return;
   const est=await estUnknown(q);
-  customs.push(mkFake(q,est,'自訂追蹤'));updCounts();renderList();
+  customs.push(mkFake(q,est,'自訂追蹤'));saveCustoms();updCounts();renderList();
   showToast(`➕ 已加入「${q}」（${est.basis}）`);
   document.getElementById('ub').classList.remove('show');clearS();
 }
@@ -575,7 +581,7 @@ function startCrawl(){if(crawling)return;crawling=true;const b=document.getEleme
     showToast(LIVE?`✅ 已同步真實資料，共 ${Object.keys(RPT).length} 項`:'🟡 後端 API 未連線，顯示模擬資料（請先啟動 api_server.py）');});}
 let tt=null;
 function showToast(m){const t=document.getElementById('toast');document.getElementById('tmsg').textContent=m;t.classList.add('show');if(tt)clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3200)}
-updCounts();renderChips();renderList();
+loadCustoms();updCounts();renderChips();renderList();
 loadLive();   // 載入時嘗試連後端真實資料（失敗則維持模擬）
 </script>
 </body>
