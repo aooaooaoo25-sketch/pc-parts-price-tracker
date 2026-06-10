@@ -124,6 +124,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 .toast{position:fixed;bottom:20px;right:20px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;font-size:12.5px;display:flex;align-items:center;gap:7px;transform:translateY(70px);transition:transform .3s;z-index:999}
 .toast.show{transform:translateY(0)}
+/* ── 平板：詳情面板與側欄略縮，避免三欄擠在一起 ── */
+@media (max-width: 960px) {
+  .detail  { width: 380px; min-width: 380px; }
+  .sidebar { width: 180px; min-width: 180px; }
+  .colhdr  { grid-template-columns: 1fr 90px 90px 70px; }
+  .prow    { grid-template-columns: 1fr 90px 90px 70px; }
+  /* 隱藏第5、6欄（筆數、狀態），保留折價幅度 */
+  .colhdr > div:nth-child(n+5),
+  .prow   > div:nth-child(n+5) { display: none; }
+}
+
+/* ── 手機：詳情面板全屏覆蓋 + 內部捲動 ── */
 @media (max-width: 640px) {
 
   /* Sidebar 縮小 */
@@ -143,9 +155,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   .colhdr > div:nth-child(n+4),
   .prow   > div:nth-child(n+4) { display: none; }
 
-  /* 詳情面板改成全寬覆蓋 */
-  .detail { width: 100vw; min-width: 0; position: fixed;
-            top: 52px; left: 0; z-index: 300; }
+  /* 詳情面板改成全寬覆蓋；固定高度 + 內部捲動，避免內容溢出視窗 */
+  .detail { width: 100vw; min-width: 100vw; position: fixed;
+            top: 52px; left: 0; bottom: 0; height: calc(100vh - 52px);
+            z-index: 300; -webkit-overflow-scrolling: touch; }
+  .detail.closed { width: 0; min-width: 0; }
+
+  /* 面板內距收斂、統計數字縮一級，避免卡片內溢出 */
+  .dphead { padding: 13px 14px 10px; }
+  .sgrid  { padding: 12px 14px; gap: 6px; }
+  .sv     { font-size: 17px; }
+  .sv.d   { font-size: 14px; }
+  .csec, .ssec, .lsec { padding-left: 14px; padding-right: 14px; }
+  .clgd   { gap: 10px; }
 
   /* Modal 改成全寬 */
   .modal  { width: 92vw; padding: 16px; }

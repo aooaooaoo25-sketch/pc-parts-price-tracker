@@ -141,7 +141,8 @@ pc_price_tracker/
 > - ✅ 已完成：#1 前後端串接、#2 ID 統一、#3 製造商新品偵測、#4 選擇器驗證、
 >   #5 API server、#7 未收錄估價、#8 報表結構、#9 .gitignore/requirements
 > - 🔶 進行中：#6 價格歷史（已可匯入真實資料，待累積天數）
-> - ⬜ 未開始：#12 行動版面（#10 自訂追蹤持久化、#11 圖表區間陰影已完成）
+> - ✅ 全部待辦完成：#10 自訂追蹤持久化、#11 圖表區間陰影、#12 行動版面皆已完成
+>   （唯 #6 需靠每日排程持續累積天數，屬資料面而非開發面）
 > - **資料來源現況**：PTT `hardwaresale` 可匿名自動爬（**已設每日排程**，累積真實歷史）；
 >   蝦皮/FB 走「登入瀏覽器擷取 → 匯入」（已實證蝦皮可行，但有反爬蟲節流）；
 >   eBay 官方 API 架構預留（海外參考價）。露天/巴哈已移除。
@@ -173,7 +174,7 @@ pc_price_tracker/
 9. ~~**缺少 `.gitignore` 與 `requirements.txt`**~~ ✅ 已完成（2026-06-03，commit `e58cfe5`）：新增 `.gitignore`、`requirements.txt`、`.env.example`
 10. ~~**前端無法持久化自訂追蹤零件**~~ ✅ 已完成（2026-06-08）：`customs` 存入 localStorage（`saveCustoms/loadCustoms`），重整不消失；自訂列加「✕」移除鈕（`removeCustom`），`loadLive` 重抓時不清自訂的估價快取
 11. ~~**圖表只有折線，缺少最高/最低價區間陰影**~~ ✅ 已完成（2026-06-11）：後端 `get_detail()` 新增 `history_min` / `history_max`（與 `history` 同結構的各區間每日最高/最低序列，取自 `price_snapshots` 既有的 `min_price` / `max_price`）；前端 `genUsed` 接收真實 min/max（無真實資料時以 `genBand()` 模擬上下浮動帶），`renderChart` 以兩條透明線 + `fill:'-1'` 畫出最高～最低陰影帶、均價線疊於上層，並於圖下新增圖例（均價線／區間帶／全新定價）
-12. **行動裝置版面未優化**（detail panel 在小螢幕會溢出）
+12. ~~**行動裝置版面未優化**（detail panel 在小螢幕會溢出）~~ ✅ 已完成（2026-06-11）：根因是 `≤640px` 時 `.detail` 設 `position:fixed; top:52px` 卻**未給高度**，內容會撐破視窗。修正：手機版改 `height:calc(100vh - 52px)` + 內部捲動（`overflow-y:auto`），面板內距/統計數字縮一級；另新增 `≤960px` 平板斷點（detail 380px、sidebar 180px、列表隱藏「筆數/狀態」保留折價幅度）。已用 Preview 在 375/768px 實測：面板不再溢出、可內部捲動、桌機版面不受影響
 
 ---
 
