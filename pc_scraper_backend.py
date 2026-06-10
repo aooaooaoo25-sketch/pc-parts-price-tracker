@@ -428,6 +428,28 @@ class ShopeeScraper(BaseScraper):
         return parse_shopee_items(data, part)
 
 
+def title_matches_part(title: str, part: dict) -> bool:
+    """判斷賣文標題是否對應到「這個確切型號」，避免基礎型號誤收變體
+    （RTX 3070 收到 3070 Ti、14900K 收到 14900KF、Ryzen 5 7600 收到 7600X、5800X 收到 5800X3D）。
+    做法：標題與別名去空白/連字號後比對；基礎型號後若緊接 Ti/Super/XT/XTX/GRE/X3D/X/S/K/F 等
+    視為「別的 SKU」而不計入。"""
+    t = re.sub(r"[\s\-]+", "", title).lower()
+    for a in part.get("aliases", []):
+        na = re.sub(r"[\s\-]+", "", a).lower()
+        if not na:
+            continue
+        i = t.find(na)
+        if i < 0:
+            continue
+        if re.search(r"(ti|super|xtx|xt|gre|x3d)$", na):   # 別名本身已是具體變體 → 命中
+            return True
+        after = t[i + len(na):]
+        if re.match(r"(ti|super|xtx|xt|gre|x3d|3d)", after) or re.match(r"[sxkf](?![a-z0-9])", after):
+            continue                                        # 其實是 Ti/Super/X3D… 等變體
+        return True
+    return False
+
+
 def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物") -> list[Listing]:
     """解析蝦皮 search_items JSON → Listing 清單。
     被 ShopeeScraper（登入後直連）與 tools/import_listings.py（匯入存檔的 JSON）共用。
@@ -443,7 +465,7 @@ def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物"
                 continue
 
             name = info.get("name", "")
-            if not any(a.lower() in name.lower() for a in part["aliases"]):
+            if not title_matches_part(name, part):
                 continue
 
             url = f"https://shopee.tw/product/{info.get('shopid','')}/{info.get('itemid','')}"
@@ -503,6 +525,9 @@ class PTTScraper(BaseScraper):
                     if part["id"].startswith("ram_") and re.search(
                             r'顯卡|\bgpu\b|rtx|gtx|rx\s?\d|cpu|處理器|主機板|筆電|nb|sodimm|'
                             r'i[3579]-|\br[3579]\b|[bzx]\d{3}', title, re.I):
+                        continue
+                    # 精確型號比對：避免基礎型號收到變體（3070 ≠ 3070 Ti）
+                    if not title_matches_part(title, part):
                         continue
 
                     href = urljoin(self.BASE, title_el["href"])
