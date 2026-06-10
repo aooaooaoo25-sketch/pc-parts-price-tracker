@@ -813,6 +813,8 @@ class Reporter:
             return None
 
         prices = [h["avg"] for h in history]
+        mins   = [h["min"] for h in history]
+        maxs   = [h["max"] for h in history]
         last = history[-1]
         part = self._find_part(part_id)
         new_price = part["new_price"] if part else 0
@@ -841,6 +843,15 @@ class Reporter:
             "history": {
                 "1w": prices[-7:],   "1m": prices[-30:],  "3m": prices[-90:],
                 "6m": prices[-180:], "1y": prices,
+            },
+            # 最高/最低區間（與 history 同結構，供圖表畫陰影帶；待辦 #11）
+            "history_min": {
+                "1w": mins[-7:],   "1m": mins[-30:],  "3m": mins[-90:],
+                "6m": mins[-180:], "1y": mins,
+            },
+            "history_max": {
+                "1w": maxs[-7:],   "1m": maxs[-30:],  "3m": maxs[-90:],
+                "6m": maxs[-180:], "1y": maxs,
             },
             "sources":  sources,
             "listings": listings,

@@ -90,6 +90,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .rtabs{display:flex;gap:1px;background:var(--bg3);border-radius:6px;padding:2px;border:1px solid var(--border)}
 .rtab{padding:3px 7px;border-radius:4px;font-size:10.5px;cursor:pointer;color:var(--text3);border:none;background:none;transition:all .15s}
 .rtab.on{background:var(--bg2);color:var(--text)}
+.clgd{display:flex;gap:16px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.lgi{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3)}
+.lgi .lln{width:14px;height:2px;border-radius:2px}
+.lgi .lbd{width:14px;height:10px;border-radius:2px;background:rgba(91,140,255,.13);border:1px solid rgba(91,140,255,.25)}
 .cbox{position:relative;height:165px}
 .ssec,.lsec{padding:0 18px 14px}
 .sttl{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
@@ -227,6 +231,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
       </div>
     </div>
     <div class="cbox"><canvas id="pc" role="img" aria-label="二手價格走勢折線圖"></canvas></div>
+    <div class="clgd">
+      <span class="lgi"><i class="lln" style="background:#5b8cff"></i>二手均價</span>
+      <span class="lgi"><i class="lbd"></i>最高～最低區間</span>
+      <span class="lgi"><i class="lln" style="background:rgba(245,166,35,.7);height:0;border-top:2px dashed rgba(245,166,35,.7)"></i>全新定價</span>
+    </div>
   </div>
   <div class="ssec"><div class="sttl">爬蟲來源明細</div><div id="src"></div></div>
   <div class="lsec"><div class="sttl">近期成交 / 掛牌記錄</div><div id="lst"></div></div>
@@ -423,11 +432,14 @@ function genUsed(p){
     if(r){  // 真實資料
       p._u=r.used;
       p._h=(r.history&&r.history['1y'])||[];
+      p._hmin=(r.history_min&&r.history_min['1y'])||[];
+      p._hmax=(r.history_max&&r.history_max['1y'])||[];
       p._ls=(r.listings||[]).map(l=>({source:l.source,c:srcInfo(l.source).c,title:l.title,price:l.price,date:l.date}));
       p._src=r.sources||null; p._live=true;
     }else{  // 模擬資料（無對應真實資料或 API 未連線）
       const b=p.new_price>500?p.new_price:8000;
-      p._u=Math.round(b*(.52+Math.random()*.22));p._ls=genLs(p);p._h=genHist(b);p._src=null;p._live=false;
+      p._u=Math.round(b*(.52+Math.random()*.22));p._ls=genLs(p);p._h=genHist(b);
+      const bd=genBand(p._h);p._hmin=bd.min;p._hmax=bd.max;p._src=null;p._live=false;
     }
   }
   return p._u
@@ -436,7 +448,7 @@ function genUsed(p){
 async function loadLive(){
   try{const r=await fetch(API+'/api/report',{cache:'no-store'});if(!r.ok)throw 0;RPT=await r.json();LIVE=true;}
   catch(e){RPT=null;LIVE=false;}
-  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._src=null;p._live=false});
+  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._live=false});
   setLiveBadge();renderList();
   if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
 }
@@ -450,6 +462,8 @@ function genLs(p){
   return SRCS.flatMap(s=>{const n=2+Math.floor(Math.random()*4);return Array.from({length:n},()=>({source:s.name,c:s.c,title:`${p.name} ${co[Math.floor(Math.random()*co.length)]} ${ar[Math.floor(Math.random()*ar.length)]}`,price:Math.round(b*(.86+Math.random()*.28)),date:`${Math.floor(Math.random()*5)+1}小時前`}))}).sort((a,b)=>a.price-b.price)
 }
 function genHist(base){const a=[];let c=base*.82;for(let i=365;i>=0;i--){c+=(Math.random()-.47)*base*.009;c=Math.max(base*.3,Math.min(base*.95,c));a.push(Math.round(c))}return a}
+// 【模擬回退】無真實 min/max 時，依均價產生上下浮動的最高/最低帶（待辦 #11）
+function genBand(h){const min=[],max=[];for(const v of h){const lo=.86+Math.random()*.05,hi=1.08+Math.random()*.06;min.push(Math.round(v*lo));max.push(Math.round(v*hi))}return{min,max}}
 // sidebar
 function setCat(c,el){curCat=c;curFilters=[];document.querySelectorAll('.sbi').forEach(x=>x.classList.remove('on'));el.classList.add('on');renderChips();renderList()}
 function updCounts(){const a=allP();document.getElementById('cnt-all').textContent=a.length;['cpu','gpu','ram','ssd','hdd'].forEach(c=>{const e=document.getElementById('cnt-'+c);if(e)e.textContent=(DB[c]||[]).length});document.getElementById('cnt-custom').textContent=customs.length}
@@ -508,8 +522,16 @@ function renderSrc(p){const u=genUsed(p);
   }
   document.getElementById('src').innerHTML=rows.map(s=>`<div class="srcrow"><div style="display:flex;align-items:center;gap:8px"><div class="srcico" style="background:${s.bg};color:${s.c}">${s.s[0]}</div><div><div class="srcname">${s.name}</div><div class="srccnt">${s.n} 筆資料</div></div></div><div class="srcp" style="color:${s.c}">NT$${s.sp.toLocaleString()}</div></div>`).join('')}
 function renderLst(p){document.getElementById('lst').innerHTML=(p._ls||[]).slice(0,8).map(l=>`<div class="litem"><div><div class="lt">${l.title}</div><div class="lm" style="color:${l.c}">${l.source}</div><div class="lm">${l.date}</div></div><div class="lp">NT$${l.price.toLocaleString()}</div></div>`).join('')}
-function getCP(p,r){const m={'1w':7,'1m':30,'3m':90,'6m':180,'1y':365},days=m[r]||90,data=(p._h||[]).slice(-days),step=Math.max(1,Math.floor(data.length/40)),sam=data.filter((_,i)=>i%step===0);const lb=sam.map((_,i)=>{const ago=Math.round((sam.length-1-i)*days/sam.length);if(ago===0)return'今日';if(days<=30)return`-${ago}天`;const w=Math.round(ago/7);return w?`-${w}週`:'今日'});return{lb,data:sam}}
-function renderChart(p,r){const c=document.getElementById('pc');if(pChart){pChart.destroy();pChart=null}const{lb,data}=getCP(p,r),np=p.new_price,ds=[{label:'二手均價',data,borderColor:'#5b8cff',backgroundColor:'rgba(91,140,255,.07)',fill:true,tension:.4,pointRadius:0,borderWidth:2}];if(np>0)ds.push({label:'全新售價',data:data.map(()=>np),borderColor:'rgba(245,166,35,.5)',borderDash:[5,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5});pChart=new Chart(c,{type:'line',data:{labels:lb,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2230',borderColor:'#2e3347',borderWidth:1,titleColor:'#7e88a8',bodyColor:'#dde3f4',callbacks:{label:c=>` NT$${c.parsed.y.toLocaleString()}`}}},scales:{x:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},maxTicksLimit:8},border:{display:false}},y:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},callback:v=>'NT$'+Math.round(v/1000)+'K'},border:{display:false}}}}})}
+function getCP(p,r){const m={'1w':7,'1m':30,'3m':90,'6m':180,'1y':365},days=m[r]||90,data=(p._h||[]).slice(-days),mn=(p._hmin||[]).slice(-days),mx=(p._hmax||[]).slice(-days),step=Math.max(1,Math.floor(data.length/40)),pick=a=>a.filter((_,i)=>i%step===0),sam=pick(data);const lb=sam.map((_,i)=>{const ago=Math.round((sam.length-1-i)*days/sam.length);if(ago===0)return'今日';if(days<=30)return`-${ago}天`;const w=Math.round(ago/7);return w?`-${w}週`:'今日'});return{lb,data:sam,min:pick(mn),max:pick(mx)}}
+function renderChart(p,r){const c=document.getElementById('pc');if(pChart){pChart.destroy();pChart=null}const{lb,data,min,max}=getCP(p,r),np=p.new_price,hasBand=min&&max&&min.length===data.length&&max.length===data.length;const ds=[];
+  // 最高/最低價區間陰影：兩條透明線 + fill 之間填色（待辦 #11）
+  if(hasBand){
+    ds.push({label:'最低價',data:min,borderColor:'transparent',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,borderWidth:0});
+    ds.push({label:'最高價',data:max,borderColor:'transparent',backgroundColor:'rgba(91,140,255,.13)',fill:'-1',tension:.4,pointRadius:0,borderWidth:0});
+  }
+  ds.push({label:'二手均價',data,borderColor:'#5b8cff',backgroundColor:'rgba(91,140,255,.05)',fill:hasBand?false:true,tension:.4,pointRadius:0,borderWidth:2});
+  if(np>0)ds.push({label:'全新售價',data:data.map(()=>np),borderColor:'rgba(245,166,35,.5)',borderDash:[5,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5});
+  pChart=new Chart(c,{type:'line',data:{labels:lb,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2230',borderColor:'#2e3347',borderWidth:1,titleColor:'#7e88a8',bodyColor:'#dde3f4',itemSort:(a,b)=>a.datasetIndex-b.datasetIndex,callbacks:{label:c=>` ${c.dataset.label} NT$${c.parsed.y.toLocaleString()}`}}},scales:{x:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},maxTicksLimit:8},border:{display:false}},y:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},callback:v=>'NT$'+Math.round(v/1000)+'K'},border:{display:false}}}}})}
 function setR(r,el){curRange=r;document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('on'));el.classList.add('on');if(selPart)renderChart(selPart,r)}
 // custom：未收錄零件 → 呼叫後端 /api/estimate 估價（待辦 #7），API 未連線則回退本地 estP
 async function estUnknown(q){
@@ -522,7 +544,8 @@ async function estUnknown(q){
 function mkFake(q,est,specPrefix){
   const fid='c'+Date.now();
   const fake={id:fid,cat:est.cat,custom:true,name:q,spec:specPrefix+'・'+est.basis,new_price:est.n,tags:['自訂'],_u:est.u||0,_live:false};
-  fake._ls=genLs(fake);fake._h=genHist(est.n||est.u*1.6||9000);return fake;
+  fake._ls=genLs(fake);fake._h=genHist(est.n||est.u*1.6||9000);
+  const bd=genBand(fake._h);fake._hmin=bd.min;fake._hmax=bd.max;return fake;
 }
 async function searchUnknown(){
   const q=Q||document.getElementById('si').value.trim();if(!q)return;
