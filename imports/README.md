@@ -7,9 +7,16 @@
 # 通用 CSV（任何來源，含 FB 社團貼文整理後）
 python tools/import_listings.py --csv imports/your_file.csv
 
-# 蝦皮：登入蝦皮後於瀏覽器開 search_items API 連結，另存 JSON
+# 蝦皮：登入蝦皮後於瀏覽器開 search_items API 連結，另存 JSON（單一零件）
 python tools/import_listings.py --shopee imports/shopee_xxx.json --part gpu_rtx5090
+
+# 蝦皮：一波抓多顆 → 合併成 {part_id:{items:[...]}} 單檔，一次匯入多顆
+python tools/import_listings.py --shopee-multi imports/shopee_cpu.json
 ```
+
+> 匯入時 `parse_shopee_items` 會自動過濾**整機/套裝/分期/夾帶顯卡等組合**與跨型號
+> 「可參考」雜訊（`SHOPEE_NOISE`），並做後綴比對（避免 14900K 收到 14900KF）。
+> 均價快照另以 `robust_price_stats`（IQR 去極值）計算，抵抗殘留離群價。
 
 ## CSV 欄位
 `part_id, source, title, price, condition, location, date, url, sold`

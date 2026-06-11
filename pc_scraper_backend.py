@@ -13,6 +13,7 @@ import time
 import random
 import sqlite3
 import hashlib
+import statistics
 from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict, field
 from typing import Optional
@@ -444,10 +445,23 @@ def title_matches_part(title: str, part: dict) -> bool:
         if re.search(r"(ti|super|xtx|xt|gre|x3d)$", na):   # 別名本身已是具體變體 → 命中
             return True
         after = t[i + len(na):]
-        if re.match(r"(ti|super|xtx|xt|gre|x3d|3d)", after) or re.match(r"[sxkf](?![a-z0-9])", after):
+        # 後綴字母（s/x/k/f）若緊接「數字或邊界」即視為變體（如 14900KF24核、7600X）；
+        # 若後接英文字母（socket、series…）則非變體，不排除。
+        if re.match(r"(ti|super|xtx|xt|gre|x3d|3d)", after) or re.match(r"[sxkf](?![a-z])", after):
             continue                                        # 其實是 Ti/Super/X3D… 等變體
         return True
     return False
+
+
+# 蝦皮賣文常見的「非單顆零件」雜訊：整機/套裝/分期/含他零件的組合 → 會嚴重污染均價。
+# 與 PTT 同精神，但蝦皮文案更雜，故另列。命中任一即排除該筆。
+SHOPEE_NOISE = re.compile(
+    r"整機|整台|主機板|主板|套裝|套装|套餐|準系統|組裝|組合|搭機|含機|含板|"
+    r"桌機|電競主機|電競桌機|電競電腦|繪圖電腦|工作站|完整電腦|電腦一台|遊戲主機|"
+    r"遊戲機|準系統|分期|無卡|免卡|可參考|參考價|"
+    r"rtx|gtx|radeon|顯卡|\brx\s?\d{3,4}\b|\b(?:30|40|50)[5-9]0(?:\s?ti)?\b|\b\d{4}ti\b",
+    re.I,
+)
 
 
 def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物") -> list[Listing]:
@@ -466,6 +480,9 @@ def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物"
 
             name = info.get("name", "")
             if not title_matches_part(name, part):
+                continue
+            # 排除整機/套裝/分期/夾帶顯卡等組合（價格非單顆零件，會拉歪均價）
+            if SHOPEE_NOISE.search(name):
                 continue
 
             url = f"https://shopee.tw/product/{info.get('shopid','')}/{info.get('itemid','')}"
@@ -657,24 +674,45 @@ def prune_by_retention(db: "Database") -> int:
     return total
 
 
+def robust_price_stats(prices: list) -> tuple:
+    """以 IQR 1.5 倍柵欄剔除離群值後，回傳 (avg, min, max, used_count)。
+    二手賣文常混入整機/配件/多型號並列等極端價，純平均會被拉歪 → 改用去極值統計。
+    樣本太少（<4）時不修剪，直接用原始值。"""
+    xs = sorted(prices)
+    n = len(xs)
+    if n < 4:
+        return (int(round(sum(xs) / n)), xs[0], xs[-1], n)
+    q1, _, q3 = statistics.quantiles(xs, n=4)
+    iqr = q3 - q1
+    lo, hi = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+    kept = [x for x in xs if lo <= x <= hi] or xs
+    return (int(round(sum(kept) / len(kept))), min(kept), max(kept), len(kept))
+
+
 def rebuild_today_snapshots(db: "Database") -> int:
     """依「今日所有來源」的成交資料重算各零件均價快照（排除海外參考價，如 eBay）。
-    爬蟲與匯入皆呼叫，確保快照反映當天 PTT＋蝦皮匯入等所有真實資料（而非單一來源）。"""
+    爬蟲與匯入皆呼叫，確保快照反映當天 PTT＋蝦皮匯入等所有真實資料（而非單一來源）。
+    均價/最高/最低皆以 robust_price_stats 去極值後計算，避免整機/配件污染。"""
     today = datetime.now().strftime("%Y-%m-%d")
     ref = list(REFERENCE_SOURCES)
     ph = ",".join("?" * len(ref)) if ref else "''"
     rows = db.conn.execute(
-        f"SELECT part_id, AVG(price), MIN(price), MAX(price), COUNT(*), "
-        f"GROUP_CONCAT(DISTINCT source) FROM listings "
-        f"WHERE date>=? AND source NOT IN ({ph}) GROUP BY part_id",
+        f"SELECT part_id, price, source FROM listings "
+        f"WHERE date>=? AND source NOT IN ({ph})",
         [today] + ref
     ).fetchall()
-    for pid, avg, mn, mx, cnt, srcs in rows:
+    by_part = {}
+    for pid, price, src in rows:
+        d = by_part.setdefault(pid, {"prices": [], "sources": set()})
+        d["prices"].append(price)
+        d["sources"].add(src)
+    for pid, d in by_part.items():
+        avg, mn, mx, _used = robust_price_stats(d["prices"])
         db.save_snapshot(PriceSnapshot(
-            part_id=pid, date=today, avg_price=int(round(avg)),
-            min_price=int(mn), max_price=int(mx), listing_count=cnt,
-            sources=(srcs or "").split(",")))
-    return len(rows)
+            part_id=pid, date=today, avg_price=avg,
+            min_price=mn, max_price=mx, listing_count=len(d["prices"]),
+            sources=sorted(d["sources"])))
+    return len(by_part)
 
 
 # ─────────────────────────────────────────────────

@@ -76,15 +76,34 @@ def import_shopee_json(db: Database, path: str, part_id: str) -> int:
     return len(listings)
 
 
+def import_shopee_multi(db: Database, path: str) -> int:
+    """匯入合併式蝦皮存檔：{part_id: {items:[...]}, ...}（一次多顆零件）。
+    供 Claude-in-Chrome 一波抓多個型號後，合併成單檔再匯入。"""
+    data = json.load(open(path, encoding="utf-8"))
+    total = 0
+    for pid, payload in data.items():
+        if pid not in PART_BY_ID:
+            print(f"  跳過：未知 part_id「{pid}」")
+            continue
+        listings = parse_shopee_items(payload, PART_BY_ID[pid])
+        for l in listings:
+            db.save_listing(l)
+        print(f"  {pid}: 比對命中 {len(listings)} / 原始 {len(payload.get('items') or [])} 筆")
+        total += len(listings)
+    return total
+
+
 def main():
     ap = argparse.ArgumentParser(description="成交資料匯入器")
     ap.add_argument("--csv", help="通用 CSV 檔路徑")
-    ap.add_argument("--shopee", help="蝦皮 search_items 存檔 JSON 路徑")
+    ap.add_argument("--shopee", help="蝦皮 search_items 存檔 JSON 路徑（單一零件）")
+    ap.add_argument("--shopee-multi", dest="shopee_multi",
+                    help="合併式蝦皮存檔 {part_id:{items:[...]}}（一次多顆）")
     ap.add_argument("--part", help="--shopee 時指定對應零件 id")
     args = ap.parse_args()
 
-    if not args.csv and not args.shopee:
-        ap.error("請指定 --csv 或 --shopee")
+    if not args.csv and not args.shopee and not args.shopee_multi:
+        ap.error("請指定 --csv / --shopee / --shopee-multi")
 
     db = Database(DB_PATH)
     total = 0
@@ -94,6 +113,8 @@ def main():
         if not args.part:
             ap.error("--shopee 需搭配 --part <part_id>")
         total += import_shopee_json(db, args.shopee, args.part)
+    if args.shopee_multi:
+        total += import_shopee_multi(db, args.shopee_multi)
 
     # 套用保留策略（各來源預設 365 天，FB 90 天）
     prune_by_retention(db)
