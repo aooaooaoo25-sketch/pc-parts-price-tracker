@@ -77,7 +77,7 @@ pc_price_tracker/
   cat: 'gpu',           // 分類：cpu / gpu / ram / ssd / hdd
   name: 'GeForce RTX 5090',
   spec: '21760 CUDA・32GB GDDR7・575W・PCIe5.0・Blackwell・2025',
-  new_price: 89900,     // 全新建議售價 TWD，停售品填 0
+  new_price: 89900,     // 全新售價 TWD：仍在售用現價，停產用「台灣當年建議售價」（2026-06-11 補齊，原為 0 的 26 顆已填）
   tags: ['NEW','2025','旗艦'],  // 可用標籤：NEW / 熱門 / 旗艦 / CP值 / 高頻 / 頂級 / 年份
 }
 ```
