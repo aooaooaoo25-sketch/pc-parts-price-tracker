@@ -120,7 +120,7 @@ pc_price_tracker/
 | `PTTScraper` | PTT `hardwaresale`（硬體買賣板） | HTML + Regex 解析 | ✅ 匿名可爬、**每日排程**（唯一全自動真實來源） |
 | `ShopeeScraper` | 蝦皮購物 | 搜尋 API（JSON） | 🔶 匿名被擋(403)→改**匯入式**（登入後存 JSON 用匯入器） |
 | `FBGroupScraper` | FB 公開二手社團 | **匯入式**（CSV，FB 需登入） | 🔶 僅保留 90 天 |
-| `EbayScraper` | eBay 國際站 | 官方 Browse API（需 OAuth token） | 🔶 架構預留，**海外參考價** |
+| `EbayScraper` | eBay 國際站 | 官方 Browse API（client_credentials 自動換 token） | ✅ 已實作，**海外在售參考價**（USD→TWD、不計台灣均價） |
 
 > **匯入式來源**（蝦皮 / FB）：資料豐富但需登入、禁匿名爬取 → 由使用者在自己已登入的
 > 瀏覽器取得資料，再用 `tools/import_listings.py` 寫入 DB（CSV 或蝦皮 search_items JSON）。
@@ -145,7 +145,7 @@ pc_price_tracker/
 >   （唯 #6 需靠每日排程持續累積天數，屬資料面而非開發面）
 > - **資料來源現況**：PTT `hardwaresale` 可匿名自動爬（**已設每日排程**，累積真實歷史）；
 >   蝦皮/FB 走「登入瀏覽器擷取 → 匯入」（已實證蝦皮可行，但有反爬蟲節流）；
->   eBay 官方 API 架構預留（海外參考價）。露天/巴哈已移除。
+>   eBay 官方 Browse API 已實作（海外在售參考價，需金鑰）。露天/巴哈已移除。
 > - **新增模組**：`api_server.py`、`catalog_updater.py`、`estimator.py`、
 >   `tools/{sync_parts,seed_demo_data,validate_selectors,import_listings}.py`、`hooks/pre-commit`
 
@@ -305,7 +305,7 @@ git config core.hooksPath hooks
 | 蝦皮購物 | 使用非公開搜尋 API，需帶正確 Referer；價格單位為分×1000 |
 | PTT BuyTrade | 需帶 cookie `over18=1`；以 Regex 從文章內容解析售價 |
 | FB 社團 | 需登入且禁自動爬取 → 採**匯入式**（已登入瀏覽器匯出貼文後解析寫入）；僅保留近 90 天 |
-| eBay | 匿名爬蟲被反機器人擋（實測 403）→ 僅能走**官方 Browse API**（需 `EBAY_OAUTH_TOKEN`）；定位海外參考價（USD、不計入台灣均價） |
+| eBay | 匿名爬蟲被反機器人擋（實測 403）→ 走**官方 Browse API**（已實作）。認證用 `EBAY_CLIENT_ID`/`EBAY_CLIENT_SECRET` 以 client_credentials 自動換 token（約 2 小時自動續期）。**限制**：公開 Browse API 只回「在售掛牌價」非成交價（成交須 Marketplace Insights API、限制存取）。USD 以 `EBAY_TWD_RATE`（預設 32）換算台幣入庫、標題附 `[US$原價]`、來源 `eBay` 列 `REFERENCE_SOURCES` 不計入台灣均價。有設金鑰時自動納入每日排程；無金鑰自動略過 |
 
 ### FB 社團資料（待接入）
 

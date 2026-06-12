@@ -14,12 +14,20 @@ import random
 import sqlite3
 import hashlib
 import statistics
+import base64
 from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict, field
 from typing import Optional
 from pathlib import Path
 from urllib.parse import quote, urljoin
 from bs4 import BeautifulSoup
+
+# 載入 .env（若有安裝 python-dotenv）：讓 EBAY_CLIENT_ID 等金鑰可從 .env 讀取
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 
 # ─────────────────────────────────────────────────
@@ -623,29 +631,118 @@ class FBGroupScraper(BaseScraper):
 class EbayScraper(BaseScraper):
     """eBay 國際站資料來源（海外參考價）。
 
-    ⚠️ eBay 匿名爬蟲會被反機器人系統擋下（實測一律 403 / Error Page），
-       且繞過機器人偵測不被允許。唯一合規途徑為官方 Browse API：
+    ⚠️ eBay 匿名爬蟲會被反機器人系統擋下（實測一律 403 / Error Page），且繞過機器人
+       偵測不被允許。唯一合規途徑為官方 **Browse API**：
          GET https://api.ebay.com/buy/browse/v1/item_summary/search?q=<關鍵字>
-       需先於 eBay 開發者後台註冊 App，取得 OAuth token。
-       金鑰一律從環境變數讀取（EBAY_OAUTH_TOKEN），不得寫入程式。
+       認證：以 `client_credentials` 換取 OAuth application token（約 2 小時過期，
+       本類別會自動快取並續期）。金鑰一律從環境變數讀取（EBAY_CLIENT_ID /
+       EBAY_CLIENT_SECRET），不得寫入程式。未設定則自動略過。
 
-    定位：eBay 為國際站、報價多為美金、含跨境運費關稅，與台灣在地行情基準不同，
-    故列為「海外參考價」（REFERENCE_SOURCES）：**不計入台灣二手均價快照**，僅供對照。
-    幣別：實作時需處理 USD（換算或於前端標註幣別）。
+    重要限制：公開 Browse API 只回「**在售掛牌價**（asking）」，**非成交價**；成交/已售
+    需 Marketplace Insights API（限制存取、須審核）。故 eBay 定位為「海外**在售**參考價」。
+
+    定位：eBay 為國際站、報價多為美金、含跨境運費關稅，與台灣在地行情基準不同，故列為
+    「海外參考價」（REFERENCE_SOURCES）：**不計入台灣二手均價快照**，僅供對照。
+    幣別：DB 無幣別欄、前端統一台幣顯示 → 以可設定匯率 `EBAY_TWD_RATE`（預設 32）把 USD
+    換算為 TWD 入庫，並於標題附 `[US$原價]` 保留原始美金、來源標 `eBay` 以資辨別。
     """
     name = "eBay"
-    API = "https://api.ebay.com/buy/browse/v1/item_summary/search"
+    SEARCH_API = "https://api.ebay.com/buy/browse/v1/item_summary/search"
+    OAUTH_URL  = "https://api.ebay.com/identity/v1/oauth2/token"
+    OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope"
 
     def __init__(self, session, db):
         super().__init__(session, db)
-        self.token = os.environ.get("EBAY_OAUTH_TOKEN", "")
+        self.client_id     = os.environ.get("EBAY_CLIENT_ID", "")
+        self.client_secret = os.environ.get("EBAY_CLIENT_SECRET", "")
+        self.marketplace   = os.environ.get("EBAY_MARKETPLACE_ID", "EBAY_US")
+        self.rate          = float(os.environ.get("EBAY_TWD_RATE", "32"))
+        self._token = ""
+        self._token_exp = 0.0
+        self._token_lock = asyncio.Lock()
+
+    @property
+    def enabled(self) -> bool:
+        return bool(self.client_id and self.client_secret)
+
+    async def _get_token(self) -> str:
+        """以 client_credentials 取 application token；快取至過期前 60 秒、並發只取一次。"""
+        if self._token and time.time() < self._token_exp - 60:
+            return self._token
+        async with self._token_lock:
+            if self._token and time.time() < self._token_exp - 60:
+                return self._token
+            basic = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
+            headers = {"Content-Type": "application/x-www-form-urlencoded",
+                       "Authorization": f"Basic {basic}"}
+            payload = {"grant_type": "client_credentials", "scope": self.OAUTH_SCOPE}
+            try:
+                async with self.session.post(self.OAUTH_URL, headers=headers, data=payload,
+                                             timeout=aiohttp.ClientTimeout(total=15)) as r:
+                    body = await r.text()
+                    if r.status != 200:
+                        print(f"[{self.name}] 取得 token 失敗 HTTP {r.status}: {body[:200]}")
+                        return ""
+                    j = json.loads(body)
+            except Exception as e:
+                print(f"[{self.name}] token 例外: {e}")
+                return ""
+            self._token = j.get("access_token", "")
+            self._token_exp = time.time() + int(j.get("expires_in", 7200))
+            return self._token
 
     async def scrape_part(self, part: dict) -> list[Listing]:
-        if not self.token:
-            print(f"[{self.name}] 未設定 EBAY_OAUTH_TOKEN，略過（見 CLAUDE.md）")
+        if not self.enabled:
             return []
-        # TODO: 以 Browse API 查詢並轉為 Listing（海外參考價、USD）。
-        return []
+        token = await self._get_token()
+        if not token:
+            return []
+        keyword = part["aliases"][0]
+        params = {"q": keyword, "filter": "conditions:{USED}", "limit": "50"}
+        headers = {"Authorization": f"Bearer {token}",
+                   "X-EBAY-C-MARKETPLACE-ID": self.marketplace,
+                   "Accept": "application/json"}
+        try:
+            await asyncio.sleep(random.uniform(*self.REQUEST_DELAY))
+            async with self.session.get(self.SEARCH_API, params=params, headers=headers,
+                                        timeout=aiohttp.ClientTimeout(total=15)) as r:
+                if r.status != 200:
+                    print(f"[{self.name}] HTTP {r.status} → {keyword}")
+                    return []
+                data = await r.json()
+        except Exception as e:
+            print(f"[{self.name}] API Error: {e}")
+            return []
+        return self._parse(data, part)
+
+    def _parse(self, data: dict, part: dict) -> list[Listing]:
+        listings = []
+        for it in data.get("itemSummaries") or []:
+            try:
+                title = it.get("title", "")
+                if not title_matches_part(title, part):
+                    continue
+                price = it.get("price") or {}
+                if price.get("value") is None:
+                    continue
+                usd = float(price["value"])
+                twd = round(usd * self.rate)          # USD→TWD（海外參考；不入台灣均價）
+                if twd < 500 or twd > 200000:
+                    continue
+                listings.append(Listing(
+                    source    = self.name,
+                    part_id   = part["id"],
+                    title     = f"{title} [US${int(round(usd))}]",
+                    price     = twd,
+                    condition = it.get("condition", "") or "Used",
+                    url       = it.get("itemWebUrl", ""),
+                    location  = (it.get("itemLocation") or {}).get("country", ""),
+                    date      = datetime.now().strftime("%Y-%m-%d"),
+                    sold      = False,   # Browse API 僅在售掛牌，非成交
+                ))
+            except Exception:
+                continue
+        return listings
 
 
 # 各來源的資料保留天數：未列出者沿用 DEFAULT_RETENTION_DAYS。FB 依需求僅保留 90 天。
@@ -742,11 +839,16 @@ class CrawlerScheduler:
 
         connector = aiohttp.TCPConnector(limit=max_concurrent, ssl=False)
         async with aiohttp.ClientSession(connector=connector) as session:
-            # 自動爬蟲只跑 PTT（hardwaresale，匿名可爬、可排程）。
+            # 自動爬蟲跑 PTT（hardwaresale，匿名可爬）。
             # 蝦皮匿名被擋(403)→改匯入式；FB 需登入→匯入式；皆不在自動清單。露天/巴哈已移除。
             scrapers = [
                 PTTScraper(session, self.db),
             ]
+            # eBay 海外參考價：有設定金鑰才啟用（Browse API、官方合規、USD→TWD、不計入台灣均價）
+            ebay = EbayScraper(session, self.db)
+            if ebay.enabled:
+                scrapers.append(ebay)
+                print(f"[調度器] eBay 海外參考價已啟用（{ebay.marketplace}，匯率 {ebay.rate}）")
 
             sem = asyncio.Semaphore(max_concurrent)
 
