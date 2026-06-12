@@ -102,6 +102,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .srcico{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
 .srcname{font-size:12px;font-weight:500}
 .srccnt{font-size:10.5px;color:var(--text3)}
+.refb{margin-left:6px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(167,139,250,.16);color:#a78bfa;vertical-align:middle}
 .srcp{font-size:12.5px;font-weight:700}
 .litem{background:var(--bg3);border-radius:7px;padding:9px 11px;margin-bottom:5px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start}
 .lt{font-size:11.5px;font-weight:500;line-height:1.4;margin-bottom:2px}
@@ -428,6 +429,7 @@ const SRCS=[
   {name:'蝦皮購物', s:'蝦皮',c:'#f0a030',bg:'rgba(240,160,48,.14)'},
   {name:'PTT 硬體交易',s:'PTT',c:'#22c97a',bg:'rgba(34,201,122,.14)'},
   {name:'FB 社團', s:'FB', c:'#5b8cff',bg:'rgba(91,140,255,.14)'},
+  {name:'eBay', s:'eBay',c:'#a78bfa',bg:'rgba(167,139,250,.14)',ref:true},  // 海外在售參考（USD 換算）
 ];
 const CHIPS={
   gpu:['RTX 50系','RTX 40系','RTX 30系','RX 9000系','RX 7000系','RX 6000系','Arc Battlemage','NVIDIA','AMD','Intel'],
@@ -538,11 +540,12 @@ function closeDp(){document.getElementById('dp').classList.add('closed');selPart
 function renderSrc(p){const u=genUsed(p);
   let rows;
   if(p._live&&p._src&&p._src.length){
-    rows=p._src.map(s=>{const i=srcInfo(s.name);return{name:s.name,c:i.c,bg:i.bg,s:i.s,n:s.count,sp:s.avg}});
+    rows=p._src.map(s=>{const i=srcInfo(s.name);return{name:s.name,c:i.c,bg:i.bg,s:i.s,n:s.count,sp:s.avg,ref:i.ref}});
   }else{
-    rows=SRCS.map(s=>({name:s.name,c:s.c,bg:s.bg,s:s.s,n:3+Math.floor(Math.random()*6),sp:Math.round(u*(.91+Math.random()*.18))}));
+    // 模擬回退只放在地來源（eBay 等海外參考無模擬資料）
+    rows=SRCS.filter(s=>!s.ref).map(s=>({name:s.name,c:s.c,bg:s.bg,s:s.s,n:3+Math.floor(Math.random()*6),sp:Math.round(u*(.91+Math.random()*.18))}));
   }
-  document.getElementById('src').innerHTML=rows.map(s=>`<div class="srcrow"><div style="display:flex;align-items:center;gap:8px"><div class="srcico" style="background:${s.bg};color:${s.c}">${s.s[0]}</div><div><div class="srcname">${s.name}</div><div class="srccnt">${s.n} 筆資料</div></div></div><div class="srcp" style="color:${s.c}">NT$${s.sp.toLocaleString()}</div></div>`).join('')}
+  document.getElementById('src').innerHTML=rows.map(s=>`<div class="srcrow"><div style="display:flex;align-items:center;gap:8px"><div class="srcico" style="background:${s.bg};color:${s.c}">${s.s[0]}</div><div><div class="srcname">${s.name}${s.ref?'<span class="refb">🌍 海外參考</span>':''}</div><div class="srccnt">${s.n} 筆資料</div></div></div><div class="srcp" style="color:${s.c}">NT$${s.sp.toLocaleString()}</div></div>`).join('')}
 function renderLst(p){document.getElementById('lst').innerHTML=(p._ls||[]).slice(0,8).map(l=>`<div class="litem"><div><div class="lt">${l.title}</div><div class="lm" style="color:${l.c}">${l.source}</div><div class="lm">${l.date}</div></div><div class="lp">NT$${l.price.toLocaleString()}</div></div>`).join('')}
 function getCP(p,r){const m={'1w':7,'1m':30,'3m':90,'6m':180,'1y':365},days=m[r]||90,data=(p._h||[]).slice(-days),mn=(p._hmin||[]).slice(-days),mx=(p._hmax||[]).slice(-days),step=Math.max(1,Math.floor(data.length/40)),pick=a=>a.filter((_,i)=>i%step===0),sam=pick(data);const lb=sam.map((_,i)=>{const ago=Math.round((sam.length-1-i)*days/sam.length);if(ago===0)return'今日';if(days<=30)return`-${ago}天`;const w=Math.round(ago/7);return w?`-${w}週`:'今日'});return{lb,data:sam,min:pick(mn),max:pick(mx)}}
 function renderChart(p,r){const c=document.getElementById('pc');if(pChart){pChart.destroy();pChart=null}const{lb,data,min,max}=getCP(p,r),np=p.new_price,hasBand=min&&max&&min.length===data.length&&max.length===data.length;const ds=[];
