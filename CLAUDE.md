@@ -322,6 +322,36 @@ CSV 欄位與範例見 `imports/README.md`、`imports/sample_listings.csv`。寫
 
 ---
 
+## 未來規劃：公開上線與 SEO（尚未執行，僅記錄方向）
+
+「讓別人在瀏覽器搜尋得到」拆成兩件事：**①上架（公開網址）** 與 **②被搜尋到（SEO）**。
+
+### ① 上架 — 推薦「靜態前端 + 定期匯出 JSON」（免伺服器）
+
+本專案天生適合免伺服器部署：前端是單檔靜態 `index.html`、後端已有 `Reporter.export_json()`、
+前端 `loadLive()` 連不到 API 會優雅降級。做法：
+- 前端改成抓**靜態 `price_report.json`**（而非 `/api/report`）
+- 本機 Windows 排程每天跑完 PTT 爬蟲後，**多一步把 `price_report.json` 推上去**
+- 靜態頁即有「每日更新的真實資料」，不必養伺服器
+
+**免費靜態主機**：Cloudflare Pages（推薦，可綁網域+自動 HTTPS）／ GitHub Pages（repo 已在 GitHub，最快）／ Netlify。
+> 直接丟 `index.html` 今天就能上線（顯示模擬資料 + 完整目錄）；真實資料只是多「每天推 JSON」一條線。
+> 若要即時動態 API 才需 Render / Railway / Fly.io / VPS 跑 Flask —— 對個人研究屬過度工程，不建議。
+
+### ② 被搜尋到 — SEO 待補（皆為小改）
+- `<title>`、`<html lang="zh-Hant">`、`<meta name="description">`、Open Graph（og:title/description/image）、favicon
+- `robots.txt` + `sitemap.xml`
+- 上線後到 **Google Search Console** 提交網址（關鍵步驟，否則不一定被索引）
+- 自訂網域（好記、有信任感）
+
+### ⚠️ 上線前必須考量：資料來源的條款/合法風險
+- 本專案定位為**個人研究／非商業**；一旦公開且可被搜尋，性質改變。
+- **蝦皮、FB 服務條款禁止爬取與轉載**；公開蝦皮成交資料（尤其含賣家標題/賣場連結/地區）風險較高。
+- 較安全的公開版做法：**只公開彙總統計**（均價/區間/折價/走勢），**隱去原始 listing 的賣家連結與個資**；
+  加**資料來源與免責聲明**；或公開版**只放 PTT**（相對開放），蝦皮/FB 僅本機檢視。
+
+---
+
 ## 與 Claude 協作建議
 
 - 修改前端時，請**只提供需要修改的函式或 CSS 區塊**，不需貼整個 HTML 檔案
