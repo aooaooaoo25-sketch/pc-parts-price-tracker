@@ -628,6 +628,16 @@ class FBGroupScraper(BaseScraper):
 # eBay（海外參考價，架構預留，需官方 API 金鑰）
 # ─────────────────────────────────────────────────
 
+# eBay 英文標題常見的「非整顆顯卡/CPU」配件雜訊（外殼/散熱片/支架/壞品/僅零件…）→ 排除
+EBAY_NOISE = re.compile(
+    r"shroud|heat\s?sink|back\s?plate|water\s?block|not\s+gpu|"
+    r"for\s+parts|parts?\s+only|box\s+only|empty\s+box|\bbroken\b|\bfaulty\b|"
+    r"cooler\s+for|fan\s+for|replacement\s+(?:fan|cooler|shroud|heat\s?sink)|"
+    r"\bbracket\b|\briser\b|thermal\s?pad|\bsticker",
+    re.I,
+)
+
+
 class EbayScraper(BaseScraper):
     """eBay 國際站資料來源（海外參考價）。
 
@@ -721,6 +731,8 @@ class EbayScraper(BaseScraper):
             try:
                 title = it.get("title", "")
                 if not title_matches_part(title, part):
+                    continue
+                if EBAY_NOISE.search(title):   # 排除外殼/散熱片/支架等配件雜訊
                     continue
                 price = it.get("price") or {}
                 if price.get("value") is None:
@@ -866,19 +878,20 @@ class CrawlerScheduler:
                         except Exception as e:
                             print(f"  [{scraper.name}] {part['name']} 錯誤: {e}")
 
-                    # 計算今日均價快照（排除海外參考價來源，如 eBay）
+                    # 計算今日均價快照（排除海外參考價來源如 eBay；去極值、來源亦排除參考源）
                     if all_listings:
-                        prices = [l.price for l in all_listings
-                                  if not l.sold and l.source not in REFERENCE_SOURCES]
-                        if prices:
+                        local = [l for l in all_listings
+                                 if not l.sold and l.source not in REFERENCE_SOURCES]
+                        if local:
+                            avg, mn, mx, _ = robust_price_stats([l.price for l in local])
                             snap = PriceSnapshot(
                                 part_id       = part["id"],
                                 date          = datetime.now().strftime("%Y-%m-%d"),
-                                avg_price     = int(sum(prices) / len(prices)),
-                                min_price     = min(prices),
-                                max_price     = max(prices),
-                                listing_count = len(prices),
-                                sources       = list({l.source for l in all_listings}),
+                                avg_price     = avg,
+                                min_price     = mn,
+                                max_price     = mx,
+                                listing_count = len(local),
+                                sources       = sorted({l.source for l in local}),
                             )
                             self.db.save_snapshot(snap)
 
