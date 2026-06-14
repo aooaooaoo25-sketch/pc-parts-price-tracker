@@ -632,6 +632,7 @@ class FBGroupScraper(BaseScraper):
 EBAY_NOISE = re.compile(
     r"shroud|heat\s?sink|back\s?plate|water\s?block|not\s+gpu|"
     r"for\s+parts|parts?\s+only|box\s+only|empty\s+box|\bbroken\b|\bfaulty\b|"
+    r"no\s+core|no\s+chip|without\s+(?:core|gpu|chip)|pcb\s+only|chip\s+removed|"
     r"cooler\s+for|fan\s+for|replacement\s+(?:fan|cooler|shroud|heat\s?sink)|"
     r"\bbracket\b|\briser\b|thermal\s?pad|\bsticker",
     re.I,
