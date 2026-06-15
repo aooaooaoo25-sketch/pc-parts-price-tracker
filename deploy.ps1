@@ -9,7 +9,7 @@
 #   .\deploy.ps1 -ProjectName pc-price-tracker -Domain pc-price-tracker.pages.dev
 param(
     [string]$ProjectName = "pc-price-tracker",
-    [string]$Domain = "",
+    [string]$Domain = $env:SITE_DOMAIN,   # default from SITE_DOMAIN env (so daily deploys keep the domain)
     [switch]$BuildOnly
 )
 $ErrorActionPreference = "Stop"
