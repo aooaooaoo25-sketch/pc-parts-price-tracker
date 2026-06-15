@@ -628,13 +628,20 @@ class FBGroupScraper(BaseScraper):
 # eBay（海外參考價，架構預留，需官方 API 金鑰）
 # ─────────────────────────────────────────────────
 
-# eBay 英文標題常見的「非整顆顯卡/CPU」配件雜訊（外殼/散熱片/支架/壞品/僅零件…）→ 排除
+# eBay 英文標題的雜訊：①非整顆零件的配件（外殼/散熱片/支架/壞品/空板）
+# ②整機/準系統/品牌預組電腦/主機板組合（CPU 尤其常見，會嚴重拉高參考價）→ 一律排除
 EBAY_NOISE = re.compile(
+    # ① 配件 / 故障品 / 空板
     r"shroud|heat\s?sink|back\s?plate|water\s?block|not\s+gpu|"
     r"for\s+parts|parts?\s+only|box\s+only|empty\s+box|\bbroken\b|\bfaulty\b|"
     r"no\s+core|no\s+chip|without\s+(?:core|gpu|chip)|pcb\s+only|chip\s+removed|"
     r"cooler\s+for|fan\s+for|replacement\s+(?:fan|cooler|shroud|heat\s?sink)|"
-    r"\bbracket\b|\briser\b|thermal\s?pad|\bsticker",
+    r"\bbracket\b|\briser\b|thermal\s?pad|\bsticker|"
+    # ② 整機 / 準系統 / 品牌預組 / 主機板組合
+    r"desktop\s+pc|gaming\s+pc|prebuilt|pre-built|barebone|workstation|"
+    r"mini\s+pc|all.in.one|\baio\b|\bbundle\b|\bcombo\b|motherboard|\bmobo\b|"
+    r"\bomen\b|legion|alienware|aurora|trident|predator|\bnuc\b|supermicro|\bserver\b|"
+    r"\btower\b|\bsff\b|gaming\s+desktop|slim\s+desktop|optiplex",
     re.I,
 )
 
@@ -741,6 +748,10 @@ class EbayScraper(BaseScraper):
                 usd = float(price["value"])
                 twd = round(usd * self.rate)          # USD→TWD（海外參考；不入台灣均價）
                 if twd < 500 or twd > 200000:
+                    continue
+                # 價格上限防呆：遠高於台灣新品價（>2.5x）幾乎必是整機/工作站組合 → 排除
+                np = part.get("new_price", 0)
+                if np > 0 and twd > np * 2.5:
                     continue
                 listings.append(Listing(
                     source    = self.name,
@@ -985,11 +996,25 @@ class Reporter:
         sources = [{"name": a["name"], "count": a["count"],
                     "avg": round(a["_sum"] / a["count"])} for a in agg.values()]
 
+        # 海外參考線（eBay 等 REFERENCE_SOURCES）：近 30 天掛牌去極值算單一參考值（TWD）。
+        # 與 sources 分開算，避免受成交明細 limit=12 影響；不進台灣均價/歷史。
+        ebay_ref = None
+        if REFERENCE_SOURCES:
+            since30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+            ph = ",".join("?" * len(REFERENCE_SOURCES))
+            ref_rows = self.db.conn.execute(
+                f"SELECT price FROM listings WHERE part_id=? AND date>=? AND source IN ({ph})",
+                [part_id, since30, *REFERENCE_SOURCES]
+            ).fetchall()
+            if ref_rows:
+                ebay_ref = robust_price_stats([r[0] for r in ref_rows])[0]
+
         return {
             "id":         part_id,
             "name":       part["name"] if part else part_id,
             "new_price":  new_price,
             "used":       last["avg"],
+            "ebay_ref":   ebay_ref,
             "used_min":   last["min"],
             "used_max":   last["max"],
             "diff_pct":   diff_pct,

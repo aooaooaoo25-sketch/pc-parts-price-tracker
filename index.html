@@ -258,6 +258,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
       <span class="lgi"><i class="lln" style="background:#5b8cff"></i>二手均價</span>
       <span class="lgi"><i class="lbd"></i>最高～最低區間</span>
       <span class="lgi"><i class="lln" style="background:rgba(245,166,35,.7);height:0;border-top:2px dashed rgba(245,166,35,.7)"></i>全新定價</span>
+      <span class="lgi" id="lg-ebay" style="display:none"><i class="lln" style="background:#a78bfa;height:0;border-top:2px dotted #a78bfa"></i>eBay 海外參考</span>
     </div>
   </div>
   <div class="ssec"><div class="sttl">爬蟲來源明細</div><div id="src"></div></div>
@@ -459,11 +460,11 @@ function genUsed(p){
       p._hmin=(r.history_min&&r.history_min['1y'])||[];
       p._hmax=(r.history_max&&r.history_max['1y'])||[];
       p._ls=(r.listings||[]).map(l=>({source:l.source,c:srcInfo(l.source).c,title:l.title,price:l.price,date:l.date}));
-      p._src=r.sources||null; p._live=true;
+      p._src=r.sources||null; p._ebayRef=r.ebay_ref||null; p._live=true;
     }else{  // 模擬資料（無對應真實資料或 API 未連線）
       const b=p.new_price>500?p.new_price:8000;
       p._u=Math.round(b*(.52+Math.random()*.22));p._ls=genLs(p);p._h=genHist(b);
-      const bd=genBand(p._h);p._hmin=bd.min;p._hmax=bd.max;p._src=null;p._live=false;
+      const bd=genBand(p._h);p._hmin=bd.min;p._hmax=bd.max;p._src=null;p._ebayRef=null;p._live=false;
     }
   }
   return p._u
@@ -472,7 +473,7 @@ function genUsed(p){
 async function loadLive(){
   try{const r=await fetch(API+'/api/report',{cache:'no-store'});if(!r.ok)throw 0;RPT=await r.json();LIVE=true;}
   catch(e){RPT=null;LIVE=false;}
-  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._live=false});
+  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._ebayRef=null;p._live=false});
   setLiveBadge();renderList();
   if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
 }
@@ -556,6 +557,10 @@ function renderChart(p,r){const c=document.getElementById('pc');if(pChart){pChar
   }
   ds.push({label:'二手均價',data,borderColor:'#5b8cff',backgroundColor:'rgba(91,140,255,.05)',fill:hasBand?false:true,tension:.4,pointRadius:0,borderWidth:2});
   if(np>0)ds.push({label:'全新售價',data:data.map(()=>np),borderColor:'rgba(245,166,35,.5)',borderDash:[5,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5});
+  // eBay 海外參考線：水平虛線（eBay 僅當前掛牌均價、無歷史序列），紫色與來源標示一致
+  const er=p._ebayRef;
+  if(er>0)ds.push({label:'eBay 海外參考',data:data.map(()=>er),borderColor:'#a78bfa',borderDash:[2,3],fill:false,tension:0,pointRadius:0,borderWidth:1.5});
+  const lge=document.getElementById('lg-ebay');if(lge)lge.style.display=er>0?'flex':'none';
   pChart=new Chart(c,{type:'line',data:{labels:lb,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2230',borderColor:'#2e3347',borderWidth:1,titleColor:'#7e88a8',bodyColor:'#dde3f4',itemSort:(a,b)=>a.datasetIndex-b.datasetIndex,callbacks:{label:c=>` ${c.dataset.label} NT$${c.parsed.y.toLocaleString()}`}}},scales:{x:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},maxTicksLimit:8},border:{display:false}},y:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},callback:v=>'NT$'+Math.round(v/1000)+'K'},border:{display:false}}}}})}
 function setR(r,el){curRange=r;document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('on'));el.classList.add('on');if(selPart)renderChart(selPart,r)}
 // custom：未收錄零件 → 呼叫後端 /api/estimate 估價（待辦 #7），API 未連線則回退本地 estP

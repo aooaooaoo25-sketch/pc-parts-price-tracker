@@ -305,7 +305,7 @@ git config core.hooksPath hooks
 | 蝦皮購物 | 使用非公開搜尋 API，需帶正確 Referer；價格單位為分×1000 |
 | PTT BuyTrade | 需帶 cookie `over18=1`；以 Regex 從文章內容解析售價 |
 | FB 社團 | 需登入且禁自動爬取 → 採**匯入式**（已登入瀏覽器匯出貼文後解析寫入）；僅保留近 90 天 |
-| eBay | 匿名爬蟲被反機器人擋（實測 403）→ 走**官方 Browse API**（已實作）。認證用 `EBAY_CLIENT_ID`/`EBAY_CLIENT_SECRET` 以 client_credentials 自動換 token（約 2 小時自動續期）。**限制**：公開 Browse API 只回「在售掛牌價」非成交價（成交須 Marketplace Insights API、限制存取）。USD 以 `EBAY_TWD_RATE`（預設 32）換算台幣入庫、標題附 `[US$原價]`、來源 `eBay` 列 `REFERENCE_SOURCES` 不計入台灣均價。有設金鑰時自動納入每日排程；無金鑰自動略過 |
+| eBay | 匿名爬蟲被反機器人擋（實測 403）→ 走**官方 Browse API**（已實作）。認證用 `EBAY_CLIENT_ID`/`EBAY_CLIENT_SECRET` 以 client_credentials 自動換 token（約 2 小時自動續期）。**限制**：公開 Browse API 只回「在售掛牌價」非成交價（成交須 Marketplace Insights API、限制存取）。USD 以 `EBAY_TWD_RATE`（預設 32）換算台幣入庫、標題附 `[US$原價]`、來源 `eBay` 列 `REFERENCE_SOURCES` 不計入台灣均價。有設金鑰時自動納入每日排程；無金鑰自動略過。**雜訊過濾**：`EBAY_NOISE`（外殼/散熱片/空板等配件 + 整機/準系統/品牌預組/主機板組合/Tower/SFF）＋ `_parse` 價格上限（>台灣新品價 2.5x 視為整機組合排除），避免 eBay 搜尋夾帶的整機（如 HP Z2 Tower）拉高參考價。**前端**：詳情圖表加一條紫色虛線「eBay 海外參考」（`get_detail` 的 `ebay_ref`＝近 30 天 eBay 掛牌去極值均價；eBay 無歷史序列故畫水平線） |
 
 ### FB 社團資料（待接入）
 
