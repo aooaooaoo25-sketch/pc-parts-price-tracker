@@ -1036,16 +1036,35 @@ class Reporter:
             "listings": listings,
         }
 
-    def build_report(self) -> dict:
-        """攤平成 {part_id: detail}，供 API / 靜態檔輸出。"""
+    @staticmethod
+    def _sanitize_public(detail: dict) -> dict:
+        """公開版去識別：移除每筆掛牌的賣家連結(url)與地區(location)，僅留 來源/標題/價格/日期。
+        彙總統計（sources/history/ebay_ref）維持不變。供公開靜態站使用，降低條款/個資風險。"""
+        d = dict(detail)
+        d["listings"] = [{"source": l.get("source"), "title": l.get("title", ""),
+                          "price": l.get("price"), "date": l.get("date", "")}
+                         for l in detail.get("listings", [])]
+        return d
+
+    def build_report(self, public: bool = False) -> dict:
+        """攤平成 {part_id: detail}，供 API / 靜態檔輸出。public=True 會去識別（隱賣家連結/地區）。"""
         report = {}
         for cat_data in PARTS_DB.values():
             for parts in cat_data.values():
                 for part in parts:
                     detail = self.get_detail(part["id"])
-                    if detail:
-                        report[part["id"]] = detail
+                    if not detail:
+                        continue
+                    report[part["id"]] = self._sanitize_public(detail) if public else detail
         return report
+
+    def export_public_json(self, output_path: str = "report.json") -> int:
+        """輸出『公開靜態站』用的扁平報表（去識別、壓縮）。前端 API 連不到時會改抓此檔。"""
+        report = self.build_report(public=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(report, f, ensure_ascii=False, separators=(",", ":"))
+        print(f"[公開報表] 已輸出 {len(report)} 項至 {output_path}")
+        return len(report)
 
     def export_json(self, output_path: str = "price_report.json"):
         report = {}
@@ -1075,7 +1094,8 @@ async def main():
     await scheduler.run(category_filter=cats, max_concurrent=2)
 
     reporter = Reporter(db)
-    reporter.export_json("price_report.json")
+    reporter.export_json("price_report.json")       # 舊版巢狀格式（保留）
+    reporter.export_public_json("report.json")      # 公開靜態站用（扁平、去識別）
     print(f"[完成] 爬取分類 = {cats or '全部'}")
 
 

@@ -448,7 +448,7 @@ function removeCustom(id){customs=customs.filter(c=>c.id!==id);saveCustoms();if(
 // ── 後端 API 橋接（待辦 #1）──
 // 若本頁由 Flask server 提供（http），用同源相對路徑；若以 file:// 直接開啟，連本機 API。
 const API=(location.protocol==='http:'||location.protocol==='https:')?'':'http://127.0.0.1:5000';
-let RPT=null, LIVE=false;   // RPT: {part_id: detail}；LIVE: 是否已連到真實資料
+let RPT=null, LIVE=false, DATA_SRC='sim';   // RPT: {part_id: detail}；LIVE: 是否連到後端 API（控功能精簡）；DATA_SRC: api/static/sim
 function srcInfo(n){return SRCS.find(s=>n===s.name||n.includes(s.s))||{name:n,s:n.slice(0,2),c:'#7e88a8',bg:'rgba(126,136,168,.14)'}}
 function allP(){return [...Object.values(DB).flat(),...customs]}
 function genUsed(p){
@@ -471,8 +471,13 @@ function genUsed(p){
 }
 // 向後端 API 取真實資料；失敗則維持模擬（直接開啟仍可用）
 async function loadLive(){
-  try{const r=await fetch(API+'/api/report',{cache:'no-store'});if(!r.ok)throw 0;RPT=await r.json();LIVE=true;}
-  catch(e){RPT=null;LIVE=false;}
+  try{const r=await fetch(API+'/api/report',{cache:'no-store'});if(!r.ok)throw 0;RPT=await r.json();LIVE=true;DATA_SRC='api';}
+  catch(e){
+    LIVE=false;
+    // 公開靜態站：後端 API 連不到 → 改抓同目錄的靜態 report.json（每日推送、去識別）
+    try{const r2=await fetch('report.json',{cache:'no-store'});if(!r2.ok)throw 0;RPT=await r2.json();DATA_SRC='static';}
+    catch(e2){RPT=null;DATA_SRC='sim';}
+  }
   allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._ebayRef=null;p._live=false});
   setLiveBadge();applyMode();renderList();
   if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
@@ -484,7 +489,10 @@ function applyMode(){
   if(!live&&curCat==='custom'){curCat='all';document.querySelectorAll('.sbi').forEach(x=>x.classList.remove('on'));const a=document.querySelector(".sbi");if(a)a.classList.add('on');renderChips();}
 }
 function setLiveBadge(){const el=document.getElementById('lastUp');if(!el)return;
-  el.textContent=LIVE?`🟢 真實資料 ${Object.keys(RPT||{}).length} 項`:'🟡 模擬資料（API 未連線）';}
+  const n=Object.keys(RPT||{}).length;
+  el.textContent = DATA_SRC==='api' ? `🟢 真實資料 ${n} 項`
+                 : DATA_SRC==='static' ? `🟢 真實資料 ${n} 項（每日更新）`
+                 : '🟡 模擬資料';}
 function getDiff(p){if(!p.new_price)return null;return((genUsed(p)-p.new_price)/p.new_price*100).toFixed(1)}
 function genLs(p){
   const b=p.new_price>500?p.new_price:8000;

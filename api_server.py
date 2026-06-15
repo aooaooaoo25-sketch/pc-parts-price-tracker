@@ -48,6 +48,13 @@ def index():
     return send_from_directory(ROOT, "index.html")
 
 
+@app.route("/report.json")
+def report_static():
+    # 公開靜態站用的扁平報表（由 tools/export_report.py 或每日爬蟲產生）；
+    # 本地以 api_server 開啟時也能取用，方便預覽靜態降級行為。
+    return send_from_directory(ROOT, "report.json")
+
+
 @app.route("/api/health")
 def health():
     db, rep = _reporter()
