@@ -7,6 +7,8 @@
 price_report.json
 # report.json：公開靜態站用的扁平報表（產生後推上靜態主機；非提交物）
 report.json
+# dist/：deploy.ps1 打包的部署輸出
+dist/
 
 # 匯入的原始資料（可能含個資）；僅保留範本與說明
 imports/*
