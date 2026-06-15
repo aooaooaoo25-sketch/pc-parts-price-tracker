@@ -185,7 +185,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   <div class="logo"><div class="logo-ico">⚡</div>PC 二手行情追蹤</div>
   <div class="hdr-r">
     <div class="htag"><div class="sdot"></div><span id="lastUp">連線中…</span></div>
-    <button class="btn" onclick="openDbModal()">🔄 更新產品庫</button>
+    <button class="btn" id="dbBtn" onclick="openDbModal()">🔄 更新產品庫</button>
     <button class="btn pri" id="crawlBtn" onclick="startCrawl()">🔄 重新整理</button>
   </div>
 </div>
@@ -202,9 +202,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   <div class="sbt">儲存裝置</div>
   <div class="sbi" onclick="setCat('ssd',this)">⚡ SSD<span class="cnt" id="cnt-ssd">0</span></div>
   <div class="sbi" onclick="setCat('hdd',this)">💿 HDD<span class="cnt" id="cnt-hdd">0</span></div>
-  <div class="sdiv"></div>
-  <div class="sbt">自訂追蹤</div>
-  <div class="sbi" onclick="setCat('custom',this)">🔍 自訂搜尋<span class="cnt" id="cnt-custom">0</span></div>
+  <div class="sdiv" id="sdiv-custom"></div>
+  <div class="sbt" id="sbt-custom">自訂追蹤</div>
+  <div class="sbi" id="sb-custom" onclick="setCat('custom',this)">🔍 自訂搜尋<span class="cnt" id="cnt-custom">0</span></div>
 </div>
 <div class="main">
   <div class="topbar">
@@ -221,7 +221,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   <div class="ubanner" id="ub">
     <span style="font-size:16px">⚠</span>
     <div class="ubt"><strong id="ubT">找不到此型號</strong><span id="ubD">此零件不在現有資料庫中，可直接搜尋中文圈二手行情。</span></div>
-    <div style="display:flex;gap:6px;flex-shrink:0">
+    <div id="ubActions" style="display:flex;gap:6px;flex-shrink:0">
       <button class="btn" onclick="addCustom()">➕ 加入追蹤</button>
       <button class="btn pri" onclick="searchUnknown()">🔍 搜尋行情</button>
     </div>
@@ -474,8 +474,14 @@ async function loadLive(){
   try{const r=await fetch(API+'/api/report',{cache:'no-store'});if(!r.ok)throw 0;RPT=await r.json();LIVE=true;}
   catch(e){RPT=null;LIVE=false;}
   allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._ebayRef=null;p._live=false});
-  setLiveBadge();renderList();
+  setLiveBadge();applyMode();renderList();
   if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
+}
+// 公開靜態站（API 未連線）= 單向查詢：隱藏維護端（更新產品庫）與自訂搜尋/估價（避免無後端的死按鈕與粗估誤導）
+function applyMode(){
+  const live=LIVE===true;
+  ['dbBtn','sdiv-custom','sbt-custom','sb-custom'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display=live?'':'none'});
+  if(!live&&curCat==='custom'){curCat='all';document.querySelectorAll('.sbi').forEach(x=>x.classList.remove('on'));const a=document.querySelector(".sbi");if(a)a.classList.add('on');renderChips();}
 }
 function setLiveBadge(){const el=document.getElementById('lastUp');if(!el)return;
   el.textContent=LIVE?`🟢 真實資料 ${Object.keys(RPT||{}).length} 項`:'🟡 模擬資料（API 未連線）';}
@@ -495,7 +501,7 @@ function updCounts(){const a=allP();document.getElementById('cnt-all').textConte
 function renderChips(){const cs=CHIPS[curCat]||[];document.getElementById('chips').innerHTML=cs.map(c=>`<span class="chip${curFilters.includes(c)?' on':''}" onclick="togFilter('${c}')">${c}</span>`).join('')}
 function togFilter(f){const i=curFilters.indexOf(f);i>=0?curFilters.splice(i,1):curFilters.push(f);renderChips();renderList()}
 // search
-function onSearch(){Q=document.getElementById('si').value.trim();document.getElementById('scl').style.display=Q?'block':'none';document.getElementById('anyBtn').style.display=Q?'flex':'none';const ub=document.getElementById('ub');if(Q.length>=2){const f=allP().some(p=>matchP(p,Q));ub.classList.toggle('show',!f);if(!f){document.getElementById('ubT').textContent=`「${Q}」不在資料庫`;document.getElementById('ubD').textContent='此型號尚未收錄，可搜尋中文圈二手行情或加入自訂追蹤。'}}else ub.classList.remove('show');renderList()}
+function onSearch(){Q=document.getElementById('si').value.trim();document.getElementById('scl').style.display=Q?'block':'none';document.getElementById('anyBtn').style.display=(Q&&LIVE)?'flex':'none';const ub=document.getElementById('ub');if(Q.length>=2){const f=allP().some(p=>matchP(p,Q));ub.classList.toggle('show',!f);if(!f){document.getElementById('ubT').textContent=`「${Q}」不在資料庫`;const act=document.getElementById('ubActions');if(LIVE){document.getElementById('ubD').textContent='此型號尚未收錄，可搜尋中文圈二手行情或加入自訂追蹤。';if(act)act.style.display='flex';}else{document.getElementById('ubD').textContent='此型號尚未收錄。';if(act)act.style.display='none';}}}else ub.classList.remove('show');renderList()}
 function onKey(e){if(e.key==='Enter'&&Q)searchUnknown()}
 function clearS(){document.getElementById('si').value='';Q='';document.getElementById('scl').style.display='none';document.getElementById('anyBtn').style.display='none';document.getElementById('ub').classList.remove('show');renderList()}
 function matchP(p,q){const h=(p.name+' '+p.spec+' '+(p.tags||[]).join(' ')).toLowerCase();return q.toLowerCase().split(/\s+/).every(w=>h.includes(w))}
@@ -634,7 +640,7 @@ function startCrawl(){if(crawling)return;crawling=true;const b=document.getEleme
     showToast(LIVE?`✅ 已同步真實資料，共 ${Object.keys(RPT).length} 項`:'🟡 後端 API 未連線，顯示模擬資料（請先啟動 api_server.py）');});}
 let tt=null;
 function showToast(m){const t=document.getElementById('toast');document.getElementById('tmsg').textContent=m;t.classList.add('show');if(tt)clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3200)}
-loadCustoms();updCounts();renderChips();renderList();
+loadCustoms();updCounts();renderChips();renderList();applyMode();
 loadLive();   // 載入時嘗試連後端真實資料（失敗則維持模擬）
 </script>
 </body>
