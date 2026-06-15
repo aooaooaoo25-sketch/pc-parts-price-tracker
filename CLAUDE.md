@@ -322,7 +322,15 @@ CSV 欄位與範例見 `imports/README.md`、`imports/sample_listings.csv`。寫
 
 ---
 
-## 未來規劃：公開上線與 SEO（尚未執行，僅記錄方向）
+## 公開上線與 SEO
+
+> **進度（2026-06-15）**：靜態化資料管線、SEO、部署腳本**已實作**；剩「實際建立 Cloudflare Pages
+> 專案 + 綁網域 + 提交 Search Console」屬使用者操作（見 `DEPLOY.md`）。
+> - ✅ 公開匯出：`Reporter.export_public_json()` → 去識別扁平 `report.json`（每日爬蟲與 `tools/export_report.py` 產生）
+> - ✅ 前端降級鏈：API → 靜態 `report.json`（`LIVE=false` → 單向查詢精簡）→ 模擬；`DATA_SRC` 標來源
+> - ✅ SEO：`<head>` meta/OG/favicon/canonical、`robots.txt`、`sitemap.xml`（網域 placeholder 待替換）
+> - ✅ 部署：`deploy.ps1`（重產 report.json→打包 dist/→wrangler）、`DEPLOY.md`（Cloudflare Pages 步驟）
+> - ⬜ 待使用者：建 Pages 專案、`-Domain` 替換網域、補 og:url/og:image、Google Search Console
 
 「讓別人在瀏覽器搜尋得到」拆成兩件事：**①上架（公開網址）** 與 **②被搜尋到（SEO）**。
 
