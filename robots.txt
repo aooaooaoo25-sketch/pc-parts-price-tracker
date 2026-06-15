@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# 上線後把下面網域換成你的實際網域，並到 Google Search Console 提交 sitemap：
+Sitemap: https://REPLACE-WITH-YOUR-DOMAIN/sitemap.xml
