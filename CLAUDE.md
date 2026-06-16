@@ -324,13 +324,21 @@ CSV 欄位與範例見 `imports/README.md`、`imports/sample_listings.csv`。寫
 
 ## 公開上線與 SEO
 
-> **進度（2026-06-15）**：靜態化資料管線、SEO、部署腳本**已實作**；剩「實際建立 Cloudflare Pages
-> 專案 + 綁網域 + 提交 Search Console」屬使用者操作（見 `DEPLOY.md`）。
+> **🟢 已上線（2026-06-16）**：<https://usedpcpartprice.com>（Cloudflare Pages，自訂網域 + 自動 HTTPS）。
+> Google Search Console 已提交 `sitemap.xml`（狀態：成功，探索 1 頁，等收錄）。
 > - ✅ 公開匯出：`Reporter.export_public_json()` → 去識別扁平 `report.json`（每日爬蟲與 `tools/export_report.py` 產生）
 > - ✅ 前端降級鏈：API → 靜態 `report.json`（`LIVE=false` → 單向查詢精簡）→ 模擬；`DATA_SRC` 標來源
-> - ✅ SEO：`<head>` meta/OG/favicon/canonical、`robots.txt`、`sitemap.xml`（網域 placeholder 待替換）
-> - ✅ 部署：`deploy.ps1`（重產 report.json→打包 dist/→wrangler）、`DEPLOY.md`（Cloudflare Pages 步驟）
-> - ⬜ 待使用者：建 Pages 專案、`-Domain` 替換網域、補 og:url/og:image、Google Search Console
+> - ✅ SEO：`<head>` meta/OG/favicon/canonical（皆指向正式網域）、`robots.txt`、`sitemap.xml`、`og.png`（`tools/make_og.py`）
+> - ✅ 部署：`deploy.ps1`（重產 report.json→打包 `dist/`→wrangler）、`DEPLOY.md`（步驟）
+>
+> **維護備忘**
+> - **手動更新上線**：`.\deploy.ps1 -BuildOnly` → 把 `dist\` 拖到 Cloudflare（Direct Upload，專案名 `pc-price-tracker`）；
+>   或設好金鑰後 `.\deploy.ps1`（CLI）。
+> - **每日自動部署**：`crawl_daily.ps1` 末端已接 `deploy.ps1`，只在設了 `CLOUDFLARE_API_TOKEN` 時執行
+>   （另需 `CLOUDFLARE_ACCOUNT_ID`、`SITE_DOMAIN`，見 `DEPLOY.md` D 段）。**未設則為手動部署。**
+> - **改網域時**要一起改：`robots.txt`、`sitemap.xml`、`index.html` 的 `og:url`/`og:image`/`canonical` → 重新部署 → Search Console 重新提交。
+> - **重產分享圖**：`python tools/make_og.py`（改文案/配色在該檔）。
+> - ⚠️ 公開網址含自訂網域即可；workers.dev 預設網址含帳號代號，勿寫進會提交的檔。
 
 「讓別人在瀏覽器搜尋得到」拆成兩件事：**①上架（公開網址）** 與 **②被搜尋到（SEO）**。
 
