@@ -23,7 +23,7 @@ Write-Host "==> 2/3 bundle dist/"
 $dist = Join-Path $PSScriptRoot "dist"
 if (Test-Path $dist) { Remove-Item $dist -Recurse -Force }
 New-Item -ItemType Directory -Path $dist | Out-Null
-Copy-Item -LiteralPath index.html, report.json, robots.txt, sitemap.xml -Destination $dist
+Copy-Item -LiteralPath index.html, report.json, robots.txt, sitemap.xml, og.png -Destination $dist
 
 if ($Domain) {
     foreach ($f in @("robots.txt", "sitemap.xml")) {
