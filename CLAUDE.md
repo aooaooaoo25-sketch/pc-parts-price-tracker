@@ -168,7 +168,12 @@ pc_price_tracker/
    - **PTT `hardwaresale` 已設每日排程自動爬**（`crawl_daily.ps1` + 工作排程 `PCPriceTracker_PTTCrawl`）→ 真實歷史逐日累積中。
    - **蝦皮 CPU 匯入（2026-06-11）**：以 Claude-in-Chrome 擷取 5 顆熱門 CPU（5800X3D/13400F/14600K/7600/14900K）共 189 筆原始 → 過濾後 52 筆入庫。新增 `import_listings.py --shopee-multi`（一次匯多顆 `{part_id:{items:[...]}}`）。
      同步強化資料品質：`parse_shopee_items` 加 `SHOPEE_NOISE` 過濾（整機/套裝/分期/夾帶顯卡/「可參考」跨型號），`title_matches_part` 修正後綴+數字漏判（14900K 誤收 14900KF），快照改用 `robust_price_stats`（IQR 去極值）算均價/最高/最低。
-     ⚠️ 蝦皮反爬蟲：實測**第 2 個請求**即可能跳流量驗證（captcha），需**不同天分批**冷卻補抓；CPU 仍有 33 顆待後續波次。
+     ⚠️ 蝦皮反爬蟲：實測**第 2 個請求**即可能跳流量驗證（captcha），需**不同天分批**冷卻補抓。
+   - **蝦皮 CPU 第二波（2026-06-16）**：再補 5 顆（7700X/14700K/5600/12400F/5700X）共 268 筆原始 → 88 筆入庫。
+     同步在 `parse_shopee_items` 加**價格上限**（>台灣新品價 2.5x 視為整機/組合排除，同 eBay `_parse`）——
+     修掉「7700X 均價被整機拉到 2 萬」之類；CPU 仍有約 28 顆待後續波次。
+   - **擷取技巧（補充）**：Claude-in-Chrome 的 `javascript_tool` 這版**async 回傳值會變 `{}`**（promise 序列化問題）；
+     解法＝把結果存進 `window.__cpu`/`window.__clip` 等變數，再用**同步**運算式讀回（fetch/clipboard 的副作用仍正常）。
 7. ~~**搜尋未收錄零件的行情估算過於粗糙**~~ ✅ 已完成（2026-06-03）：新增 `estimator.py` + `/api/estimate`，以真實 166 項目錄與成交資料估價（目錄比對→相近型號→兜底），附 basis/confidence；前端 `searchUnknown/addCustom` 改呼叫後端、API 未連線回退 `estP`。順帶修好 `searchUnknown` 原本詳情面板不顯示的 bug
 8. ~~**`Reporter.export_json()` 與前端 DB 結構不匹配**~~ ✅ 已處理（2026-06-03）：新增 `Reporter.get_detail()` / `build_report()` 產生與前端一致的扁平 `{part_id: detail}` 結構，供 API 使用
 

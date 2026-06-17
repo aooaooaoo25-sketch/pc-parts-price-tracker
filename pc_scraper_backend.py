@@ -492,6 +492,10 @@ def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物"
             # 排除整機/套裝/分期/夾帶顯卡等組合（價格非單顆零件，會拉歪均價）
             if SHOPEE_NOISE.search(name):
                 continue
+            # 價格上限防呆：遠高於台灣新品價（>2.5x）幾乎必是整機/組合，關鍵字漏接時擋掉
+            np = part.get("new_price", 0)
+            if np > 0 and raw_price > np * 2.5:
+                continue
 
             url = f"https://shopee.tw/product/{info.get('shopid','')}/{info.get('itemid','')}"
             sold = info.get("sold", 0) > 0 or info.get("historical_sold", 0) > 0
