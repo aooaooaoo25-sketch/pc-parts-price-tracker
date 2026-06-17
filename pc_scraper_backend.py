@@ -462,11 +462,16 @@ def title_matches_part(title: str, part: dict) -> bool:
 
 
 # 蝦皮賣文常見的「非單顆零件」雜訊：整機/套裝/分期/含他零件的組合 → 會嚴重污染均價。
-# 與 PTT 同精神，但蝦皮文案更雜，故另列。命中任一即排除該筆。
+# 與 PTT 同精神，但蝦皮文案更雜。命中任一即排除該筆。**所有分類**都套用。
 SHOPEE_NOISE = re.compile(
     r"整機|整台|主機板|主板|套裝|套装|套餐|準系統|組裝|組合|搭機|含機|含板|"
     r"桌機|電競主機|電競桌機|電競電腦|繪圖電腦|工作站|完整電腦|電腦一台|遊戲主機|"
-    r"遊戲機|準系統|分期|無卡|免卡|可參考|參考價|"
+    r"遊戲機|準系統|分期|無卡|免卡|可參考|參考價",
+    re.I,
+)
+# 「夾帶顯卡」的組合雜訊（CPU/RAM/SSD 等賣文常附顯卡 → 拉歪均價）。
+# ⚠️ 只對**非顯卡品項**套用——否則會把顯卡本身的賣文（標題必含 RTX/RX）全部誤殺。
+SHOPEE_GPU_COMBO = re.compile(
     r"rtx|gtx|radeon|顯卡|\brx\s?\d{3,4}\b|\b(?:30|40|50)[5-9]0(?:\s?ti)?\b|\b\d{4}ti\b",
     re.I,
 )
@@ -489,8 +494,11 @@ def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物"
             name = info.get("name", "")
             if not title_matches_part(name, part):
                 continue
-            # 排除整機/套裝/分期/夾帶顯卡等組合（價格非單顆零件，會拉歪均價）
+            # 排除整機/套裝/分期等組合（價格非單顆零件，會拉歪均價）
             if SHOPEE_NOISE.search(name):
+                continue
+            # 「夾帶顯卡」雜訊只對非顯卡品項套用（顯卡本身標題必含 RTX/RX，不可誤殺）
+            if not part.get("id", "").startswith("gpu_") and SHOPEE_GPU_COMBO.search(name):
                 continue
             # 價格上限防呆：遠高於台灣新品價（>2.5x）幾乎必是整機/組合，關鍵字漏接時擋掉
             np = part.get("new_price", 0)
