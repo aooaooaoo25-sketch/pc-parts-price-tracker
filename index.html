@@ -88,6 +88,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .rmx:hover{color:var(--red);opacity:1}
 .empty{text-align:center;padding:60px 20px;color:var(--text3)}
 .foot{flex-shrink:0;padding:6px 18px;font-size:10px;color:var(--text3);border-top:1px solid var(--border);background:var(--bg2);line-height:1.5}
+.footmeta{margin-bottom:2px}#clock{color:var(--text2);font-variant-numeric:tabular-nums}
+.flink{color:var(--accent);text-decoration:none;font-weight:600}.flink:hover{text-decoration:underline}
 .empty .ei{font-size:40px;margin-bottom:12px}
 .detail{width:460px;min-width:460px;background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;transition:width .28s,min-width .28s;flex-shrink:0}
 .detail.closed{width:0;min-width:0;overflow:hidden}
@@ -245,7 +247,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   </div>
   <div class="colhdr"><div>零件名稱</div><div>全新售價</div><div>二手均價</div><div>折價幅度</div><div>筆數</div><div>狀態</div></div>
   <div class="plist" id="pl"></div>
-  <div class="foot">資料來源：PTT 硬體交易・蝦皮購物・FB 社團・eBay（海外在售參考）　|　本站為個人研究、非商業用途；價格為公開掛牌／貼文之彙整估算，非保證成交價，亦不構成交易或投資建議。</div>
+  <div class="foot">
+    <div class="footmeta"><span id="clock">🕒 —</span>　｜　<a class="flink" id="contact" href="#" rel="nofollow" title="新品上市、缺漏零件回報、功能許願都歡迎來信">📧 聯絡 / 意見回饋</a></div>
+    <div>資料來源：PTT 硬體交易・蝦皮購物・FB 社團・eBay（海外在售參考）　|　本站為個人研究、非商業用途；價格為公開掛牌／貼文之彙整估算，非保證成交價，亦不構成交易或投資建議。</div>
+  </div>
 </div>
 <div class="detail closed" id="dp">
   <div class="dphead">
@@ -666,6 +671,11 @@ function startCrawl(){if(crawling)return;crawling=true;const b=document.getEleme
     showToast(LIVE?`✅ 已同步真實資料，共 ${Object.keys(RPT).length} 項`:'🟡 後端 API 未連線，顯示模擬資料（請先啟動 api_server.py）');});}
 let tt=null;
 function showToast(m){const t=document.getElementById('toast');document.getElementById('tmsg').textContent=m;t.classList.add('show');if(tt)clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3200)}
+// 頁尾即時時鐘（每秒更新）
+function tick(){const el=document.getElementById('clock');if(!el)return;const d=new Date(),w='日一二三四五六'[d.getDay()],p=n=>String(n).padStart(2,'0');el.textContent=`🕒 ${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())}（週${w}）${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
+tick();setInterval(tick,1000);
+// 聯絡信箱（防爬：以 JS 組裝，HTML 原始碼不留明碼 email）
+(function(){var a=document.getElementById('contact');if(!a)return;var u='dontbelievenet25',d='gmail.com';a.href='mailto:'+u+'@'+d+'?subject='+encodeURIComponent('【二手零件行情】意見/回報')+'&body='+encodeURIComponent('（請描述：新品上市 / 缺漏零件 / 功能建議）\n\n');})();
 loadCustoms();updCounts();renderChips();renderList();applyMode();
 loadLive();   // 載入時嘗試連後端真實資料（失敗則維持模擬）
 </script>
