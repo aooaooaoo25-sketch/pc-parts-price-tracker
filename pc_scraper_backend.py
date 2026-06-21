@@ -1071,12 +1071,15 @@ class Reporter:
         return report
 
     def export_public_json(self, output_path: str = "report.json") -> int:
-        """輸出『公開靜態站』用的扁平報表（去識別、壓縮）。前端 API 連不到時會改抓此檔。"""
+        """輸出『公開靜態站』用的扁平報表（去識別、壓縮）。前端 API 連不到時會改抓此檔。
+        另附 `_meta.generated_at`（產生時間）供前端顯示「資料更新於…」。"""
         report = self.build_report(public=True)
+        n = len(report)
+        report["_meta"] = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M")}
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, separators=(",", ":"))
-        print(f"[公開報表] 已輸出 {len(report)} 項至 {output_path}")
-        return len(report)
+        print(f"[公開報表] 已輸出 {n} 項至 {output_path}")
+        return n
 
     def export_json(self, output_path: str = "price_report.json"):
         report = {}

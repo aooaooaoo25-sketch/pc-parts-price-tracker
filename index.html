@@ -253,7 +253,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   <div class="colhdr"><div>零件名稱</div><div>全新售價</div><div>二手均價</div><div>折價幅度</div><div>筆數</div><div>狀態</div></div>
   <div class="plist" id="pl"></div>
   <div class="foot">
-    <div class="footmeta"><span id="clock">🕒 —</span>　｜　<a class="flink" id="contact" onclick="openFeedback()" title="新品上市、缺漏零件回報、功能許願都歡迎">📧 意見回饋</a></div>
+    <div class="footmeta"><span id="clock">🕒 —</span>　｜　<a class="flink" id="contact" onclick="openFeedback()" title="新品上市、缺漏零件回報、功能許願都歡迎">📧 意見回饋</a><span id="dataT"></span></div>
     <div>資料來源：PTT 硬體交易・蝦皮購物・FB 社團・eBay（海外在售參考）　|　本站為個人研究、非商業用途；價格為公開掛牌／貼文之彙整估算，非保證成交價，亦不構成交易或投資建議。</div>
   </div>
 </div>
@@ -528,7 +528,7 @@ async function loadLive(){
     catch(e2){RPT=null;DATA_SRC='sim';}
   }
   allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._ebayRef=null;p._live=false});
-  setLiveBadge();applyMode();renderList();
+  setLiveBadge();setDataTime();applyMode();renderList();
   if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
 }
 // 公開靜態站（API 未連線）= 單向查詢：隱藏維護端（更新產品庫）與自訂搜尋/估價（避免無後端的死按鈕與粗估誤導）
@@ -538,10 +538,15 @@ function applyMode(){
   if(!live&&curCat==='custom'){curCat='all';document.querySelectorAll('.sbi').forEach(x=>x.classList.remove('on'));const a=document.querySelector(".sbi");if(a)a.classList.add('on');renderChips();}
 }
 function setLiveBadge(){const el=document.getElementById('lastUp');if(!el)return;
-  const n=Object.keys(RPT||{}).length;
+  const n=Object.keys(RPT||{}).filter(k=>k!=='_meta').length;
   el.textContent = DATA_SRC==='api' ? `🟢 真實資料 ${n} 項`
                  : DATA_SRC==='static' ? `🟢 真實資料 ${n} 項（每日更新）`
                  : '🟡 模擬資料';}
+// 頁尾「資料更新於…」：靜態站用 report.json 的 _meta.generated_at；本機 API 為即時
+function setDataTime(){const dt=document.getElementById('dataT');if(!dt)return;
+  const g=RPT&&RPT._meta&&RPT._meta.generated_at;
+  dt.textContent = DATA_SRC==='static'&&g ? `　｜　📅 資料更新於 ${g}`
+                 : DATA_SRC==='api' ? '　｜　📅 本機即時資料' : '';}
 function getDiff(p){if(!p.new_price)return null;return((genUsed(p)-p.new_price)/p.new_price*100).toFixed(1)}
 function genLs(p){
   const b=p.new_price>500?p.new_price:8000;

@@ -32,6 +32,8 @@ ENV/
 
 # 爬蟲每日 log
 logs/
+# DB 每日備份（crawl_daily.ps1 產生，保留近 14 份）
+backups/
 
 # === 測試 / 工具快取 ===
 .pytest_cache/

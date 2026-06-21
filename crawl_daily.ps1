@@ -10,6 +10,18 @@ $logDir = Join-Path $PSScriptRoot "logs"
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
 $log = Join-Path $logDir ("crawl_{0}.log" -f (Get-Date -Format "yyyyMMdd"))
 
+# DB backup (run before crawl to keep last-known-good); keep the latest 14 copies.
+$bkDir = Join-Path $PSScriptRoot "backups"
+if (-not (Test-Path $bkDir)) { New-Item -ItemType Directory -Path $bkDir | Out-Null }
+$db = Join-Path $PSScriptRoot "pc_prices.db"
+if (Test-Path $db) {
+    Copy-Item $db (Join-Path $bkDir ("pc_prices_{0}.db" -f (Get-Date -Format 'yyyyMMdd'))) -Force
+    Get-ChildItem $bkDir -Filter 'pc_prices_*.db' | Sort-Object LastWriteTime -Descending |
+        Select-Object -Skip 14 | Remove-Item -Force
+    "==== $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') DB backed up to backups/ ====" |
+        Out-File -FilePath $log -Append -Encoding utf8
+}
+
 "==== $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') 開始 PTT 爬取 ($cats) ====" |
     Out-File -FilePath $log -Append -Encoding utf8
 python pc_scraper_backend.py $cats.Split(" ") *>> $log
