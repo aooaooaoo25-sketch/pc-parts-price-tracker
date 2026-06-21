@@ -39,6 +39,7 @@ if ($BuildOnly) {
     return
 }
 
-Write-Host "==> 3/3 wrangler deploy to Cloudflare Pages (project: $ProjectName)"
-# Requires Node + wrangler, and either 'wrangler login' or CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID.
-npx wrangler pages deploy $dist --project-name=$ProjectName
+Write-Host "==> 3/3 wrangler deploy (Cloudflare Worker with static assets)"
+# Deploys the Worker named in wrangler.jsonc, serving ./dist as static assets.
+# Non-interactive auth via CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID env vars.
+npx --yes wrangler deploy

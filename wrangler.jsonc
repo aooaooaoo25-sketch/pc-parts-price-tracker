@@ -1,0 +1,9 @@
+{
+  // Cloudflare Worker（靜態資產）部署設定。
+  // 站台是純靜態檔，無 Worker 腳本，只靠 assets 服務 dist/。
+  // 由 deploy.ps1 先打包 dist/，再 `npx wrangler deploy` 上傳。
+  // name 必須等於現有 Worker 名稱（網址 pc-price-tracker.<帳號>.workers.dev）。
+  "name": "pc-price-tracker",
+  "compatibility_date": "2025-06-01",
+  "assets": { "directory": "./dist" }
+}

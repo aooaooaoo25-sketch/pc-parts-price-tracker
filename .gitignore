@@ -9,6 +9,9 @@ price_report.json
 report.json
 # dist/：deploy.ps1 打包的部署輸出
 dist/
+# wrangler 本機快取
+.wrangler/
+node_modules/
 
 # 匯入的原始資料（可能含個資）；僅保留範本與說明
 imports/*
