@@ -67,6 +67,9 @@ pc_price_tracker/
 | `genUsed(p)` | 取二手均價：`RPT[p.id]` 有資料用真實（含 `_ls`/`_h`/`_src`），否則模擬回退 |
 | `genHist(base)` | **【模擬回退】** 無真實資料時產生 365 天歷史 |
 | `genLs(p)` | **【模擬回退】** 無真實資料時產生成交列表 |
+| `applyMode()` | 依 `LIVE` 切換公開/本地：API 未連線（公開靜態站）時隱藏更新產品庫/自訂搜尋，精簡為單向查詢 |
+| `tick()` | 頁尾即時時鐘（每秒更新日期時間） |
+| `openFeedback()`/`closeFeedback()`/`submitFeedback()` | 意見回饋彈窗：填主題/內容/(選填)Email → 經 **Web3Forms** AJAX 直送站長信箱（免後端、免郵件程式、不跳轉）。access key 在前端（公開金鑰）、信箱不在原始碼、含 honeypot 擋垃圾 |
 
 **前端零件資料庫（`DB` 物件）：**
 
