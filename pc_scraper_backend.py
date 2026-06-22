@@ -488,6 +488,16 @@ def title_is_new(title: str) -> bool:
     return bool(_NEW_RE.search(title) and not _USED_RE.search(title))
 
 
+def split_used_new(rows) -> tuple:
+    """把 (title, price) 序列分流成 (used_prices, new_prices)。
+    「二手均價」只該由二手賣文構成 → 明確全新（title_is_new）的價格抽出來另計，
+    其餘（二手或未標明成色）一律歸二手。回傳兩個價格 list。"""
+    used, new = [], []
+    for title, price in rows:
+        (new if title_is_new(title or "") else used).append(price)
+    return used, new
+
+
 def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物") -> list[Listing]:
     """解析蝦皮 search_items JSON → Listing 清單。
     被 ShopeeScraper（登入後直連）與 tools/import_listings.py（匯入存檔的 JSON）共用。
@@ -836,27 +846,35 @@ def robust_price_stats(prices: list) -> tuple:
 def rebuild_today_snapshots(db: "Database") -> int:
     """依「今日所有來源」的成交資料重算各零件均價快照（排除海外參考價，如 eBay）。
     爬蟲與匯入皆呼叫，確保快照反映當天 PTT＋蝦皮匯入等所有真實資料（而非單一來源）。
-    均價/最高/最低皆以 robust_price_stats 去極值後計算，避免整機/配件污染。"""
+    均價/最高/最低皆以 robust_price_stats 去極值後計算，避免整機/配件污染。
+    **二手分流（#2）**：明確全新的賣文（title_is_new）不計入二手快照，避免新品（尤其
+    AI 飆漲的當代卡/記憶體）把二手均價墊高。某零件當天若只有全新賣文 → 當天不產生二手快照。"""
     today = datetime.now().strftime("%Y-%m-%d")
     ref = list(REFERENCE_SOURCES)
     ph = ",".join("?" * len(ref)) if ref else "''"
     rows = db.conn.execute(
-        f"SELECT part_id, price, source FROM listings "
+        f"SELECT part_id, title, price, source FROM listings "
         f"WHERE date>=? AND source NOT IN ({ph})",
         [today] + ref
     ).fetchall()
     by_part = {}
-    for pid, price, src in rows:
-        d = by_part.setdefault(pid, {"prices": [], "sources": set()})
-        d["prices"].append(price)
+    for pid, title, price, src in rows:
+        d = by_part.setdefault(pid, {"rows": [], "sources": set()})
+        d["rows"].append((title, price, src))
         d["sources"].add(src)
+    n = 0
     for pid, d in by_part.items():
-        avg, mn, mx, _used = robust_price_stats(d["prices"])
+        used, _new = split_used_new([(t, p) for (t, p, s) in d["rows"]])
+        if not used:   # 當天只有全新賣文 → 無二手成交，不寫快照
+            continue
+        used_srcs = sorted({s for (t, p, s) in d["rows"] if not title_is_new(t or "")})
+        avg, mn, mx, _u = robust_price_stats(used)
         db.save_snapshot(PriceSnapshot(
             part_id=pid, date=today, avg_price=avg,
-            min_price=mn, max_price=mx, listing_count=len(d["prices"]),
-            sources=sorted(d["sources"])))
-    return len(by_part)
+            min_price=mn, max_price=mx, listing_count=len(used),
+            sources=used_srcs))
+        n += 1
+    return n
 
 
 # ─────────────────────────────────────────────────
@@ -914,19 +932,21 @@ class CrawlerScheduler:
                             print(f"  [{scraper.name}] {part['name']} 錯誤: {e}")
 
                     # 計算今日均價快照（排除海外參考價來源如 eBay；去極值、來源亦排除參考源）
+                    # 二手分流（#2）：明確全新賣文不計入二手快照，避免新品墊高二手均價。
                     if all_listings:
                         local = [l for l in all_listings
                                  if not l.sold and l.source not in REFERENCE_SOURCES]
-                        if local:
-                            avg, mn, mx, _ = robust_price_stats([l.price for l in local])
+                        used = [l for l in local if not title_is_new(l.title or "")]
+                        if used:
+                            avg, mn, mx, _ = robust_price_stats([l.price for l in used])
                             snap = PriceSnapshot(
                                 part_id       = part["id"],
                                 date          = datetime.now().strftime("%Y-%m-%d"),
                                 avg_price     = avg,
                                 min_price     = mn,
                                 max_price     = mx,
-                                listing_count = len(local),
-                                sources       = sorted({l.source for l in local}),
+                                listing_count = len(used),
+                                sources       = sorted({l.source for l in used}),
                             )
                             self.db.save_snapshot(snap)
 
@@ -1009,10 +1029,16 @@ class Reporter:
         diff_pct = round((last["avg"] - new_price) / new_price * 100, 1) if new_price > 0 else None
 
         listings = self.db.get_recent_listings(part_id, days=7, limit=12)
+        # 二手分流（#2）：標記每筆是否為「明確全新」，前端可加「全新」標籤；
+        # 來源分布只計二手筆數/均價，與二手均價的組成一致（全新另由 new_now 呈現）。
+        for lst in listings:
+            lst["is_new"] = title_is_new(lst.get("title") or "")
 
-        # 依來源彙整（筆數 / 均價）
+        # 依來源彙整（二手筆數 / 二手均價）
         agg = {}
         for lst in listings:
+            if lst["is_new"]:
+                continue
             a = agg.setdefault(lst["source"], {"name": lst["source"], "count": 0, "_sum": 0})
             a["count"] += 1
             a["_sum"] += lst["price"]
@@ -1047,6 +1073,10 @@ class Reporter:
             new_now = robust_price_stats(new_prices)[0]
             new_count = len(new_prices)
 
+        # 二手相對「目前全新行情」的折價（買二手比買現貨全新省多少 %）。
+        # 與 diff_pct（相對上市價的折舊）不同：此項反映 AI 飆漲下「現在新品多貴」。
+        diff_now_pct = round((last["avg"] - new_now) / new_now * 100, 1) if new_now else None
+
         return {
             "id":         part_id,
             "name":       part["name"] if part else part_id,
@@ -1055,6 +1085,7 @@ class Reporter:
             "ebay_ref":   ebay_ref,
             "new_now":    new_now,
             "new_count":  new_count,
+            "diff_now_pct": diff_now_pct,
             "used_min":   last["min"],
             "used_max":   last["max"],
             "diff_pct":   diff_pct,
@@ -1082,7 +1113,8 @@ class Reporter:
         彙總統計（sources/history/ebay_ref）維持不變。供公開靜態站使用，降低條款/個資風險。"""
         d = dict(detail)
         d["listings"] = [{"source": l.get("source"), "title": l.get("title", ""),
-                          "price": l.get("price"), "date": l.get("date", "")}
+                          "price": l.get("price"), "date": l.get("date", ""),
+                          "is_new": l.get("is_new", False)}
                          for l in detail.get("listings", [])]
         return d
 

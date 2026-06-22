@@ -127,6 +127,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .srcname{font-size:12px;font-weight:500}
 .srccnt{font-size:10.5px;color:var(--text3)}
 .refb{margin-left:6px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(167,139,250,.16);color:#a78bfa;vertical-align:middle}
+.nwb{margin-left:5px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(56,189,248,.16);color:#38bdf8;vertical-align:middle}
 .srcp{font-size:12.5px;font-weight:700}
 .litem{background:var(--bg3);border-radius:7px;padding:9px 11px;margin-bottom:5px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start}
 .lt{font-size:11.5px;font-weight:500;line-height:1.4;margin-bottom:2px}
@@ -509,12 +510,12 @@ function genUsed(p){
       p._h=(r.history&&r.history['1y'])||[];
       p._hmin=(r.history_min&&r.history_min['1y'])||[];
       p._hmax=(r.history_max&&r.history_max['1y'])||[];
-      p._ls=(r.listings||[]).map(l=>({source:l.source,c:srcInfo(l.source).c,title:l.title,price:l.price,date:l.date}));
-      p._src=r.sources||null; p._ebayRef=r.ebay_ref||null; p._newNow=r.new_now||null; p._live=true;
+      p._ls=(r.listings||[]).map(l=>({source:l.source,c:srcInfo(l.source).c,title:l.title,price:l.price,date:l.date,is_new:l.is_new}));
+      p._src=r.sources||null; p._ebayRef=r.ebay_ref||null; p._newNow=r.new_now||null; p._diffNow=r.diff_now_pct; p._live=true;
     }else{  // 模擬資料（無對應真實資料或 API 未連線）
       const b=p.new_price>500?p.new_price:8000;
       p._u=Math.round(b*(.52+Math.random()*.22));p._ls=genLs(p);p._h=genHist(b);
-      const bd=genBand(p._h);p._hmin=bd.min;p._hmax=bd.max;p._src=null;p._ebayRef=null;p._newNow=null;p._live=false;
+      const bd=genBand(p._h);p._hmin=bd.min;p._hmax=bd.max;p._src=null;p._ebayRef=null;p._newNow=null;p._diffNow=null;p._live=false;
     }
   }
   return p._u
@@ -528,7 +529,7 @@ async function loadLive(){
     try{const r2=await fetch('report.json',{cache:'no-store'});if(!r2.ok)throw 0;RPT=await r2.json();DATA_SRC='static';}
     catch(e2){RPT=null;DATA_SRC='sim';}
   }
-  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._ebayRef=null;p._newNow=null;p._live=false});
+  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._ebayRef=null;p._newNow=null;p._diffNow=null;p._live=false});
   setLiveBadge();setDataTime();applyMode();renderList();
   if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
 }
@@ -601,8 +602,13 @@ function showDp(p){
   const nnCard=document.getElementById('card-nn'),nn=p._newNow;
   if(nn&&nn>0){nnCard.style.display='';document.getElementById('dp-nn').textContent='NT$'+nn.toLocaleString();
     const sub=document.getElementById('dp-nnsub');
-    if(p.new_price>0){const ch=((nn-p.new_price)/p.new_price*100).toFixed(0);sub.textContent=(ch>=0?'▲ +':'▼ ')+ch+'% vs 上市';}
-    else sub.textContent='蝦皮全新賣場';
+    let txt;
+    if(p.new_price>0){const ch=((nn-p.new_price)/p.new_price*100).toFixed(0);txt=(ch>=0?'▲ +':'▼ ')+ch+'% vs 上市';}
+    else txt='蝦皮全新賣場';
+    // 二手相對「目前全新」的折價：只在二手確實較便宜時顯示「二手省X%」。
+    // 二手反而較貴多為樣本稀疏（單筆 PTT 喊價）或夾帶組合的雜訊 → 不顯示，避免誤導。
+    if(p._diffNow!=null&&p._diffNow<0){txt+=' · 二手省'+(-p._diffNow).toFixed(0)+'%';}
+    sub.textContent=txt;
   }else{nnCard.style.display='none';}
   const d=getDiff(p);const de=document.getElementById('dp-df');
   if(d===null){de.textContent='—';de.className='sv';}
@@ -623,7 +629,7 @@ function renderSrc(p){const u=genUsed(p);
     rows=SRCS.filter(s=>!s.ref).map(s=>({name:s.name,c:s.c,bg:s.bg,s:s.s,n:3+Math.floor(Math.random()*6),sp:Math.round(u*(.91+Math.random()*.18))}));
   }
   document.getElementById('src').innerHTML=rows.map(s=>`<div class="srcrow"><div style="display:flex;align-items:center;gap:8px"><div class="srcico" style="background:${s.bg};color:${s.c}">${s.s[0]}</div><div><div class="srcname">${s.name}${s.ref?'<span class="refb">🌍 海外參考</span>':''}</div><div class="srccnt">${s.n} 筆資料</div></div></div><div class="srcp" style="color:${s.c}">NT$${s.sp.toLocaleString()}</div></div>`).join('')}
-function renderLst(p){document.getElementById('lst').innerHTML=(p._ls||[]).slice(0,8).map(l=>`<div class="litem"><div><div class="lt">${l.title}</div><div class="lm" style="color:${l.c}">${l.source}</div><div class="lm">${l.date}</div></div><div class="lp">NT$${l.price.toLocaleString()}</div></div>`).join('')}
+function renderLst(p){document.getElementById('lst').innerHTML=(p._ls||[]).slice(0,8).map(l=>`<div class="litem"><div><div class="lt">${l.title}${l.is_new?' <span class="nwb">全新</span>':''}</div><div class="lm" style="color:${l.c}">${l.source}</div><div class="lm">${l.date}</div></div><div class="lp">NT$${l.price.toLocaleString()}</div></div>`).join('')}
 function getCP(p,r){const m={'1w':7,'1m':30,'3m':90,'6m':180,'1y':365},days=m[r]||90,data=(p._h||[]).slice(-days),mn=(p._hmin||[]).slice(-days),mx=(p._hmax||[]).slice(-days),step=Math.max(1,Math.floor(data.length/40)),pick=a=>a.filter((_,i)=>i%step===0),sam=pick(data);const lb=sam.map((_,i)=>{const ago=Math.round((sam.length-1-i)*days/sam.length);if(ago===0)return'今日';if(days<=30)return`-${ago}天`;const w=Math.round(ago/7);return w?`-${w}週`:'今日'});return{lb,data:sam,min:pick(mn),max:pick(mx)}}
 function renderChart(p,r){const c=document.getElementById('pc');if(pChart){pChart.destroy();pChart=null}const{lb,data,min,max}=getCP(p,r),np=p.new_price,hasBand=min&&max&&min.length===data.length&&max.length===data.length;const ds=[];
   // 最高/最低價區間陰影：兩條透明線 + fill 之間填色（待辦 #11）
