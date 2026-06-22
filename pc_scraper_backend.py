@@ -478,6 +478,15 @@ SHOPEE_GPU_COMBO = re.compile(
     re.I,
 )
 
+# 全新 / 二手 判定（用標題關鍵字）：供「目前全新行情」與二手分流。
+# is_new = 命中 NEW 訊號且未命中 USED 訊號（避免「公司貨二手」之類被誤判為全新）。
+_USED_RE = re.compile(r"二手|中古|拆機|福利品|良品|無盒|使用過|用過|九成|9\s?成|八成|8\s?成|七成|7\s?成|六成|6\s?成|盒裝完整|保存良好", re.I)
+_NEW_RE  = re.compile(r"全新|未拆|未開封|盒裝全新|公司貨|原廠盒裝|現貨全新|台灣公司貨|全新品|拆封新品", re.I)
+
+
+def title_is_new(title: str) -> bool:
+    return bool(_NEW_RE.search(title) and not _USED_RE.search(title))
+
 
 def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物") -> list[Listing]:
     """解析蝦皮 search_items JSON → Listing 清單。
@@ -1023,12 +1032,29 @@ class Reporter:
             if ref_rows:
                 ebay_ref = robust_price_stats([r[0] for r in ref_rows])[0]
 
+        # 目前全新行情（雛形）：近 30 天「明確全新」的在地賣文（多為蝦皮全新賣場），去極值。
+        # 與二手分流，反映 AI 需求等造成的新品飆漲。on-the-fly 計算、不改 schema。
+        new_now, new_count = None, 0
+        since30b = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        refb = list(REFERENCE_SOURCES)
+        phb = ",".join("?" * len(refb)) if refb else "''"
+        local_rows = self.db.conn.execute(
+            f"SELECT title, price FROM listings WHERE part_id=? AND date>=? AND source NOT IN ({phb})",
+            [part_id, since30b, *refb]
+        ).fetchall()
+        new_prices = [p for (t, p) in local_rows if title_is_new(t or "")]
+        if len(new_prices) >= 3:   # 需足夠樣本才可靠（避免單筆托盤/配件雜訊）
+            new_now = robust_price_stats(new_prices)[0]
+            new_count = len(new_prices)
+
         return {
             "id":         part_id,
             "name":       part["name"] if part else part_id,
             "new_price":  new_price,
             "used":       last["avg"],
             "ebay_ref":   ebay_ref,
+            "new_now":    new_now,
+            "new_count":  new_count,
             "used_min":   last["min"],
             "used_max":   last["max"],
             "diff_pct":   diff_pct,

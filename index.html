@@ -265,7 +265,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     </div>
   </div>
   <div class="sgrid">
-    <div class="scard"><div class="slb">全新售價</div><div class="sv d" id="dp-np"></div><div class="ssub">電商/官方</div></div>
+    <div class="scard"><div class="slb">上市/參考價</div><div class="sv d" id="dp-np"></div><div class="ssub">建議/上市定價</div></div>
+    <div class="scard" id="card-nn" style="display:none"><div class="slb">目前全新行情</div><div class="sv a" id="dp-nn"></div><div class="ssub" id="dp-nnsub">蝦皮全新賣場</div></div>
     <div class="scard"><div class="slb">今日二手均價</div><div class="sv" id="dp-up"></div><div class="ssub" id="dp-ct">共 0 筆</div></div>
     <div class="scard"><div class="slb">折價幅度</div><div class="sv g" id="dp-df"></div><div class="ssub">vs 全新定價</div></div>
     <div class="scard"><div class="slb">近7日趨勢</div><div class="sv" id="dp-tr"></div><div class="ssub">環比上週均價</div></div>
@@ -509,11 +510,11 @@ function genUsed(p){
       p._hmin=(r.history_min&&r.history_min['1y'])||[];
       p._hmax=(r.history_max&&r.history_max['1y'])||[];
       p._ls=(r.listings||[]).map(l=>({source:l.source,c:srcInfo(l.source).c,title:l.title,price:l.price,date:l.date}));
-      p._src=r.sources||null; p._ebayRef=r.ebay_ref||null; p._live=true;
+      p._src=r.sources||null; p._ebayRef=r.ebay_ref||null; p._newNow=r.new_now||null; p._live=true;
     }else{  // 模擬資料（無對應真實資料或 API 未連線）
       const b=p.new_price>500?p.new_price:8000;
       p._u=Math.round(b*(.52+Math.random()*.22));p._ls=genLs(p);p._h=genHist(b);
-      const bd=genBand(p._h);p._hmin=bd.min;p._hmax=bd.max;p._src=null;p._ebayRef=null;p._live=false;
+      const bd=genBand(p._h);p._hmin=bd.min;p._hmax=bd.max;p._src=null;p._ebayRef=null;p._newNow=null;p._live=false;
     }
   }
   return p._u
@@ -527,7 +528,7 @@ async function loadLive(){
     try{const r2=await fetch('report.json',{cache:'no-store'});if(!r2.ok)throw 0;RPT=await r2.json();DATA_SRC='static';}
     catch(e2){RPT=null;DATA_SRC='sim';}
   }
-  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._ebayRef=null;p._live=false});
+  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._ebayRef=null;p._newNow=null;p._live=false});
   setLiveBadge();setDataTime();applyMode();renderList();
   if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
 }
@@ -596,6 +597,13 @@ function showDp(p){
   const u=genUsed(p);
   document.getElementById('dp-up').textContent='NT$'+u.toLocaleString();
   document.getElementById('dp-ct').textContent=`共 ${(p._ls||[]).length} 筆`;
+  // 目前全新行情（雛形）：有足夠全新賣文時才顯示，並標出與上市價的漲跌
+  const nnCard=document.getElementById('card-nn'),nn=p._newNow;
+  if(nn&&nn>0){nnCard.style.display='';document.getElementById('dp-nn').textContent='NT$'+nn.toLocaleString();
+    const sub=document.getElementById('dp-nnsub');
+    if(p.new_price>0){const ch=((nn-p.new_price)/p.new_price*100).toFixed(0);sub.textContent=(ch>=0?'▲ +':'▼ ')+ch+'% vs 上市';}
+    else sub.textContent='蝦皮全新賣場';
+  }else{nnCard.style.display='none';}
   const d=getDiff(p);const de=document.getElementById('dp-df');
   if(d===null){de.textContent='—';de.className='sv';}
   else{const dn=parseFloat(d)<0;de.textContent=(dn?'▼ ':'▲ ')+Math.abs(d)+'%';de.className='sv '+(dn?'g':'r');}
