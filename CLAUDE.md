@@ -28,6 +28,8 @@ pc_price_tracker/
 │   ├── seed_demo_data.py      # 產生示範用價格資料寫入 pc_prices.db（開發/展示）
 │   ├── validate_selectors.py  # 驗證爬蟲選擇器是否符合現行 DOM（待辦 #4）
 │   ├── import_listings.py     # 匯入式來源（蝦皮/FB）的成交資料匯入器
+│   ├── scrape_coolpc.py       # 原價屋報價單抓取：權威「目前全新行情」來源（#3）
+│   ├── rebuild_snapshots.py   # 一次性遷移：用現行分流邏輯重算所有快照
 │   └── clear_imports.py       # 一鍵清理 imports/ 累積的暫存檔（保留範本）
 ├── imports/                   # 匯入資料夾（範本已附；實際資料不提交）
 ├── pc_prices.db               # SQLite 資料庫（執行後自動產生）
@@ -124,10 +126,18 @@ pc_price_tracker/
 | `ShopeeScraper` | 蝦皮購物 | 搜尋 API（JSON） | 🔶 匿名被擋(403)→改**匯入式**（登入後存 JSON 用匯入器） |
 | `FBGroupScraper` | FB 公開二手社團 | **匯入式**（CSV，FB 需登入） | 🔶 僅保留 90 天 |
 | `EbayScraper` | eBay 國際站 | 官方 Browse API（client_credentials 自動換 token） | ✅ 已實作，**海外在售參考價**（USD→TWD、不計台灣均價） |
+| 原價屋（coolpc） | `evaluate.php` 報價單 | 匿名抓 + Big5/cp950 解析 `<select>` | ✅ **權威「目前全新行情」來源**（每日排程、無 captcha、不計二手） |
 
 > **匯入式來源**（蝦皮 / FB）：資料豐富但需登入、禁匿名爬取 → 由使用者在自己已登入的
 > 瀏覽器取得資料，再用 `tools/import_listings.py` 寫入 DB（CSV 或蝦皮 search_items JSON）。
 > 解析蝦皮 JSON 與爬蟲共用 `parse_shopee_items()`。匯入後統計／API／前端自動沿用。
+
+> **原價屋（coolpc）＝權威新品價**（待辦 #3，2026-06-24）：`scrape_coolpc_to_db()` 抓 `evaluate.php`
+> 報價單，比對 PARTS_DB 命中型號的新品價，以 `source=原價屋` 寫入（列 `REFERENCE_SOURCES`、保留 14 天）。
+> `get_detail` 的「目前全新行情」(`new_now`) **優先用原價屋**、停產件原價屋無貨時退回蝦皮全新賣文
+> （`new_now_src` 標 原價屋/蝦皮）。`part_new_ref`（二手分流價格天花板）亦優先用原價屋。
+> 匿名可抓無 captcha → 已接每日排程；亦可 `python tools/scrape_coolpc.py` 手動跑。
+> RAM 比對用 kit-aware 容量 `ram_total_capacities()`（「16G*2」=32G）避免套組容量誤判。
 
 > 露天（`LuTianScraper`）、巴哈（`BahaScraper`）已於 2026-06-03 **移除**（資訊量不足／過於分散）。
 > 各來源保留天數：`SOURCE_RETENTION` 指定（FB＝90 天），未列出者用 `DEFAULT_RETENTION_DAYS`（365 天）；
