@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pc_scraper_backend import (
     Database, PriceSnapshot, REFERENCE_SOURCES,
-    robust_price_stats, classify_listing, part_new_ref,
+    robust_price_stats, classify_listing, part_new_ref, part_default_new,
     is_cross_model_gpu, find_part,
 )
 
@@ -46,6 +46,7 @@ def main(dry_run: bool = False) -> None:
         if pid not in nref_cache:
             nref_cache[pid] = part_new_ref(db, pid)
         nref = nref_cache[pid]
+        # 二手快照不套 default_new（避免 RAM 全歸全新→無二手→消失）；只用價格天花板。
         used_rows = [(t, p, s) for (t, p, s) in d["rows"]
                      if classify_listing(t, p, nref) == "used"]
         had_new = len(used_rows) < len(d["rows"])
