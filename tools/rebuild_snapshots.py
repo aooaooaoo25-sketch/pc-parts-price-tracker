@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pc_scraper_backend import (
     Database, PriceSnapshot, REFERENCE_SOURCES,
     robust_price_stats, split_used_new, title_is_new,
+    is_cross_model_gpu, find_part,
 )
 
 
@@ -30,9 +31,11 @@ def main(dry_run: bool = False) -> None:
         f"WHERE source NOT IN ({ph})", ref
     ).fetchall()
 
-    # 以 (part_id, date) 聚合
+    # 以 (part_id, date) 聚合（先剔除顯卡跨型號/賣場清單賣文）
     by_key = {}
     for pid, date, title, price, src in rows:
+        if is_cross_model_gpu(title, find_part(pid)):
+            continue
         d = by_key.setdefault((pid, date), {"rows": [], "sources": set()})
         d["rows"].append((title, price, src))
 

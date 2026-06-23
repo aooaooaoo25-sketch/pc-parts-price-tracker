@@ -480,12 +480,55 @@ SHOPEE_GPU_COMBO = re.compile(
 
 # 全新 / 二手 判定（用標題關鍵字）：供「目前全新行情」與二手分流。
 # is_new = 命中 NEW 訊號且未命中 USED 訊號（避免「公司貨二手」之類被誤判為全新）。
-_USED_RE = re.compile(r"二手|中古|拆機|福利品|良品|無盒|使用過|用過|九成|9\s?成|八成|8\s?成|七成|7\s?成|六成|6\s?成|盒裝完整|保存良好", re.I)
-_NEW_RE  = re.compile(r"全新|未拆|未開封|盒裝全新|公司貨|原廠盒裝|現貨全新|台灣公司貨|全新品|拆封新品", re.I)
+# ⚠️「保固N天」是二手賣家常見話術 → 不可當全新；只認「保固N年/N年保固」這種零售年保。
+_USED_RE = re.compile(r"二手|中古|拆機|福利品|良品|無盒|使用過|用過|九成|9\s?成|八成|8\s?成|七成|7\s?成|六成|6\s?成|盒裝完整|保存良好|保固\s?\d+\s?天", re.I)
+_NEW_RE  = re.compile(
+    r"全新|未拆|未開封|盒裝全新|公司貨|原廠盒裝|現貨全新|台灣公司貨|全新品|拆封新品|"
+    # 零售/通路新品訊號（蝦皮商城常無「全新」二字，但有下列零售用語）
+    r"庫存|開立發票|開發票|可開發票|附發票|含發票|原廠保固|代理商|保固\s?[一二三四五六七八九十]\s?年|保固\s?\d+\s?年|\d+\s?年(?:原廠)?保固",
+    re.I,
+)
 
 
 def title_is_new(title: str) -> bool:
     return bool(_NEW_RE.search(title) and not _USED_RE.search(title))
+
+
+# 跨型號 / 賣場列表雜訊：一篇標題列出多張不同顯卡（賣場清單、「XX參考」、套組），
+# 其價格不對應「這一顆」→ 不該計入該型號均價。保守起見只認「有品牌前綴」的型號
+# （rtx/gtx/rx + 數字），避免把記憶體容量(12G)、年份等誤判為型號。
+_GPU_MODEL_RE = re.compile(r"(?:rtx|gtx|rx)\s?(\d{3,4})\s?(ti|xtx|xt|super|gre)?", re.I)
+
+
+def gpu_model_set(title: str) -> set:
+    """抽出標題中所有『有品牌前綴』的顯卡型號（正規化為 數字+變體，如 3060 / 3060ti / 6800xt）。"""
+    out = set()
+    for m in _GPU_MODEL_RE.finditer(title or ""):
+        out.add(m.group(1) + (m.group(2) or "").lower())
+    return out
+
+
+def is_cross_model_gpu(title: str, part: dict) -> bool:
+    """顯卡賣文是否為『跨型號/賣場清單』（標題含 ≥2 個不同顯卡型號）→ 該價非單卡價，應排除。
+    只對顯卡品項判定；非顯卡或型號數 <2 一律 False。"""
+    if not (part or {}).get("id", "").startswith("gpu_"):
+        return False
+    return len(gpu_model_set(title or "")) >= 2
+
+
+_PART_BY_ID = None
+
+
+def find_part(part_id: str) -> dict:
+    """以 id 取得零件 dict（含 aliases/new_price）。供模組層聚合函式查型號用，結果快取。"""
+    global _PART_BY_ID
+    if _PART_BY_ID is None:
+        _PART_BY_ID = {}
+        for cat_data in PARTS_DB.values():
+            for subcat_data in cat_data.values():
+                for p in subcat_data:
+                    _PART_BY_ID[p["id"]] = p
+    return _PART_BY_ID.get(part_id)
 
 
 def split_used_new(rows) -> tuple:
@@ -520,6 +563,9 @@ def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物"
                 continue
             # 「夾帶顯卡」雜訊只對非顯卡品項套用（顯卡本身標題必含 RTX/RX，不可誤殺）
             if not part.get("id", "").startswith("gpu_") and SHOPEE_GPU_COMBO.search(name):
+                continue
+            # 顯卡跨型號/賣場清單（標題列多張不同卡）→ 價非單卡價，排除
+            if is_cross_model_gpu(name, part):
                 continue
             # 價格上限防呆：遠高於台灣新品價（>2.5x）幾乎必是整機/組合，關鍵字漏接時擋掉
             np = part.get("new_price", 0)
@@ -859,6 +905,9 @@ def rebuild_today_snapshots(db: "Database") -> int:
     ).fetchall()
     by_part = {}
     for pid, title, price, src in rows:
+        # 跨型號/賣場清單賣文（顯卡）→ 非單卡價，整筆剔除
+        if is_cross_model_gpu(title, find_part(pid)):
+            continue
         d = by_part.setdefault(pid, {"rows": [], "sources": set()})
         d["rows"].append((title, price, src))
         d["sources"].add(src)
@@ -935,7 +984,8 @@ class CrawlerScheduler:
                     # 二手分流（#2）：明確全新賣文不計入二手快照，避免新品墊高二手均價。
                     if all_listings:
                         local = [l for l in all_listings
-                                 if not l.sold and l.source not in REFERENCE_SOURCES]
+                                 if not l.sold and l.source not in REFERENCE_SOURCES
+                                 and not is_cross_model_gpu(l.title or "", part)]
                         used = [l for l in local if not title_is_new(l.title or "")]
                         if used:
                             avg, mn, mx, _ = robust_price_stats([l.price for l in used])
@@ -1006,12 +1056,7 @@ class Reporter:
         }
 
     def _find_part(self, part_id: str):
-        for cat_data in PARTS_DB.values():
-            for subcat_data in cat_data.values():
-                for p in subcat_data:
-                    if p["id"] == part_id:
-                        return p
-        return None
+        return find_part(part_id)
 
     def get_detail(self, part_id: str) -> dict:
         """產生前端 detail panel 所需的完整資料（含歷史、來源分布、成交明細）。
@@ -1028,7 +1073,9 @@ class Reporter:
         new_price = part["new_price"] if part else 0
         diff_pct = round((last["avg"] - new_price) / new_price * 100, 1) if new_price > 0 else None
 
-        listings = self.db.get_recent_listings(part_id, days=7, limit=12)
+        # 抓較多筆（含跨型號雜訊），剔除顯卡跨型號/賣場清單後取前 12 筆呈現
+        listings = [l for l in self.db.get_recent_listings(part_id, days=7, limit=40)
+                    if not is_cross_model_gpu(l.get("title") or "", part)][:12]
         # 二手分流（#2）：標記每筆是否為「明確全新」，前端可加「全新」標籤；
         # 來源分布只計二手筆數/均價，與二手均價的組成一致（全新另由 new_now 呈現）。
         for lst in listings:
@@ -1068,7 +1115,8 @@ class Reporter:
             f"SELECT title, price FROM listings WHERE part_id=? AND date>=? AND source NOT IN ({phb})",
             [part_id, since30b, *refb]
         ).fetchall()
-        new_prices = [p for (t, p) in local_rows if title_is_new(t or "")]
+        new_prices = [p for (t, p) in local_rows
+                      if title_is_new(t or "") and not is_cross_model_gpu(t or "", part)]
         if len(new_prices) >= 3:   # 需足夠樣本才可靠（避免單筆托盤/配件雜訊）
             new_now = robust_price_stats(new_prices)[0]
             new_count = len(new_prices)
