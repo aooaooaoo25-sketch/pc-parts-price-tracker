@@ -61,12 +61,12 @@ pc_price_tracker/
 | `addCustom()` | 將未收錄零件（後端估價）加入自訂追蹤清單 |
 | `estUnknown(q)` | 向 `/api/estimate` 取估價，失敗回退本地 `estP` |
 | `selP(id)` | 點選零件列表列，展開詳情面板 |
-| `showDp(p)` | 渲染右側詳情面板（統計卡 + 圖表 + 來源 + 成交記錄） |
+| `showDp(p)` | 渲染右側詳情面板（統計卡 + 圖表 + 來源 + 成交記錄）；含「目前全新行情」卡（`p._newNow`/`_newNowSrc`/`_diffNow`，標來源 + ▲% vs 上市 + 二手省%） |
 | `renderChart(p, range)` | 以 Chart.js 繪製特定時間區間折線圖 |
 | `runDb()` | 呼叫 `/api/update_catalog` 偵測製造商官網新型號，於 Modal 顯示「目錄未收錄」的新品 |
 | `startCrawl()` | 模擬觸發爬蟲（目前為前端模擬，待串接後端） |
 | `loadLive()` | 向 `/api/report` 取真實資料存入 `RPT`，設定 `LIVE` 並重繪；失敗則維持模擬 |
-| `genUsed(p)` | 取二手均價：`RPT[p.id]` 有資料用真實（含 `_ls`/`_h`/`_src`），否則模擬回退 |
+| `genUsed(p)` | 取二手均價：`RPT[p.id]` 有資料用真實（含 `_ls`/`_h`/`_src`/`_newNow`/`_newNowSrc`/`_diffNow`），否則模擬回退 |
 | `genHist(base)` | **【模擬回退】** 無真實資料時產生 365 天歷史 |
 | `genLs(p)` | **【模擬回退】** 無真實資料時產生成交列表 |
 | `applyMode()` | 依 `LIVE` 切換公開/本地：API 未連線（公開靜態站）時隱藏更新產品庫/自訂搜尋，精簡為單向查詢 |
@@ -111,6 +111,11 @@ pc_price_tracker/
 > 如 `['DDR5 32G','DDR5 32GB']`），`sync_parts.py` 會優先採用它當後端 aliases / PTT 搜尋詞。
 > PTT 抓 RAM 時另排除「夾帶其他零件的組合」與筆電記憶體（`PTTScraper` 內 RAM 專屬過濾），
 > 確保均價只算純 RAM 賣文（較乾淨但較稀疏）。
+>
+> **RAM 蝦皮 + 原價屋資料**（2026-06-23~24）：已匯入蝦皮 6 組規格帶（單次快照、半手動）並接原價屋
+> 每日新品價。`title_matches_part` 的 RAM 比對用 kit-aware 容量（`ram_total_capacities()`：「16G*2」=32G、
+> 「32G*2」=64G）；`SHOPEE_RAM_NOISE` 排除筆電 SO-DIMM / 伺服器 ECC/REG。RAM 幾無真 C2C 二手 →
+> 「目前全新行情」（飆漲主角，DDR5 32G +299% vs 上市）才是 RAM 的重點，「二手」為較便宜零售之代理值。
 
 ---
 
@@ -161,6 +166,27 @@ pc_price_tracker/
 >   eBay 官方 Browse API 已實作（海外在售參考價，需金鑰）。露天/巴哈已移除。
 > - **新增模組**：`api_server.py`、`catalog_updater.py`、`estimator.py`、
 >   `tools/{sync_parts,seed_demo_data,validate_selectors,import_listings}.py`、`hooks/pre-commit`
+
+> **🆕 進度摘要（2026-06-23 ~ 06-24）：目前全新行情（新舊分流）**
+> 因 AI 需求，全新零件（RAM/GPU）價格飆漲，與二手脫鉤 → 新增「**目前全新行情**」並把
+> **全新從二手均價分流**。三步完成（皆已部署上線）：
+> - **① 改善偵測**：`classify_listing()` 集中分類規則（'used'/'new'/'exclude'）：
+>   明確二手字樣→二手（但喊到≥全新價的「良品」整新店→exclude 剔除）；明確全新/零售字樣→全新；
+>   無成色但**價格≥目前全新行情(new_ref)**→全新（蝦皮零售卡無「全新」字樣者）。
+>   `is_cross_model_gpu()` 剔除跨型號賣場清單；`_NEW_RE` 擴充零售訊號（庫存/開發票/含稅/終身保固…）。
+>   `part_default_new()`：RAM 這種零售為主、二手稀少的品類，無成色**預設全新**（僅用於 new_now 估計，
+>   不套到二手快照否則整顆消失）。
+> - **② 補蝦皮 RAM**：6 組規格帶（DDR5/DDR4 × 32/16/64/8GB）。`parse_shopee_items` 改**雙階段**：
+>   先濾雜訊、再用「本批中位數 ×3.5」**動態價格上限**（取代舊「>2.5×上市價」，否則飆漲品被當整機剔掉）。
+>   `title_matches_part` 加 RAM 規格帶比對（世代+kit-aware 容量同時出現）；加筆電/伺服器 RAM 過濾。
+> - **③ 接原價屋**：見上方來源表。`new_now` 優先原價屋、退回蝦皮；`part_new_ref`（價格天花板）亦優先原價屋。
+> - **後端欄位**：`get_detail` 新增 `new_now`/`new_count`/`new_now_src`(原價屋/蝦皮)/`diff_now_pct`(二手 vs 目前全新)；
+>   listings 加 `is_new` 標記；`ebay_ref` 改只查 eBay。二手快照只用價格天花板分流（`rebuild_today_snapshots`/
+>   `scrape_one`），全新不計入。
+> - **前端**：詳情面板新增「目前全新行情」卡（標來源 + ▲% vs 上市 + 二手省X%）；成交明細「全新」藍標籤。
+> - **新增模組**：`tools/scrape_coolpc.py`、`tools/rebuild_snapshots.py`（一次性重算所有快照的遷移）。
+> - **誠實限制**：RAM 幾無真 C2C 二手 → 其「二手」是較便宜零售的代理值（顯示二手省%合理但非真二手）；
+>   蝦皮 RAM 為單次快照（半手動），原價屋與 PTT 才每日自動刷新。
 
 ### 🔴 高優先（核心功能缺失）
 
