@@ -20,6 +20,7 @@ from dataclasses import dataclass, asdict, field
 from typing import Optional
 from pathlib import Path
 from urllib.parse import quote, urljoin
+import urllib.request
 from bs4 import BeautifulSoup
 
 # 載入 .env（若有安裝 python-dotenv）：讓 EBAY_CLIENT_ID 等金鑰可從 .env 讀取
@@ -437,6 +438,21 @@ class ShopeeScraper(BaseScraper):
         return parse_shopee_items(data, part)
 
 
+def ram_total_capacities(title: str) -> set:
+    """從 RAM 標題推估『總容量(GB)』候選集合，處理套裝(kit)記法避免容量誤判：
+      「16G*2」「16Gx2」「2x16G」→ 32（套組總量，非單條 16）；「32G」「32GB」→ 32。
+    有套組記法時只認套組總量（忽略單條數字）；否則用標題中所有單條容量。"""
+    t = title.lower()
+    kits = set()
+    for base, cnt in re.findall(r"(?<!\d)(\d+)\s*g[b]?\s*[\*x×]\s*(\d+)\b", t):   # 16g*2
+        kits.add(int(base) * int(cnt))
+    for cnt, base in re.findall(r"(?<!\d)(\d+)\s*[\*x×]\s*(\d+)\s*g[b]?\b", t):   # 2x16g
+        kits.add(int(cnt) * int(base))
+    if kits:
+        return kits
+    return {int(n) for n in re.findall(r"(?<!\d)(\d+)\s*g(?:b|igabyte)?\b", t)}
+
+
 def title_matches_part(title: str, part: dict) -> bool:
     """判斷賣文標題是否對應到「這個確切型號」，避免基礎型號誤收變體
     （RTX 3070 收到 3070 Ti、14900K 收到 14900KF、Ryzen 5 7600 收到 7600X、5800X 收到 5800X3D）。
@@ -448,11 +464,9 @@ def title_matches_part(title: str, part: dict) -> bool:
         pid = part["id"]                       # ram_ddr5_32gb → gen=ddr5, cap=32
         gen = "ddr5" if "ddr5" in pid else ("ddr4" if "ddr4" in pid else "")
         m = re.search(r"_(\d+)gb$", pid)
-        cap = m.group(1) if m else ""
+        cap = int(m.group(1)) if m else 0
         tl = title.lower()
-        if gen and cap and gen in tl and re.search(r"(?<!\d)" + cap + r"\s*g(?:b|igabyte)?\b", tl):
-            return True
-        return False
+        return bool(gen and cap and gen in tl and cap in ram_total_capacities(tl))
 
     t = re.sub(r"[\s\-]+", "", title).lower()
     for a in part.get("aliases", []):
@@ -590,9 +604,12 @@ def split_used_new(rows, new_ref: int = None) -> tuple:
 
 
 def part_new_ref(db, part_id: str, days: int = 60) -> int:
-    """估某零件『目前全新行情』參考價：近 days 天、在地（排除海外參考源）、非跨型號、
-    明確全新（title_is_new）賣文的去極值均價。樣本 <3 回 None（不夠可靠就不啟用價格天花板）。
-    供 split_used_new 當 new_ref 用，把無成色但定價≥全新的零售卡剔出二手。"""
+    """估某零件『目前全新行情』參考價（供二手分流的價格天花板用）。
+    優先用原價屋（權威新品報價）；無原價屋資料時，退回近 days 天在地、非跨型號、
+    明確全新賣文的去極值均價。樣本 <3 回 None（不夠可靠就不啟用價格天花板）。"""
+    cp = coolpc_new_price(db, part_id)
+    if cp:
+        return cp
     ref = list(REFERENCE_SOURCES)
     ph = ",".join("?" * len(ref)) if ref else "''"
     since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
@@ -932,14 +949,104 @@ class EbayScraper(BaseScraper):
         return listings
 
 
+# 原價屋（coolpc）：台灣最完整的『新品』報價單 → 當權威「目前全新行情」來源（非二手）。
+COOLPC_SOURCE = "原價屋"
+
 # 各來源的資料保留天數：未列出者沿用 DEFAULT_RETENTION_DAYS。FB 依需求僅保留 90 天。
 DEFAULT_RETENTION_DAYS = 365
 SOURCE_RETENTION = {
     FBGroupScraper.name: FBGroupScraper.RETENTION_DAYS,
+    COOLPC_SOURCE: 14,   # 新品報價每日刷新，僅保留近兩週即可
 }
 
-# 海外參考價來源：資料仍會儲存供對照，但**不計入**台灣二手均價快照。
-REFERENCE_SOURCES = {EbayScraper.name}
+# 不計入台灣二手均價快照的來源：eBay（海外參考）、原價屋（新品報價，非二手）。
+EBAY_SOURCE = EbayScraper.name
+REFERENCE_SOURCES = {EBAY_SOURCE, COOLPC_SOURCE}
+
+
+# ─────────────────────────────────────────────────
+# 原價屋（coolpc）報價單：權威「目前全新行情」來源
+# ─────────────────────────────────────────────────
+COOLPC_URL = "https://www.coolpc.com.tw/evaluate.php"
+# evaluate.php 的零件分類 <select name>：n4=CPU n6=RAM n7=SSD n8=HDD n12=顯示卡
+COOLPC_CATS = {"n4": "cpu", "n6": "ram", "n7": "ssd", "n8": "hdd", "n12": "gpu"}
+# 配件雜訊（顯卡支撐架、線材等非零件本體）
+COOLPC_ACCESSORY = re.compile(
+    r"支撐架|支架|背板|延長線|轉接卡|轉接|水冷頭|風扇|燈條|線材|擴充卡|底座|護板|清潔|測試片?|架$|延長線?",
+    re.I,
+)
+
+
+def parse_coolpc(html: str) -> dict:
+    """解析原價屋 evaluate.php → {category: [(desc, price)]}。只取零件分類、去配件、價格防呆。"""
+    out = {}
+    for nm, cat in COOLPC_CATS.items():
+        m = re.search(r'<select\b[^>]*name="?%s"?[^>]*>(.*?)</select>' % nm, html, re.I | re.S)
+        if not m:
+            continue
+        items = []
+        for o in re.findall(r"<option[^>]*>([^<]*)</option>", m.group(1), re.I):
+            o = re.sub(r"&#x[0-9a-fA-F]+;|&\w+;", " ", o).strip()
+            mm = re.match(r"^(.*?),\s*\$(\d[\d,]*)", o)
+            if not mm:
+                continue
+            desc, price = mm.group(1).strip(), int(mm.group(2).replace(",", ""))
+            if not (500 <= price <= 200000):
+                continue
+            if COOLPC_ACCESSORY.search(desc):
+                continue
+            items.append((desc, price))
+        out[cat] = items
+    return out
+
+
+def fetch_coolpc_html() -> str:
+    """抓原價屋報價單（匿名可抓、Big5/cp950 編碼）。"""
+    req = urllib.request.Request(
+        COOLPC_URL,
+        headers={"User-Agent": BaseScraper.HEADERS["User-Agent"], "Accept-Encoding": "identity"},
+    )
+    return urllib.request.urlopen(req, timeout=30).read().decode("cp950", "ignore")
+
+
+def scrape_coolpc_to_db(db: "Database") -> int:
+    """抓原價屋報價單，比對 PARTS_DB，命中型號的新品價以 source=原價屋 寫入 listings。
+    原價屋列入 REFERENCE_SOURCES（不計二手），供 get_detail 當權威『目前全新行情』。
+    匿名可抓、無 captcha → 可納入每日排程自動更新。"""
+    try:
+        html = fetch_coolpc_html()
+    except Exception as e:
+        print(f"[原價屋] 抓取失敗：{e}")
+        return 0
+    parsed = parse_coolpc(html)
+    today = datetime.now().strftime("%Y-%m-%d")
+    db.conn.execute("DELETE FROM listings WHERE source=? AND date=?", (COOLPC_SOURCE, today))
+    n = 0
+    for cat, subs in PARTS_DB.items():
+        items = parsed.get(cat, [])
+        if not items:
+            continue
+        for parts in subs.values():
+            for part in parts:
+                for desc, price in items:
+                    if title_matches_part(desc, part) and not is_cross_model_gpu(desc, part):
+                        db.save_listing(Listing(
+                            source=COOLPC_SOURCE, part_id=part["id"], title=desc,
+                            price=price, condition="全新", url="", location="",
+                            date=today, sold=False))
+                        n += 1
+    db.conn.commit()
+    print(f"[原價屋] 寫入 {n} 筆新品報價（{today}）")
+    return n
+
+
+def coolpc_new_price(db: "Database", part_id: str, days: int = 14) -> int:
+    """某零件的原價屋『目前全新行情』：近 days 天原價屋報價的去極值均價；無則 None。"""
+    since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    rows = db.conn.execute(
+        "SELECT price FROM listings WHERE part_id=? AND source=? AND date>=?",
+        (part_id, COOLPC_SOURCE, since)).fetchall()
+    return robust_price_stats([r[0] for r in rows])[0] if rows else None
 
 
 def prune_by_retention(db: "Database") -> int:
@@ -1090,6 +1197,9 @@ class CrawlerScheduler:
 
             await asyncio.gather(*[scrape_one(p) for p in parts])
 
+        # 原價屋新品報價（匿名可抓、無 captcha）→ 權威「目前全新行情」來源
+        scrape_coolpc_to_db(self.db)
+
         # 套用保留策略 + 依今日所有來源（PTT＋當天匯入的蝦皮等）重算均價快照
         prune_by_retention(self.db)
         rebuild_today_snapshots(self.db)
@@ -1185,35 +1295,37 @@ class Reporter:
         sources = [{"name": a["name"], "count": a["count"],
                     "avg": round(a["_sum"] / a["count"])} for a in agg.values()]
 
-        # 海外參考線（eBay 等 REFERENCE_SOURCES）：近 30 天掛牌去極值算單一參考值（TWD）。
-        # 與 sources 分開算，避免受成交明細 limit=12 影響；不進台灣均價/歷史。
+        # 海外參考線（eBay）：近 30 天掛牌去極值算單一參考值（TWD）。只取 eBay，與原價屋分開。
         ebay_ref = None
-        if REFERENCE_SOURCES:
-            since30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
-            ph = ",".join("?" * len(REFERENCE_SOURCES))
-            ref_rows = self.db.conn.execute(
-                f"SELECT price FROM listings WHERE part_id=? AND date>=? AND source IN ({ph})",
-                [part_id, since30, *REFERENCE_SOURCES]
-            ).fetchall()
-            if ref_rows:
-                ebay_ref = robust_price_stats([r[0] for r in ref_rows])[0]
+        since30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        eb_rows = self.db.conn.execute(
+            "SELECT price FROM listings WHERE part_id=? AND date>=? AND source=?",
+            [part_id, since30, EBAY_SOURCE]).fetchall()
+        if eb_rows:
+            ebay_ref = robust_price_stats([r[0] for r in eb_rows])[0]
 
-        # 目前全新行情（雛形）：近 30 天「明確全新」的在地賣文（多為蝦皮全新賣場），去極值。
-        # 與二手分流，反映 AI 需求等造成的新品飆漲。on-the-fly 計算、不改 schema。
-        new_now, new_count = None, 0
-        since30b = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
-        refb = list(REFERENCE_SOURCES)
-        phb = ",".join("?" * len(refb)) if refb else "''"
-        local_rows = self.db.conn.execute(
-            f"SELECT title, price FROM listings WHERE part_id=? AND date>=? AND source NOT IN ({phb})",
-            [part_id, since30b, *refb]
-        ).fetchall()
-        new_prices = [p for (t, p) in local_rows
-                      if not is_cross_model_gpu(t or "", part)
-                      and classify_listing(t or "", p, None, dn) == "new"]
-        if len(new_prices) >= 3:   # 需足夠樣本才可靠（避免單筆托盤/配件雜訊）
-            new_now = robust_price_stats(new_prices)[0]
-            new_count = len(new_prices)
+        # 目前全新行情：優先用原價屋（權威新品報價），無則退回蝦皮「全新」賣文去極值。
+        # 反映 AI 需求等造成的新品飆漲；with new_now_src 標來源供前端顯示。
+        new_now, new_count, new_now_src = None, 0, None
+        cp = coolpc_new_price(self.db, part_id)
+        if cp:
+            new_now, new_now_src = cp, "原價屋"
+            cnt = self.db.conn.execute(
+                "SELECT COUNT(*) FROM listings WHERE part_id=? AND source=? AND date>=?",
+                [part_id, COOLPC_SOURCE, since30]).fetchone()
+            new_count = cnt[0] if cnt else 0
+        else:
+            refb = list(REFERENCE_SOURCES)
+            phb = ",".join("?" * len(refb)) if refb else "''"
+            local_rows = self.db.conn.execute(
+                f"SELECT title, price FROM listings WHERE part_id=? AND date>=? AND source NOT IN ({phb})",
+                [part_id, since30, *refb]
+            ).fetchall()
+            new_prices = [p for (t, p) in local_rows
+                          if not is_cross_model_gpu(t or "", part)
+                          and classify_listing(t or "", p, None, dn) == "new"]
+            if len(new_prices) >= 3:   # 需足夠樣本才可靠（避免單筆托盤/配件雜訊）
+                new_now, new_count, new_now_src = robust_price_stats(new_prices)[0], len(new_prices), "蝦皮"
 
         # 二手相對「目前全新行情」的折價（買二手比買現貨全新省多少 %）。
         # 與 diff_pct（相對上市價的折舊）不同：此項反映 AI 飆漲下「現在新品多貴」。
@@ -1227,6 +1339,7 @@ class Reporter:
             "ebay_ref":   ebay_ref,
             "new_now":    new_now,
             "new_count":  new_count,
+            "new_now_src": new_now_src,
             "diff_now_pct": diff_now_pct,
             "used_min":   last["min"],
             "used_max":   last["max"],

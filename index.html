@@ -511,11 +511,11 @@ function genUsed(p){
       p._hmin=(r.history_min&&r.history_min['1y'])||[];
       p._hmax=(r.history_max&&r.history_max['1y'])||[];
       p._ls=(r.listings||[]).map(l=>({source:l.source,c:srcInfo(l.source).c,title:l.title,price:l.price,date:l.date,is_new:l.is_new}));
-      p._src=r.sources||null; p._ebayRef=r.ebay_ref||null; p._newNow=r.new_now||null; p._diffNow=r.diff_now_pct; p._live=true;
+      p._src=r.sources||null; p._ebayRef=r.ebay_ref||null; p._newNow=r.new_now||null; p._newNowSrc=r.new_now_src||null; p._diffNow=r.diff_now_pct; p._live=true;
     }else{  // 模擬資料（無對應真實資料或 API 未連線）
       const b=p.new_price>500?p.new_price:8000;
       p._u=Math.round(b*(.52+Math.random()*.22));p._ls=genLs(p);p._h=genHist(b);
-      const bd=genBand(p._h);p._hmin=bd.min;p._hmax=bd.max;p._src=null;p._ebayRef=null;p._newNow=null;p._diffNow=null;p._live=false;
+      const bd=genBand(p._h);p._hmin=bd.min;p._hmax=bd.max;p._src=null;p._ebayRef=null;p._newNow=null;p._newNowSrc=null;p._diffNow=null;p._live=false;
     }
   }
   return p._u
@@ -529,7 +529,7 @@ async function loadLive(){
     try{const r2=await fetch('report.json',{cache:'no-store'});if(!r2.ok)throw 0;RPT=await r2.json();DATA_SRC='static';}
     catch(e2){RPT=null;DATA_SRC='sim';}
   }
-  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._ebayRef=null;p._newNow=null;p._diffNow=null;p._live=false});
+  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._ebayRef=null;p._newNow=null;p._newNowSrc=null;p._diffNow=null;p._live=false});
   setLiveBadge();setDataTime();applyMode();renderList();
   if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
 }
@@ -602,13 +602,14 @@ function showDp(p){
   const nnCard=document.getElementById('card-nn'),nn=p._newNow;
   if(nn&&nn>0){nnCard.style.display='';document.getElementById('dp-nn').textContent='NT$'+nn.toLocaleString();
     const sub=document.getElementById('dp-nnsub');
+    // 來源標籤：原價屋＝權威台灣新品報價；蝦皮＝全新賣場（停產卡才退回此）
+    const src=p._newNowSrc?p._newNowSrc+' · ':'';
     let txt;
     if(p.new_price>0){const ch=((nn-p.new_price)/p.new_price*100).toFixed(0);txt=(ch>=0?'▲ +':'▼ ')+ch+'% vs 上市';}
-    else txt='蝦皮全新賣場';
+    else txt='現貨新品';
     // 二手相對「目前全新」的折價：只在二手確實較便宜時顯示「二手省X%」。
-    // 二手反而較貴多為樣本稀疏（單筆 PTT 喊價）或夾帶組合的雜訊 → 不顯示，避免誤導。
     if(p._diffNow!=null&&p._diffNow<0){txt+=' · 二手省'+(-p._diffNow).toFixed(0)+'%';}
-    sub.textContent=txt;
+    sub.textContent=src+txt;
   }else{nnCard.style.display='none';}
   const d=getDiff(p);const de=document.getElementById('dp-df');
   if(d===null){de.textContent='—';de.className='sv';}
