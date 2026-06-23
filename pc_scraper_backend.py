@@ -531,14 +531,56 @@ def find_part(part_id: str) -> dict:
     return _PART_BY_ID.get(part_id)
 
 
-def split_used_new(rows) -> tuple:
-    """把 (title, price) 序列分流成 (used_prices, new_prices)。
-    「二手均價」只該由二手賣文構成 → 明確全新（title_is_new）的價格抽出來另計，
-    其餘（二手或未標明成色）一律歸二手。回傳兩個價格 list。"""
+def classify_listing(title: str, price: int, new_ref: int = None) -> str:
+    """把單筆賣文分類為 'used' / 'new' / 'exclude'（供二手分流共用，規則集中一處）。
+    規則（由強到弱）：
+      1. 明確二手字樣（_USED_RE）：
+         - 若給了 new_ref 且 price ≥ new_ref → 'exclude'（「良品/福利」卻喊到比現貨全新還貴
+           ＝整新店/喊價，兩邊都不可信 → 整筆剔除，不污染二手也不算全新）。
+         - 否則 'used'。
+      2. 明確全新字樣（_NEW_RE）→ 'new'。
+      3. 無成色賣文：給了 new_ref 且 price ≥ new_ref → 'new'（多為蝦皮商城無「全新」字樣的零售卡）；
+         否則 'used'。
+    new_ref 用『目前全新行情』而非上市價 → 對 AI 飆漲的 RAM 安全：真實二手仍低於飆漲後的全新。"""
+    t = title or ""
+    if _USED_RE.search(t):
+        return "exclude" if (new_ref and price >= new_ref) else "used"
+    if title_is_new(t):
+        return "new"
+    if new_ref and price >= new_ref:
+        return "new"
+    return "used"
+
+
+def split_used_new(rows, new_ref: int = None) -> tuple:
+    """把 (title, price) 序列分流成 (used_prices, new_prices)。'exclude' 兩邊皆不計。見 classify_listing。"""
     used, new = [], []
     for title, price in rows:
-        (new if title_is_new(title or "") else used).append(price)
+        c = classify_listing(title, price, new_ref)
+        if c == "used":
+            used.append(price)
+        elif c == "new":
+            new.append(price)
     return used, new
+
+
+def part_new_ref(db, part_id: str, days: int = 60) -> int:
+    """估某零件『目前全新行情』參考價：近 days 天、在地（排除海外參考源）、非跨型號、
+    明確全新（title_is_new）賣文的去極值均價。樣本 <3 回 None（不夠可靠就不啟用價格天花板）。
+    供 split_used_new 當 new_ref 用，把無成色但定價≥全新的零售卡剔出二手。"""
+    ref = list(REFERENCE_SOURCES)
+    ph = ",".join("?" * len(ref)) if ref else "''"
+    since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    rows = db.conn.execute(
+        f"SELECT title, price FROM listings WHERE part_id=? AND date>=? AND source NOT IN ({ph})",
+        [part_id, since, *ref]
+    ).fetchall()
+    part = find_part(part_id)
+    new_prices = [p for (t, p) in rows
+                  if title_is_new(t or "") and not is_cross_model_gpu(t or "", part)]
+    if len(new_prices) >= 3:
+        return robust_price_stats(new_prices)[0]
+    return None
 
 
 def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物") -> list[Listing]:
@@ -913,15 +955,16 @@ def rebuild_today_snapshots(db: "Database") -> int:
         d["sources"].add(src)
     n = 0
     for pid, d in by_part.items():
-        used, _new = split_used_new([(t, p) for (t, p, s) in d["rows"]])
-        if not used:   # 當天只有全新賣文 → 無二手成交，不寫快照
+        nref = part_new_ref(db, pid)   # 目前全新行情參考價（價格天花板，剔除無成色零售全新）
+        used_rows = [(t, p, s) for (t, p, s) in d["rows"]
+                     if classify_listing(t, p, nref) == "used"]
+        if not used_rows:   # 當天只有全新賣文 → 無二手成交，不寫快照
             continue
-        used_srcs = sorted({s for (t, p, s) in d["rows"] if not title_is_new(t or "")})
-        avg, mn, mx, _u = robust_price_stats(used)
+        avg, mn, mx, _u = robust_price_stats([p for (t, p, s) in used_rows])
         db.save_snapshot(PriceSnapshot(
             part_id=pid, date=today, avg_price=avg,
-            min_price=mn, max_price=mx, listing_count=len(used),
-            sources=used_srcs))
+            min_price=mn, max_price=mx, listing_count=len(used_rows),
+            sources=sorted({s for (t, p, s) in used_rows})))
         n += 1
     return n
 
@@ -986,7 +1029,9 @@ class CrawlerScheduler:
                         local = [l for l in all_listings
                                  if not l.sold and l.source not in REFERENCE_SOURCES
                                  and not is_cross_model_gpu(l.title or "", part)]
-                        used = [l for l in local if not title_is_new(l.title or "")]
+                        nref = part_new_ref(self.db, part["id"])
+                        used = [l for l in local
+                                if classify_listing(l.title or "", l.price, nref) == "used"]
                         if used:
                             avg, mn, mx, _ = robust_price_stats([l.price for l in used])
                             snap = PriceSnapshot(
@@ -1076,15 +1121,18 @@ class Reporter:
         # 抓較多筆（含跨型號雜訊），剔除顯卡跨型號/賣場清單後取前 12 筆呈現
         listings = [l for l in self.db.get_recent_listings(part_id, days=7, limit=40)
                     if not is_cross_model_gpu(l.get("title") or "", part)][:12]
-        # 二手分流（#2）：標記每筆是否為「明確全新」，前端可加「全新」標籤；
+        # 二手分流：以與二手均價相同的規則（含價格天花板）標記全新；
         # 來源分布只計二手筆數/均價，與二手均價的組成一致（全新另由 new_now 呈現）。
+        nref = part_new_ref(self.db, part_id)
         for lst in listings:
-            lst["is_new"] = title_is_new(lst.get("title") or "")
+            cls = classify_listing(lst.get("title") or "", lst.get("price") or 0, nref)
+            lst["_cls"] = cls
+            lst["is_new"] = (cls == "new")
 
-        # 依來源彙整（二手筆數 / 二手均價）
+        # 依來源彙整（只計『二手』，全新與剔除項皆不算入二手均價/筆數）
         agg = {}
         for lst in listings:
-            if lst["is_new"]:
+            if lst["_cls"] != "used":
                 continue
             a = agg.setdefault(lst["source"], {"name": lst["source"], "count": 0, "_sum": 0})
             a["count"] += 1

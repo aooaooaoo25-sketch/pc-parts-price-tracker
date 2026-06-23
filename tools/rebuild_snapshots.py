@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pc_scraper_backend import (
     Database, PriceSnapshot, REFERENCE_SOURCES,
-    robust_price_stats, split_used_new, title_is_new,
+    robust_price_stats, classify_listing, part_new_ref,
     is_cross_model_gpu, find_part,
 )
 
@@ -39,28 +39,33 @@ def main(dry_run: bool = False) -> None:
         d = by_key.setdefault((pid, date), {"rows": [], "sources": set()})
         d["rows"].append((title, price, src))
 
+    nref_cache = {}   # 每個零件的『目前全新行情』參考價（價格天花板）算一次即可
+
     rewritten = deleted = skipped = 0
     for (pid, date), d in by_key.items():
-        used, new = split_used_new([(t, p) for (t, p, s) in d["rows"]])
-        if not used:
+        if pid not in nref_cache:
+            nref_cache[pid] = part_new_ref(db, pid)
+        nref = nref_cache[pid]
+        used_rows = [(t, p, s) for (t, p, s) in d["rows"]
+                     if classify_listing(t, p, nref) == "used"]
+        had_new = len(used_rows) < len(d["rows"])
+        if not used_rows:
             # 當天只有全新賣文 → 刪掉該日（被新品污染的）二手快照
             if not dry_run:
                 db.conn.execute(
                     "DELETE FROM price_snapshots WHERE part_id=? AND date=?", (pid, date))
             deleted += 1
             continue
-        if new and len(used) < 2:
-            # 有全新被排除、但剩下的二手樣本太少(僅 1 筆) → 重算會變單點噪聲，
-            # 保守起見保留原快照（既有混合值），不退化成單筆。
+        if had_new and len(used_rows) < 2:
+            # 有全新被排除、但剩下的二手樣本太少(僅 1 筆) → 重算會變單點噪聲，保留原快照。
             skipped += 1
             continue
-        used_srcs = sorted({s for (t, p, s) in d["rows"] if not title_is_new(t or "")})
-        avg, mn, mx, _u = robust_price_stats(used)
+        avg, mn, mx, _u = robust_price_stats([p for (t, p, s) in used_rows])
         if not dry_run:
             db.save_snapshot(PriceSnapshot(
                 part_id=pid, date=date, avg_price=avg,
-                min_price=mn, max_price=mx, listing_count=len(used),
-                sources=used_srcs))
+                min_price=mn, max_price=mx, listing_count=len(used_rows),
+                sources=sorted({s for (t, p, s) in used_rows})))
         rewritten += 1
 
     if not dry_run:
