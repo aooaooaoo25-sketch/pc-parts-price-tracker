@@ -270,6 +270,15 @@ class Database:
             PRIMARY KEY (part_id, date)
         );
 
+        CREATE TABLE IF NOT EXISTS new_snapshots (
+            part_id     TEXT NOT NULL,
+            date        TEXT NOT NULL,
+            new_price   INTEGER,
+            src         TEXT,
+            cnt         INTEGER,
+            PRIMARY KEY (part_id, date)
+        );
+
         CREATE TABLE IF NOT EXISTS crawl_log (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             source      TEXT,
@@ -302,6 +311,21 @@ class Database:
         """, (snap.part_id, snap.date, snap.avg_price, snap.min_price,
               snap.max_price, snap.listing_count, json.dumps(snap.sources)))
         self.conn.commit()
+
+    def save_new_snapshot(self, part_id: str, date: str, new_price: int, src: str, cnt: int):
+        """寫入某零件某日的『目前全新行情』快照（供新品價歷史曲線）。"""
+        self.conn.execute(
+            "INSERT OR REPLACE INTO new_snapshots VALUES (?,?,?,?,?)",
+            (part_id, date, new_price, src, cnt))
+        self.conn.commit()
+
+    def get_new_history(self, part_id: str, days: int = 365) -> list:
+        since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+        rows = self.conn.execute(
+            "SELECT date, new_price, src FROM new_snapshots "
+            "WHERE part_id=? AND date>=? ORDER BY date ASC", (part_id, since)
+        ).fetchall()
+        return [{"date": r[0], "new": r[1], "src": r[2]} for r in rows]
 
     def get_today_listings(self, part_id: str) -> list:
         today = datetime.now().strftime("%Y-%m-%d")
@@ -1049,6 +1073,67 @@ def coolpc_new_price(db: "Database", part_id: str, days: int = 14) -> int:
     return robust_price_stats([r[0] for r in rows])[0] if rows else None
 
 
+def _shopee_new_prices_rows(rows, part) -> list:
+    """從 (title, price) 列挑出蝦皮『全新』賣文價（去跨型號；用 classify_listing 含 default_new）。"""
+    dn = part_default_new(part["id"]) if part else False
+    return [p for (t, p) in rows
+            if not is_cross_model_gpu(t or "", part)
+            and classify_listing(t or "", p, None, dn) == "new"]
+
+
+def compute_new_now(db: "Database", part_id: str) -> tuple:
+    """目前全新行情（滾動視窗）：優先原價屋（近 14 天），無則蝦皮『全新』賣文（近 30 天，≥3 筆）。
+    回傳 (price, cnt, src)；無資料回 (None, 0, None)。供 get_detail 與每日快照共用。"""
+    cp = coolpc_new_price(db, part_id)
+    if cp:
+        since14 = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d")
+        cnt = db.conn.execute(
+            "SELECT COUNT(*) FROM listings WHERE part_id=? AND source=? AND date>=?",
+            (part_id, COOLPC_SOURCE, since14)).fetchone()[0]
+        return cp, cnt, "原價屋"
+    since30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    refb = list(REFERENCE_SOURCES)
+    phb = ",".join("?" * len(refb)) if refb else "''"
+    rows = db.conn.execute(
+        f"SELECT title, price FROM listings WHERE part_id=? AND date>=? AND source NOT IN ({phb})",
+        [part_id, since30, *refb]).fetchall()
+    np = _shopee_new_prices_rows(rows, find_part(part_id))
+    if len(np) >= 3:
+        return robust_price_stats(np)[0], len(np), "蝦皮"
+    return None, 0, None
+
+
+def new_price_on_date(db: "Database", part_id: str, date: str) -> tuple:
+    """某零件『某一天』的全新行情：當天原價屋報價優先，否則當天蝦皮全新賣文（≥3 筆）。
+    供 rebuild_new_snapshots 回填每日新品價歷史。回傳 (price, cnt, src) 或 (None, 0, None)。"""
+    cp_rows = db.conn.execute(
+        "SELECT price FROM listings WHERE part_id=? AND source=? AND date=?",
+        (part_id, COOLPC_SOURCE, date)).fetchall()
+    if cp_rows:
+        return robust_price_stats([r[0] for r in cp_rows])[0], len(cp_rows), "原價屋"
+    rows = db.conn.execute(
+        "SELECT title, price FROM listings WHERE part_id=? AND date=? AND source NOT IN (?, ?)",
+        (part_id, date, EBAY_SOURCE, COOLPC_SOURCE)).fetchall()
+    np = _shopee_new_prices_rows(rows, find_part(part_id))
+    if len(np) >= 3:
+        return robust_price_stats(np)[0], len(np), "蝦皮"
+    return None, 0, None
+
+
+def rebuild_new_snapshots(db: "Database") -> int:
+    """回填/更新『目前全新行情』每日快照：掃 listings 中每個 (零件, 日期)（排除 eBay），
+    用 new_price_on_date 算當日新品價並寫入 new_snapshots。原價屋每日刷新 → 曲線逐日累積。"""
+    rows = db.conn.execute(
+        "SELECT DISTINCT part_id, date FROM listings WHERE source<>?", (EBAY_SOURCE,)).fetchall()
+    n = 0
+    for pid, date in rows:
+        price, cnt, src = new_price_on_date(db, pid, date)
+        if price:
+            db.save_new_snapshot(pid, date, price, src, cnt)
+            n += 1
+    return n
+
+
 def prune_by_retention(db: "Database") -> int:
     """依保留策略清除過舊的 listings：對 DB 中現有的每個來源，
     用 SOURCE_RETENTION 指定的天數，未指定者用 DEFAULT_RETENTION_DAYS（365）。
@@ -1203,6 +1288,7 @@ class CrawlerScheduler:
         # 套用保留策略 + 依今日所有來源（PTT＋當天匯入的蝦皮等）重算均價快照
         prune_by_retention(self.db)
         rebuild_today_snapshots(self.db)
+        rebuild_new_snapshots(self.db)   # 累積『目前全新行情』每日快照（新品價曲線）
 
         print("[調度器] 爬蟲完成！")
 
@@ -1304,28 +1390,22 @@ class Reporter:
         if eb_rows:
             ebay_ref = robust_price_stats([r[0] for r in eb_rows])[0]
 
-        # 目前全新行情：優先用原價屋（權威新品報價），無則退回蝦皮「全新」賣文去極值。
-        # 反映 AI 需求等造成的新品飆漲；with new_now_src 標來源供前端顯示。
-        new_now, new_count, new_now_src = None, 0, None
-        cp = coolpc_new_price(self.db, part_id)
-        if cp:
-            new_now, new_now_src = cp, "原價屋"
-            cnt = self.db.conn.execute(
-                "SELECT COUNT(*) FROM listings WHERE part_id=? AND source=? AND date>=?",
-                [part_id, COOLPC_SOURCE, since30]).fetchone()
-            new_count = cnt[0] if cnt else 0
-        else:
-            refb = list(REFERENCE_SOURCES)
-            phb = ",".join("?" * len(refb)) if refb else "''"
-            local_rows = self.db.conn.execute(
-                f"SELECT title, price FROM listings WHERE part_id=? AND date>=? AND source NOT IN ({phb})",
-                [part_id, since30, *refb]
-            ).fetchall()
-            new_prices = [p for (t, p) in local_rows
-                          if not is_cross_model_gpu(t or "", part)
-                          and classify_listing(t or "", p, None, dn) == "new"]
-            if len(new_prices) >= 3:   # 需足夠樣本才可靠（避免單筆托盤/配件雜訊）
-                new_now, new_count, new_now_src = robust_price_stats(new_prices)[0], len(new_prices), "蝦皮"
+        # 目前全新行情（滾動值）：優先原價屋、無則蝦皮全新賣文（見 compute_new_now）。
+        new_now, new_count, new_now_src = compute_new_now(self.db, part_id)
+
+        # 新品價歷史曲線：對齊二手 history 的日期（carry-forward 補空），讓圖表可疊「新品線」。
+        # new_snapshots 由 rebuild_new_snapshots 每日累積（原價屋每天刷新→曲線逐日成形）。
+        nh = self.db.get_new_history(part_id, 365)
+        used_dates = [h["date"] for h in history]
+        new_series, j, cur = [], 0, None
+        for d in used_dates:
+            while j < len(nh) and nh[j]["date"] <= d:
+                cur = nh[j]["new"]
+                j += 1
+            new_series.append(cur)
+        # 末點固定為當前權威 new_now（二手歷史日期可能落後今日 → 否則曲線到不了「今日」最新價）
+        if new_now and new_series:
+            new_series[-1] = new_now
 
         # 二手相對「目前全新行情」的折價（買二手比買現貨全新省多少 %）。
         # 與 diff_pct（相對上市價的折舊）不同：此項反映 AI 飆漲下「現在新品多貴」。
@@ -1357,6 +1437,11 @@ class Reporter:
             "history_max": {
                 "1w": maxs[-7:],   "1m": maxs[-30:],  "3m": maxs[-90:],
                 "6m": maxs[-180:], "1y": maxs,
+            },
+            # 目前全新行情歷史（與 history 同結構、同日期對齊）：供圖表疊「新品價」線
+            "new_history": {
+                "1w": new_series[-7:],   "1m": new_series[-30:],  "3m": new_series[-90:],
+                "6m": new_series[-180:], "1y": new_series,
             },
             "sources":  sources,
             "listings": listings,

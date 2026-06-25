@@ -11,7 +11,8 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from pc_scraper_backend import Database, scrape_coolpc_to_db, rebuild_today_snapshots
+from pc_scraper_backend import (Database, scrape_coolpc_to_db,
+                                rebuild_today_snapshots, rebuild_new_snapshots)
 
 
 def main() -> None:
@@ -20,6 +21,7 @@ def main() -> None:
     if n:
         # 原價屋不計二手，但重算今日快照可讓「目前全新行情」的價格天花板即時生效
         rebuild_today_snapshots(db)
+        rebuild_new_snapshots(db)   # 累積新品價曲線
     print(f"完成：原價屋新品報價 {n} 筆已更新")
 
 

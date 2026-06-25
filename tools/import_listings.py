@@ -24,7 +24,7 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pc_scraper_backend import (Database, Listing, PARTS_DB, prune_by_retention,
-                                rebuild_today_snapshots, parse_shopee_items)
+                                rebuild_today_snapshots, rebuild_new_snapshots, parse_shopee_items)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(ROOT, "pc_prices.db")
@@ -120,6 +120,7 @@ def main():
     prune_by_retention(db)
 
     snaps = rebuild_today_snapshots(db)
+    rebuild_new_snapshots(db)   # 累積『目前全新行情』每日快照
     db.conn.close()
     print(f"匯入完成：寫入 {total} 筆成交資料、重算 {snaps} 個零件今日均價 → {DB_PATH}")
 

@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pc_scraper_backend import (
     Database, PriceSnapshot, REFERENCE_SOURCES,
     robust_price_stats, classify_listing, part_new_ref, part_default_new,
-    is_cross_model_gpu, find_part,
+    is_cross_model_gpu, find_part, rebuild_new_snapshots,
 )
 
 
@@ -71,9 +71,13 @@ def main(dry_run: bool = False) -> None:
 
     if not dry_run:
         db.conn.commit()
+        nn = rebuild_new_snapshots(db)   # 一併回填『目前全新行情』每日快照（新品價曲線）
+    else:
+        nn = 0
     tag = "[dry-run] " if dry_run else ""
     print(f"{tag}重算二手快照：覆寫 {rewritten} 筆、刪除（全新-only）{deleted} 筆、"
-          f"保留（二手樣本不足）{skipped} 筆，涵蓋 {len(by_key)} 個 (零件,日期)")
+          f"保留（二手樣本不足）{skipped} 筆，涵蓋 {len(by_key)} 個 (零件,日期)"
+          + ("" if dry_run else f"；新品價快照回填 {nn} 筆"))
 
 
 if __name__ == "__main__":

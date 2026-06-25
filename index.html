@@ -287,7 +287,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     <div class="clgd">
       <span class="lgi"><i class="lln" style="background:#5b8cff"></i>二手均價</span>
       <span class="lgi"><i class="lbd"></i>最高～最低區間</span>
-      <span class="lgi"><i class="lln" style="background:rgba(245,166,35,.7);height:0;border-top:2px dashed rgba(245,166,35,.7)"></i>全新定價</span>
+      <span class="lgi" id="lg-nn" style="display:none"><i class="lln" style="background:#f5a623"></i>目前全新行情</span>
+      <span class="lgi"><i class="lln" style="background:rgba(245,166,35,.7);height:0;border-top:2px dashed rgba(245,166,35,.4)"></i>上市定價</span>
       <span class="lgi" id="lg-ebay" style="display:none"><i class="lln" style="background:#a78bfa;height:0;border-top:2px dotted #a78bfa"></i>eBay 海外參考</span>
     </div>
   </div>
@@ -510,12 +511,13 @@ function genUsed(p){
       p._h=(r.history&&r.history['1y'])||[];
       p._hmin=(r.history_min&&r.history_min['1y'])||[];
       p._hmax=(r.history_max&&r.history_max['1y'])||[];
+      p._newHist=(r.new_history&&r.new_history['1y'])||[];
       p._ls=(r.listings||[]).map(l=>({source:l.source,c:srcInfo(l.source).c,title:l.title,price:l.price,date:l.date,is_new:l.is_new}));
       p._src=r.sources||null; p._ebayRef=r.ebay_ref||null; p._newNow=r.new_now||null; p._newNowSrc=r.new_now_src||null; p._diffNow=r.diff_now_pct; p._live=true;
     }else{  // 模擬資料（無對應真實資料或 API 未連線）
       const b=p.new_price>500?p.new_price:8000;
       p._u=Math.round(b*(.52+Math.random()*.22));p._ls=genLs(p);p._h=genHist(b);
-      const bd=genBand(p._h);p._hmin=bd.min;p._hmax=bd.max;p._src=null;p._ebayRef=null;p._newNow=null;p._newNowSrc=null;p._diffNow=null;p._live=false;
+      const bd=genBand(p._h);p._hmin=bd.min;p._hmax=bd.max;p._newHist=[];p._src=null;p._ebayRef=null;p._newNow=null;p._newNowSrc=null;p._diffNow=null;p._live=false;
     }
   }
   return p._u
@@ -529,7 +531,7 @@ async function loadLive(){
     try{const r2=await fetch('report.json',{cache:'no-store'});if(!r2.ok)throw 0;RPT=await r2.json();DATA_SRC='static';}
     catch(e2){RPT=null;DATA_SRC='sim';}
   }
-  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._src=null;p._ebayRef=null;p._newNow=null;p._newNowSrc=null;p._diffNow=null;p._live=false});
+  allP().forEach(p=>{if(p.custom)return;p._u=null;p._ls=null;p._h=null;p._hmin=null;p._hmax=null;p._newHist=null;p._src=null;p._ebayRef=null;p._newNow=null;p._newNowSrc=null;p._diffNow=null;p._live=false});
   setLiveBadge();setDataTime();applyMode();renderList();
   if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
 }
@@ -631,19 +633,22 @@ function renderSrc(p){const u=genUsed(p);
   }
   document.getElementById('src').innerHTML=rows.map(s=>`<div class="srcrow"><div style="display:flex;align-items:center;gap:8px"><div class="srcico" style="background:${s.bg};color:${s.c}">${s.s[0]}</div><div><div class="srcname">${s.name}${s.ref?'<span class="refb">🌍 海外參考</span>':''}</div><div class="srccnt">${s.n} 筆資料</div></div></div><div class="srcp" style="color:${s.c}">NT$${s.sp.toLocaleString()}</div></div>`).join('')}
 function renderLst(p){document.getElementById('lst').innerHTML=(p._ls||[]).slice(0,8).map(l=>`<div class="litem"><div><div class="lt">${l.title}${l.is_new?' <span class="nwb">全新</span>':''}</div><div class="lm" style="color:${l.c}">${l.source}</div><div class="lm">${l.date}</div></div><div class="lp">NT$${l.price.toLocaleString()}</div></div>`).join('')}
-function getCP(p,r){const m={'1w':7,'1m':30,'3m':90,'6m':180,'1y':365},days=m[r]||90,data=(p._h||[]).slice(-days),mn=(p._hmin||[]).slice(-days),mx=(p._hmax||[]).slice(-days),step=Math.max(1,Math.floor(data.length/40)),pick=a=>a.filter((_,i)=>i%step===0),sam=pick(data);const lb=sam.map((_,i)=>{const ago=Math.round((sam.length-1-i)*days/sam.length);if(ago===0)return'今日';if(days<=30)return`-${ago}天`;const w=Math.round(ago/7);return w?`-${w}週`:'今日'});return{lb,data:sam,min:pick(mn),max:pick(mx)}}
-function renderChart(p,r){const c=document.getElementById('pc');if(pChart){pChart.destroy();pChart=null}const{lb,data,min,max}=getCP(p,r),np=p.new_price,hasBand=min&&max&&min.length===data.length&&max.length===data.length;const ds=[];
+function getCP(p,r){const m={'1w':7,'1m':30,'3m':90,'6m':180,'1y':365},days=m[r]||90,data=(p._h||[]).slice(-days),mn=(p._hmin||[]).slice(-days),mx=(p._hmax||[]).slice(-days),nn=(p._newHist||[]).slice(-days),step=Math.max(1,Math.floor(data.length/40)),pick=a=>a.filter((_,i)=>i%step===0),sam=pick(data);const lb=sam.map((_,i)=>{const ago=Math.round((sam.length-1-i)*days/sam.length);if(ago===0)return'今日';if(days<=30)return`-${ago}天`;const w=Math.round(ago/7);return w?`-${w}週`:'今日'});return{lb,data:sam,min:pick(mn),max:pick(mx),nn:pick(nn)}}
+function renderChart(p,r){const c=document.getElementById('pc');if(pChart){pChart.destroy();pChart=null}const{lb,data,min,max,nn}=getCP(p,r),np=p.new_price,hasBand=min&&max&&min.length===data.length&&max.length===data.length;const hasNN=nn&&nn.some(v=>v!=null);const ds=[];
   // 最高/最低價區間陰影：兩條透明線 + fill 之間填色（待辦 #11）
   if(hasBand){
     ds.push({label:'最低價',data:min,borderColor:'transparent',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,borderWidth:0});
     ds.push({label:'最高價',data:max,borderColor:'transparent',backgroundColor:'rgba(91,140,255,.13)',fill:'-1',tension:.4,pointRadius:0,borderWidth:0});
   }
   ds.push({label:'二手均價',data,borderColor:'#5b8cff',backgroundColor:'rgba(91,140,255,.05)',fill:hasBand?false:true,tension:.4,pointRadius:0,borderWidth:2});
-  if(np>0)ds.push({label:'全新售價',data:data.map(()=>np),borderColor:'rgba(245,166,35,.5)',borderDash:[5,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5});
+  // 目前全新行情曲線（原價屋/蝦皮每日新品價）：橘色實線，反映 AI 飆漲走勢。sparse 點以 spanGaps 連接
+  if(hasNN)ds.push({label:'目前全新行情',data:nn,borderColor:'#f5a623',backgroundColor:'transparent',fill:false,tension:.3,pointRadius:2,pointBackgroundColor:'#f5a623',borderWidth:2,spanGaps:true});
+  if(np>0)ds.push({label:'上市定價',data:data.map(()=>np),borderColor:'rgba(245,166,35,.4)',borderDash:[5,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5});
   // eBay 海外參考線：水平虛線（eBay 僅當前掛牌均價、無歷史序列），紫色與來源標示一致
   const er=p._ebayRef;
   if(er>0)ds.push({label:'eBay 海外參考',data:data.map(()=>er),borderColor:'#a78bfa',borderDash:[2,3],fill:false,tension:0,pointRadius:0,borderWidth:1.5});
   const lge=document.getElementById('lg-ebay');if(lge)lge.style.display=er>0?'flex':'none';
+  const lgn=document.getElementById('lg-nn');if(lgn)lgn.style.display=hasNN?'flex':'none';
   pChart=new Chart(c,{type:'line',data:{labels:lb,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2230',borderColor:'#2e3347',borderWidth:1,titleColor:'#7e88a8',bodyColor:'#dde3f4',itemSort:(a,b)=>a.datasetIndex-b.datasetIndex,callbacks:{label:c=>` ${c.dataset.label} NT$${c.parsed.y.toLocaleString()}`}}},scales:{x:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},maxTicksLimit:8},border:{display:false}},y:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},callback:v=>'NT$'+Math.round(v/1000)+'K'},border:{display:false}}}}})}
 function setR(r,el){curRange=r;document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('on'));el.classList.add('on');if(selPart)renderChart(selPart,r)}
 // custom：未收錄零件 → 呼叫後端 /api/estimate 估價（待辦 #7），API 未連線則回退本地 estP
