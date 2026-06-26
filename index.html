@@ -207,55 +207,56 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 </head>
 <body>
 <div class="hdr">
-  <div class="logo"><div class="logo-ico">⚡</div>PC 二手行情追蹤</div>
+  <div class="logo"><div class="logo-ico">⚡</div><span data-i18n="logo">PC 二手行情追蹤</span></div>
   <div class="hdr-r">
     <div class="htag"><div class="sdot"></div><span id="lastUp">連線中…</span></div>
-    <button class="btn" id="dbBtn" onclick="openDbModal()">🔄 更新產品庫</button>
-    <button class="btn pri" id="crawlBtn" onclick="startCrawl()">🔄 重新整理</button>
+    <button class="btn" id="langBtn" onclick="toggleLang()" title="中 / English">EN</button>
+    <button class="btn" id="dbBtn" onclick="openDbModal()" data-i18n="updCatalog">🔄 更新產品庫</button>
+    <button class="btn pri" id="crawlBtn" onclick="startCrawl()" data-i18n="refresh">🔄 重新整理</button>
   </div>
 </div>
 <div class="layout">
 <div class="sidebar">
-  <div class="sbt">所有分類</div>
-  <div class="sbi on" onclick="setCat('all',this)">🗂 全部零件<span class="cnt" id="cnt-all">0</span></div>
+  <div class="sbt" data-i18n="allCat">所有分類</div>
+  <div class="sbi on" onclick="setCat('all',this)"><span data-i18n="allParts">🗂 全部零件</span><span class="cnt" id="cnt-all">0</span></div>
   <div class="sdiv"></div>
-  <div class="sbt">核心元件</div>
+  <div class="sbt" data-i18n="coreComp">核心元件</div>
   <div class="sbi" onclick="setCat('cpu',this)">🔲 CPU<span class="cnt" id="cnt-cpu">0</span></div>
   <div class="sbi" onclick="setCat('gpu',this)">🎮 GPU<span class="cnt" id="cnt-gpu">0</span></div>
   <div class="sbi" onclick="setCat('ram',this)">💾 RAM<span class="cnt" id="cnt-ram">0</span></div>
   <div class="sdiv"></div>
-  <div class="sbt">儲存裝置</div>
+  <div class="sbt" data-i18n="storage">儲存裝置</div>
   <div class="sbi" onclick="setCat('ssd',this)">⚡ SSD<span class="cnt" id="cnt-ssd">0</span></div>
   <div class="sbi" onclick="setCat('hdd',this)">💿 HDD<span class="cnt" id="cnt-hdd">0</span></div>
   <div class="sdiv" id="sdiv-custom"></div>
-  <div class="sbt" id="sbt-custom">自訂追蹤</div>
-  <div class="sbi" id="sb-custom" onclick="setCat('custom',this)">🔍 自訂搜尋<span class="cnt" id="cnt-custom">0</span></div>
+  <div class="sbt" id="sbt-custom" data-i18n="customTrack">自訂追蹤</div>
+  <div class="sbi" id="sb-custom" onclick="setCat('custom',this)"><span data-i18n="customSearch">🔍 自訂搜尋</span><span class="cnt" id="cnt-custom">0</span></div>
 </div>
 <div class="main">
   <div class="topbar">
     <div class="srow">
       <div class="swrap">
         <span style="color:var(--text3);font-size:14px">🔍</span>
-        <input type="text" id="si" placeholder="搜尋型號、規格，或輸入未收錄零件（如：RTX 5090、RX 9070 XT、Core Ultra 9 285K）..." oninput="onSearch()" onkeydown="onKey(event)">
+        <input type="text" id="si" data-i18n-ph="searchPh" placeholder="搜尋型號、規格，或輸入未收錄零件（如：RTX 5090、RX 9070 XT、Core Ultra 9 285K）..." oninput="onSearch()" onkeydown="onKey(event)">
         <span id="scl" style="color:var(--text3);cursor:pointer;font-size:15px;display:none" onclick="clearS()">✕</span>
       </div>
-      <button class="btn" id="anyBtn" style="display:none;white-space:nowrap" onclick="searchUnknown()">🌐 搜尋此零件行情 ↗</button>
+      <button class="btn" id="anyBtn" style="display:none;white-space:nowrap" onclick="searchUnknown()" data-i18n="searchPart">🌐 搜尋此零件行情 ↗</button>
     </div>
     <div class="schips" id="chips"></div>
   </div>
   <div class="ubanner" id="ub">
     <span style="font-size:16px">⚠</span>
-    <div class="ubt"><strong id="ubT">找不到此型號</strong><span id="ubD">此零件不在現有資料庫中，可直接搜尋中文圈二手行情。</span></div>
+    <div class="ubt"><strong id="ubT" data-i18n="notFound">找不到此型號</strong><span id="ubD" data-i18n="notFoundD">此零件不在現有資料庫中，可直接搜尋中文圈二手行情。</span></div>
     <div id="ubActions" style="display:flex;gap:6px;flex-shrink:0">
-      <button class="btn" onclick="addCustom()">➕ 加入追蹤</button>
-      <button class="btn pri" onclick="searchUnknown()">🔍 搜尋行情</button>
+      <button class="btn" onclick="addCustom()" data-i18n="track">➕ 加入追蹤</button>
+      <button class="btn pri" onclick="searchUnknown()" data-i18n="searchQuote">🔍 搜尋行情</button>
     </div>
   </div>
-  <div class="colhdr"><div>零件名稱</div><div>全新售價</div><div>二手均價</div><div>折價幅度</div><div>筆數</div><div>狀態</div></div>
+  <div class="colhdr"><div data-i18n="colName">零件名稱</div><div data-i18n="colNew">全新售價</div><div data-i18n="colUsed">二手均價</div><div data-i18n="colDiff">折價幅度</div><div data-i18n="colCnt">筆數</div><div data-i18n="colStatus">狀態</div></div>
   <div class="plist" id="pl"></div>
   <div class="foot">
-    <div class="footmeta"><span id="clock">🕒 —</span>　｜　<a class="flink" id="contact" onclick="openFeedback()" title="新品上市、缺漏零件回報、功能許願都歡迎">📧 意見回饋</a><span id="dataT"></span></div>
-    <div>資料來源：PTT 硬體交易・蝦皮購物・FB 社團・eBay（海外在售參考）　|　本站為個人研究、非商業用途；價格為公開掛牌／貼文之彙整估算，非保證成交價，亦不構成交易或投資建議。</div>
+    <div class="footmeta"><span id="clock">🕒 —</span>　｜　<a class="flink" id="contact" onclick="openFeedback()" data-i18n="feedback" data-i18n-title="feedbackTip" title="新品上市、缺漏零件回報、功能許願都歡迎">📧 意見回饋</a><span id="dataT"></span></div>
+    <div data-i18n="disclaimer">資料來源：PTT 硬體交易・蝦皮購物・FB 社團・eBay（海外在售參考）　|　本站為個人研究、非商業用途；價格為公開掛牌／貼文之彙整估算，非保證成交價，亦不構成交易或投資建議。</div>
   </div>
 </div>
 <div class="detail closed" id="dp">
@@ -266,71 +267,71 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     </div>
   </div>
   <div class="sgrid">
-    <div class="scard"><div class="slb">上市/參考價</div><div class="sv d" id="dp-np"></div><div class="ssub">建議/上市定價</div></div>
-    <div class="scard" id="card-nn" style="display:none"><div class="slb">目前全新行情</div><div class="sv a" id="dp-nn"></div><div class="ssub" id="dp-nnsub">蝦皮全新賣場</div></div>
-    <div class="scard"><div class="slb">今日二手均價</div><div class="sv" id="dp-up"></div><div class="ssub" id="dp-ct">共 0 筆</div></div>
-    <div class="scard"><div class="slb">折價幅度</div><div class="sv g" id="dp-df"></div><div class="ssub">vs 全新定價</div></div>
-    <div class="scard"><div class="slb">近7日趨勢</div><div class="sv" id="dp-tr"></div><div class="ssub">環比上週均價</div></div>
+    <div class="scard"><div class="slb" data-i18n="cLaunch">上市/參考價</div><div class="sv d" id="dp-np"></div><div class="ssub" data-i18n="cLaunchSub">建議/上市定價</div></div>
+    <div class="scard" id="card-nn" style="display:none"><div class="slb" data-i18n="cNewNow">目前全新行情</div><div class="sv a" id="dp-nn"></div><div class="ssub" id="dp-nnsub">蝦皮全新賣場</div></div>
+    <div class="scard"><div class="slb" data-i18n="cUsed">今日二手均價</div><div class="sv" id="dp-up"></div><div class="ssub" id="dp-ct">共 0 筆</div></div>
+    <div class="scard"><div class="slb" data-i18n="cDiff">折價幅度</div><div class="sv g" id="dp-df"></div><div class="ssub" data-i18n="cDiffSub">vs 全新定價</div></div>
+    <div class="scard"><div class="slb" data-i18n="cTrend">近7日趨勢</div><div class="sv" id="dp-tr"></div><div class="ssub" data-i18n="cTrendSub">環比上週均價</div></div>
   </div>
   <div class="csec">
     <div class="chead">
-      <div class="clb">二手價格走勢 vs 全新定價</div>
+      <div class="clb" data-i18n="chartTitle">二手價格走勢 vs 全新定價</div>
       <div class="rtabs">
-        <button class="rtab" onclick="setR('1w',this)">1週</button>
-        <button class="rtab" onclick="setR('1m',this)">1月</button>
-        <button class="rtab on" onclick="setR('3m',this)">3月</button>
-        <button class="rtab" onclick="setR('6m',this)">6月</button>
-        <button class="rtab" onclick="setR('1y',this)">1年</button>
+        <button class="rtab" onclick="setR('1w',this)" data-i18n="r1w">1週</button>
+        <button class="rtab" onclick="setR('1m',this)" data-i18n="r1m">1月</button>
+        <button class="rtab on" onclick="setR('3m',this)" data-i18n="r3m">3月</button>
+        <button class="rtab" onclick="setR('6m',this)" data-i18n="r6m">6月</button>
+        <button class="rtab" onclick="setR('1y',this)" data-i18n="r1y">1年</button>
       </div>
     </div>
-    <div class="cbox"><canvas id="pc" role="img" aria-label="二手價格走勢折線圖"></canvas></div>
+    <div class="cbox"><canvas id="pc" role="img" data-i18n-aria="chartAria" aria-label="二手價格走勢折線圖"></canvas></div>
     <div class="clgd">
-      <span class="lgi"><i class="lln" style="background:#5b8cff"></i>二手均價</span>
-      <span class="lgi"><i class="lbd"></i>最高～最低區間</span>
-      <span class="lgi" id="lg-nn" style="display:none"><i class="lln" style="background:#f5a623"></i>目前全新行情</span>
-      <span class="lgi"><i class="lln" style="background:rgba(245,166,35,.7);height:0;border-top:2px dashed rgba(245,166,35,.4)"></i>上市定價</span>
-      <span class="lgi" id="lg-ebay" style="display:none"><i class="lln" style="background:#a78bfa;height:0;border-top:2px dotted #a78bfa"></i>eBay 海外參考</span>
+      <span class="lgi"><i class="lln" style="background:#5b8cff"></i><span data-i18n="lgUsed">二手均價</span></span>
+      <span class="lgi"><i class="lbd"></i><span data-i18n="lgBand">最高～最低區間</span></span>
+      <span class="lgi" id="lg-nn" style="display:none"><i class="lln" style="background:#f5a623"></i><span data-i18n="lgNew">目前全新行情</span></span>
+      <span class="lgi"><i class="lln" style="background:rgba(245,166,35,.7);height:0;border-top:2px dashed rgba(245,166,35,.4)"></i><span data-i18n="lgLaunch">上市定價</span></span>
+      <span class="lgi" id="lg-ebay" style="display:none"><i class="lln" style="background:#a78bfa;height:0;border-top:2px dotted #a78bfa"></i><span data-i18n="lgEbay">eBay 海外參考</span></span>
     </div>
   </div>
-  <div class="ssec"><div class="sttl">爬蟲來源明細</div><div id="src"></div></div>
-  <div class="lsec"><div class="sttl">近期成交 / 掛牌記錄</div><div id="lst"></div></div>
+  <div class="ssec"><div class="sttl" data-i18n="secSources">爬蟲來源明細</div><div id="src"></div></div>
+  <div class="lsec"><div class="sttl" data-i18n="secListings">近期成交 / 掛牌記錄</div><div id="lst"></div></div>
 </div>
 </div>
 <div class="mbg" id="mbg">
 <div class="modal">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-    <div class="mtitle">🔄 產品庫更新</div>
+    <div class="mtitle" data-i18n="dbTitle">🔄 產品庫更新</div>
     <button class="dpcls" onclick="closeMdl()">✕</button>
   </div>
-  <div class="msub">從各大製造商官網爬取最近10年消費級產品，每分類最多50品項</div>
+  <div class="msub" data-i18n="dbSub">從各大製造商官網爬取最近10年消費級產品，每分類最多50品項</div>
   <div class="plist2" id="progL"></div>
   <div id="newSec" style="display:none">
-    <div class="sttl" style="margin-bottom:6px">新增品項 <span id="newCnt" style="color:var(--teal)"></span></div>
+    <div class="sttl" style="margin-bottom:6px"><span data-i18n="dbNewItems">新增品項</span> <span id="newCnt" style="color:var(--teal)"></span></div>
     <div class="nplist" id="npL"></div>
   </div>
   <div style="display:flex;gap:8px;justify-content:flex-end">
-    <button class="btn" onclick="closeMdl()">關閉</button>
-    <button class="btn pri" id="startDbBtn" onclick="runDb()">開始更新</button>
+    <button class="btn" onclick="closeMdl()" data-i18n="close">關閉</button>
+    <button class="btn pri" id="startDbBtn" onclick="runDb()" data-i18n="startUpd">開始更新</button>
   </div>
 </div>
 </div>
 <div class="mbg" id="fbg">
 <div class="modal" style="width:440px">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-    <div class="mtitle">📧 意見回饋</div>
+    <div class="mtitle" data-i18n="fbTitle">📧 意見回饋</div>
     <button class="dpcls" onclick="closeFeedback()">✕</button>
   </div>
-  <div class="msub">新品上市、缺漏零件回報、功能許願都歡迎！</div>
+  <div class="msub" data-i18n="fbSub">新品上市、缺漏零件回報、功能許願都歡迎！</div>
   <form id="fbForm" onsubmit="return submitFeedback(event)">
     <input type="hidden" name="access_key" value="c4969a90-f8a8-4bc8-ad3d-6d560135ff8c">
     <input type="checkbox" name="botcheck" class="hp" tabindex="-1" autocomplete="off">
-    <input class="fbi" name="topic" placeholder="主題（例：請新增 RTX 5060 Ti、5700X 沒資料）" required maxlength="80">
-    <textarea class="fbi" name="message" rows="5" placeholder="想說的話、缺漏的零件、想要的功能…" required maxlength="1000"></textarea>
-    <input class="fbi" type="email" name="email" placeholder="你的 Email（選填，方便我回覆你）" maxlength="120">
+    <input class="fbi" name="topic" data-i18n-ph="fbTopicPh" placeholder="主題（例：請新增 RTX 5060 Ti、5700X 沒資料）" required maxlength="80">
+    <textarea class="fbi" name="message" rows="5" data-i18n-ph="fbMsgPh" placeholder="想說的話、缺漏的零件、想要的功能…" required maxlength="1000"></textarea>
+    <input class="fbi" type="email" name="email" data-i18n-ph="fbEmailPh" placeholder="你的 Email（選填，方便我回覆你）" maxlength="120">
     <div id="fbMsg" class="fbmsg"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button type="button" class="btn" onclick="closeFeedback()">取消</button>
-      <button type="submit" class="btn pri" id="fbSend">送出</button>
+      <button type="button" class="btn" onclick="closeFeedback()" data-i18n="cancel">取消</button>
+      <button type="submit" class="btn pri" id="fbSend" data-i18n="send">送出</button>
     </div>
   </form>
 </div>
@@ -501,6 +502,105 @@ function removeCustom(id){customs=customs.filter(c=>c.id!==id);saveCustoms();if(
 // 若本頁由 Flask server 提供（http），用同源相對路徑；若以 file:// 直接開啟，連本機 API。
 const API=(location.protocol==='http:'||location.protocol==='https:')?'':'http://127.0.0.1:5000';
 let RPT=null, LIVE=false, DATA_SRC='sim';   // RPT: {part_id: detail}；LIVE: 是否連到後端 API（控功能精簡）；DATA_SRC: api/static/sim
+
+// ════════════════════════════════════════════════
+// i18n：繁中 / English 切換（A 方案：字典 + t()；單檔、無框架）
+// ════════════════════════════════════════════════
+let LANG = (localStorage.getItem('lang')==='en') ? 'en' : 'zh';
+const I18N = {
+  zh:{
+    logo:'PC 二手行情追蹤', allCat:'所有分類', allParts:'🗂 全部零件', coreComp:'核心元件',
+    storage:'儲存裝置', customTrack:'自訂追蹤', customSearch:'🔍 自訂搜尋',
+    updCatalog:'🔄 更新產品庫', refresh:'🔄 重新整理', connecting:'連線中…',
+    searchPh:'搜尋型號、規格，或輸入未收錄零件（如：RTX 5090、RX 9070 XT、Core Ultra 9 285K）...',
+    searchPart:'🌐 搜尋此零件行情 ↗', notFound:'找不到此型號',
+    notFoundD:'此零件不在現有資料庫中，可直接搜尋中文圈二手行情。',
+    track:'➕ 加入追蹤', searchQuote:'🔍 搜尋行情',
+    colName:'零件名稱', colNew:'全新售價', colUsed:'二手均價', colDiff:'折價幅度', colCnt:'筆數', colStatus:'狀態',
+    feedback:'📧 意見回饋', feedbackTip:'新品上市、缺漏零件回報、功能許願都歡迎',
+    disclaimer:'資料來源：PTT 硬體交易・蝦皮購物・FB 社團・eBay（海外在售參考）　|　本站為個人研究、非商業用途；價格為公開掛牌／貼文之彙整估算，非保證成交價，亦不構成交易或投資建議。',
+    cLaunch:'上市/參考價', cLaunchSub:'建議/上市定價', cNewNow:'目前全新行情', cNewNowSub:'蝦皮全新賣場',
+    cUsed:'今日二手均價', cDiff:'折價幅度', cDiffSub:'vs 全新定價', cTrend:'近7日趨勢', cTrendSub:'環比上週均價',
+    chartTitle:'二手價格走勢 vs 全新定價', r1w:'1週', r1m:'1月', r3m:'3月', r6m:'6月', r1y:'1年',
+    chartAria:'二手價格走勢折線圖',
+    lgUsed:'二手均價', lgBand:'最高～最低區間', lgNew:'目前全新行情', lgLaunch:'上市定價', lgEbay:'eBay 海外參考',
+    secSources:'爬蟲來源明細', secListings:'近期成交 / 掛牌記錄',
+    dbTitle:'🔄 產品庫更新', dbSub:'從各大製造商官網爬取最近10年消費級產品，每分類最多50品項',
+    dbNewItems:'新增品項', close:'關閉', startUpd:'開始更新',
+    fbTitle:'📧 意見回饋', fbSub:'新品上市、缺漏零件回報、功能許願都歡迎！',
+    fbTopicPh:'主題（例：請新增 RTX 5060 Ti、5700X 沒資料）',
+    fbMsgPh:'想說的話、缺漏的零件、想要的功能…', fbEmailPh:'你的 Email（選填，方便我回覆你）',
+    cancel:'取消', send:'送出', sending:'送出中…',
+    vsLaunch:'vs 上市', usedSaves:'二手省', spotNew:'現貨新品', listingsN:'筆', totalN:'共 {n} 筆',
+    trend7:'近7日', today:'今日', daysAgo:'-{n}天', weeksAgo:'-{n}週',
+    notListed:'未收錄', custom:'自訂', discontinued:'已停售', noMatch:'找不到符合的零件',
+    realData:'🟢 真實資料 {n} 項', simData:'🟡 模擬資料', updatedAt:'📅 資料更新於 {t}', localData:'📅 本機即時資料',
+    tagHot:'熱門', tagFlag:'旗艦', tagValue:'CP值', tagHigh:'高頻', tagTop:'頂級',
+    srcPTT:'PTT 硬體交易', srcShopee:'蝦皮購物', srcFB:'FB 社團', srcEbay:'eBay 海外參考', srcCoolpc:'原價屋',
+    noMatchSub:'輸入型號後點「搜尋此零件行情」可查詢未收錄品項', dataRows:'筆資料', overseasRef:'🌍 海外參考',
+    notInDb:'「{q}」不在資料庫', unlistedHint:'此型號尚未收錄，可搜尋中文圈二手行情或加入自訂追蹤。', unlistedShort:'此型號尚未收錄。',
+    fbSent:'✅ 已送出，感謝你的回饋！', fbFail:'⚠ 送出失敗，請稍後再試（', fbNotReady:'⚠ 表單尚未設定完成（缺 access key）',
+    docTitle:'PC 二手行情追蹤｜台灣 GPU/CPU/SSD 二手價格走勢',
+    metaDesc:'追蹤台灣二手市場（PTT、蝦皮等）顯示卡、處理器、記憶體、SSD、硬碟的二手成交行情，對比全新定價與 eBay 海外參考價，提供歷史價格走勢圖。',
+  },
+  en:{
+    logo:'PC Used-Price Tracker', allCat:'All categories', allParts:'🗂 All parts', coreComp:'Core components',
+    storage:'Storage', customTrack:'Custom tracking', customSearch:'🔍 Custom search',
+    updCatalog:'🔄 Update catalog', refresh:'🔄 Refresh', connecting:'Connecting…',
+    searchPh:'Search model, spec, or type an unlisted part (e.g. RTX 5090, RX 9070 XT, Core Ultra 9 285K)...',
+    searchPart:'🌐 Search this part ↗', notFound:'Model not found',
+    notFoundD:'This part is not in the catalog; you can search the used market directly.',
+    track:'➕ Track', searchQuote:'🔍 Search',
+    colName:'Part', colNew:'Launch price', colUsed:'Used avg', colDiff:'Discount', colCnt:'Count', colStatus:'Status',
+    feedback:'📧 Feedback', feedbackTip:'New launches, missing parts, feature requests all welcome',
+    disclaimer:'Sources: PTT・Shopee・FB groups・eBay (overseas ref)　|　Personal research, non-commercial. Prices are aggregated estimates from public listings/posts — not guaranteed sale prices, and not trading or investment advice.',
+    cLaunch:'Launch / Ref price', cLaunchSub:'MSRP / launch', cNewNow:'Current new price', cNewNowSub:'retail new',
+    cUsed:"Today's used avg", cDiff:'Discount', cDiffSub:'vs launch price', cTrend:'7-day trend', cTrendSub:'vs last week',
+    chartTitle:'Used price trend vs launch', r1w:'1W', r1m:'1M', r3m:'3M', r6m:'6M', r1y:'1Y',
+    chartAria:'Used price trend line chart',
+    lgUsed:'Used avg', lgBand:'High–low range', lgNew:'Current new', lgLaunch:'Launch price', lgEbay:'eBay (overseas)',
+    secSources:'Data sources', secListings:'Recent listings',
+    dbTitle:'🔄 Catalog update', dbSub:'Scans manufacturer sites for consumer products of the last 10 years (max 50 per category)',
+    dbNewItems:'New items', close:'Close', startUpd:'Start update',
+    fbTitle:'📧 Feedback', fbSub:'New launches, missing parts, feature requests all welcome!',
+    fbTopicPh:'Subject (e.g. please add RTX 5060 Ti; 5700X missing)',
+    fbMsgPh:'Your message, missing parts, desired features…', fbEmailPh:'Your email (optional, so I can reply)',
+    cancel:'Cancel', send:'Send', sending:'Sending…',
+    vsLaunch:'vs launch', usedSaves:'used saves ', spotNew:'retail new', listingsN:'', totalN:'{n} listings',
+    trend7:'7-day', today:'now', daysAgo:'-{n}d', weeksAgo:'-{n}w',
+    notListed:'unlisted', custom:'custom', discontinued:'discontinued', noMatch:'No matching parts',
+    realData:'🟢 Live data · {n} parts', simData:'🟡 Demo data', updatedAt:'📅 Updated {t}', localData:'📅 Local live data',
+    tagHot:'Hot', tagFlag:'Flagship', tagValue:'Value', tagHigh:'Hi-freq', tagTop:'Premium',
+    srcPTT:'PTT', srcShopee:'Shopee', srcFB:'FB group', srcEbay:'eBay (overseas)', srcCoolpc:'Coolpc',
+    noMatchSub:'Type a model then click "Search this part" to look up unlisted items', dataRows:'listings', overseasRef:'🌍 overseas ref',
+    notInDb:'"{q}" not in catalog', unlistedHint:'Not in the catalog yet — search the used market or add to custom tracking.', unlistedShort:'Not in the catalog yet.',
+    fbSent:'✅ Sent — thanks for your feedback!', fbFail:'⚠ Failed, please try again (', fbNotReady:'⚠ Form not configured (missing access key)',
+    docTitle:'Taiwan Used PC Parts Tracker | GPU/CPU/SSD used-price trends',
+    metaDesc:'Track used-market prices (PTT, Shopee, etc.) for GPUs, CPUs, RAM, SSDs and HDDs in Taiwan, vs launch price and eBay overseas reference, with historical price-trend charts.',
+  },
+};
+// 來源顯示名稱（後端送中文來源名）→ 依語言對應
+const SRC_KEY={'PTT 硬體交易':'srcPTT','蝦皮購物':'srcShopee','蝦皮':'srcShopee','FB 社團':'srcFB','eBay':'srcEbay','eBay 海外參考':'srcEbay','原價屋':'srcCoolpc'};
+function tsrc(name){return (LANG==='en'&&SRC_KEY[name])?t(SRC_KEY[name]):name}
+function t(k,vars){let s=(I18N[LANG]&&I18N[LANG][k])!=null?I18N[LANG][k]:(I18N.zh[k]!=null?I18N.zh[k]:k);if(vars)for(const v in vars)s=s.replace('{'+v+'}',vars[v]);return s}
+// 規格字串：英文模式把中文技術詞轉英文（核→-core、內顯→iGPU…）
+const SPEC_EN=[[/無內顯/g,'no iGPU'],[/內顯/g,'iGPU'],[/(\d+)核/g,'$1-core'],[/常見/g,'typ.'],[/單條/g,'single'],[/系/g,' series'],[/級/g,'-grade']];
+function tspec(s){if(LANG!=='en'||!s)return s;let o=s;for(const[re,rep]of SPEC_EN)o=o.replace(re,rep);return o}
+const TAG_KEY={'熱門':'tagHot','旗艦':'tagFlag','CP值':'tagValue','高頻':'tagHigh','頂級':'tagTop'};
+function ttag(tag){if(LANG!=='en')return tag;return TAG_KEY[tag]?t(TAG_KEY[tag]):tag}
+function applyLang(){
+  document.documentElement.lang = LANG==='en'?'en':'zh-Hant';
+  document.querySelectorAll('[data-i18n]').forEach(e=>{e.textContent=t(e.dataset.i18n)});
+  document.querySelectorAll('[data-i18n-ph]').forEach(e=>{e.placeholder=t(e.dataset.i18nPh)});
+  document.querySelectorAll('[data-i18n-title]').forEach(e=>{e.title=t(e.dataset.i18nTitle)});
+  document.querySelectorAll('[data-i18n-aria]').forEach(e=>{e.setAttribute('aria-label',t(e.dataset.i18nAria))});
+  const lb=document.getElementById('langBtn');if(lb)lb.textContent=LANG==='en'?'中文':'EN';
+  document.title=t('docTitle');
+  const md=document.querySelector('meta[name="description"]');if(md)md.setAttribute('content',t('metaDesc'));
+  setLiveBadge();updCounts();renderChips();renderList();
+  if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
+}
+function toggleLang(){LANG=LANG==='zh'?'en':'zh';localStorage.setItem('lang',LANG);applyLang()}
 function srcInfo(n){return SRCS.find(s=>n===s.name||n.includes(s.s))||{name:n,s:n.slice(0,2),c:'#7e88a8',bg:'rgba(126,136,168,.14)'}}
 function allP(){return [...Object.values(DB).flat(),...customs]}
 function genUsed(p){
@@ -543,14 +643,12 @@ function applyMode(){
 }
 function setLiveBadge(){const el=document.getElementById('lastUp');if(!el)return;
   const n=Object.keys(RPT||{}).filter(k=>k!=='_meta').length;
-  el.textContent = DATA_SRC==='api' ? `🟢 真實資料 ${n} 項`
-                 : DATA_SRC==='static' ? `🟢 真實資料 ${n} 項（每日更新）`
-                 : '🟡 模擬資料';}
+  el.textContent = (DATA_SRC==='api'||DATA_SRC==='static') ? t('realData',{n}) : t('simData');}
 // 頁尾「資料更新於…」：靜態站用 report.json 的 _meta.generated_at；本機 API 為即時
 function setDataTime(){const dt=document.getElementById('dataT');if(!dt)return;
   const g=RPT&&RPT._meta&&RPT._meta.generated_at;
-  dt.textContent = DATA_SRC==='static'&&g ? `　｜　📅 資料更新於 ${g}`
-                 : DATA_SRC==='api' ? '　｜　📅 本機即時資料' : '';}
+  dt.textContent = DATA_SRC==='static'&&g ? '　｜　'+t('updatedAt',{t:g})
+                 : DATA_SRC==='api' ? '　｜　'+t('localData') : '';}
 function getDiff(p){if(!p.new_price)return null;return((genUsed(p)-p.new_price)/p.new_price*100).toFixed(1)}
 function genLs(p){
   const b=p.new_price>500?p.new_price:8000;
@@ -564,10 +662,10 @@ function genBand(h){const min=[],max=[];for(const v of h){const lo=.86+Math.rand
 // sidebar
 function setCat(c,el){curCat=c;curFilters=[];document.querySelectorAll('.sbi').forEach(x=>x.classList.remove('on'));el.classList.add('on');renderChips();renderList()}
 function updCounts(){const a=allP();document.getElementById('cnt-all').textContent=a.length;['cpu','gpu','ram','ssd','hdd'].forEach(c=>{const e=document.getElementById('cnt-'+c);if(e)e.textContent=(DB[c]||[]).length});document.getElementById('cnt-custom').textContent=customs.length}
-function renderChips(){const cs=CHIPS[curCat]||[];document.getElementById('chips').innerHTML=cs.map(c=>`<span class="chip${curFilters.includes(c)?' on':''}" onclick="togFilter('${c}')">${c}</span>`).join('')}
+function renderChips(){const cs=CHIPS[curCat]||[];document.getElementById('chips').innerHTML=cs.map(c=>`<span class="chip${curFilters.includes(c)?' on':''}" onclick="togFilter('${c}')">${tspec(c)}</span>`).join('')}
 function togFilter(f){const i=curFilters.indexOf(f);i>=0?curFilters.splice(i,1):curFilters.push(f);renderChips();renderList()}
 // search
-function onSearch(){Q=document.getElementById('si').value.trim();document.getElementById('scl').style.display=Q?'block':'none';document.getElementById('anyBtn').style.display=(Q&&LIVE)?'flex':'none';const ub=document.getElementById('ub');if(Q.length>=2){const f=allP().some(p=>matchP(p,Q));ub.classList.toggle('show',!f);if(!f){document.getElementById('ubT').textContent=`「${Q}」不在資料庫`;const act=document.getElementById('ubActions');if(LIVE){document.getElementById('ubD').textContent='此型號尚未收錄，可搜尋中文圈二手行情或加入自訂追蹤。';if(act)act.style.display='flex';}else{document.getElementById('ubD').textContent='此型號尚未收錄。';if(act)act.style.display='none';}}}else ub.classList.remove('show');renderList()}
+function onSearch(){Q=document.getElementById('si').value.trim();document.getElementById('scl').style.display=Q?'block':'none';document.getElementById('anyBtn').style.display=(Q&&LIVE)?'flex':'none';const ub=document.getElementById('ub');if(Q.length>=2){const f=allP().some(p=>matchP(p,Q));ub.classList.toggle('show',!f);if(!f){document.getElementById('ubT').textContent=t('notInDb',{q:Q});const act=document.getElementById('ubActions');if(LIVE){document.getElementById('ubD').textContent=t('unlistedHint');if(act)act.style.display='flex';}else{document.getElementById('ubD').textContent=t('unlistedShort');if(act)act.style.display='none';}}}else ub.classList.remove('show');renderList()}
 function onKey(e){if(e.key==='Enter'&&Q)searchUnknown()}
 function clearS(){document.getElementById('si').value='';Q='';document.getElementById('scl').style.display='none';document.getElementById('anyBtn').style.display='none';document.getElementById('ub').classList.remove('show');renderList()}
 function matchP(p,q){const h=(p.name+' '+p.spec+' '+(p.tags||[]).join(' ')).toLowerCase();return q.toLowerCase().split(/\s+/).every(w=>h.includes(w))}
@@ -577,16 +675,16 @@ function getVis(){let pts=curCat==='all'?allP():curCat==='custom'?customs:(DB[cu
 function renderList(){
   updCounts();
   const pts=getVis(),el=document.getElementById('pl');
-  if(!pts.length){el.innerHTML='<div class="empty"><div class="ei">🔍</div><p>找不到符合的零件<br><span style="font-size:12px;color:var(--text3)">輸入型號後點「搜尋此零件行情」可查詢未收錄品項</span></p></div>';return}
+  if(!pts.length){el.innerHTML=`<div class="empty"><div class="ei">🔍</div><p>${t('noMatch')}<br><span style="font-size:12px;color:var(--text3)">${t('noMatchSub')}</span></p></div>`;return}
   el.innerHTML=pts.map(p=>{
     const u=genUsed(p),d=getDiff(p),isN=(p.tags||[]).includes('NEW')||p.custom;
     return `<div class="prow${selPart&&selPart.id===p.id?' sel':''}${p.custom?' cust':''}" onclick="selP('${p.id}')">
-      <div><div class="pname">${isN?'<span class="badge nb">NEW</span>':''}${p.custom?'<span class="badge cb">自訂</span>':''}${(p.tags||[]).includes('旗艦')?'<span class="badge hb">旗艦</span>':''}${p.name}${p.custom?`<span class="rmx" onclick="event.stopPropagation();removeCustom('${p.id}')" title="移除自訂追蹤">✕</span>`:''}</div><div class="pspec">${p.spec}</div></div>
+      <div><div class="pname">${isN?'<span class="badge nb">NEW</span>':''}${p.custom?`<span class="badge cb">${t('custom')}</span>`:''}${(p.tags||[]).includes('旗艦')?`<span class="badge hb">${ttag('旗艦')}</span>`:''}${p.name}${p.custom?`<span class="rmx" onclick="event.stopPropagation();removeCustom('${p.id}')" title="✕">✕</span>`:''}</div><div class="pspec">${tspec(p.spec)}</div></div>
       <div class="pnew">${p.new_price>0?'NT$'+p.new_price.toLocaleString():'—'}</div>
       <div class="pused">NT$${u.toLocaleString()}</div>
       <div>${d!==null?`<span class="diff ${parseFloat(d)<0?'dn':'up'}">${parseFloat(d)<0?'▼':'▲'} ${Math.abs(d)}%</span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</div>
-      <div style="font-size:11px;color:var(--text3)">${(p._ls||[]).length} 筆</div>
-      <div style="font-size:10.5px;color:${isN?'var(--teal)':'var(--text3)'}">${isN?'今日':'近7日'}</div>
+      <div style="font-size:11px;color:var(--text3)">${(p._ls||[]).length}${LANG==='en'?'':' 筆'}</div>
+      <div style="font-size:10.5px;color:${isN?'var(--teal)':'var(--text3)'}">${isN?t('today'):t('trend7')}</div>
     </div>`
   }).join('')
 }
@@ -595,22 +693,22 @@ function selP(id){const p=allP().find(x=>x.id===id);if(!p)return;selPart=p;rende
 function showDp(p){
   document.getElementById('dp').classList.remove('closed');
   document.getElementById('dp-n').textContent=p.name;
-  document.getElementById('dp-s').textContent=p.spec;
-  document.getElementById('dp-np').textContent=p.new_price>0?'NT$'+p.new_price.toLocaleString():'已停售';
+  document.getElementById('dp-s').textContent=tspec(p.spec);
+  document.getElementById('dp-np').textContent=p.new_price>0?'NT$'+p.new_price.toLocaleString():t('discontinued');
   const u=genUsed(p);
   document.getElementById('dp-up').textContent='NT$'+u.toLocaleString();
-  document.getElementById('dp-ct').textContent=`共 ${(p._ls||[]).length} 筆`;
+  document.getElementById('dp-ct').textContent=t('totalN',{n:(p._ls||[]).length});
   // 目前全新行情（雛形）：有足夠全新賣文時才顯示，並標出與上市價的漲跌
   const nnCard=document.getElementById('card-nn'),nn=p._newNow;
   if(nn&&nn>0){nnCard.style.display='';document.getElementById('dp-nn').textContent='NT$'+nn.toLocaleString();
     const sub=document.getElementById('dp-nnsub');
     // 來源標籤：原價屋＝權威台灣新品報價；蝦皮＝全新賣場（停產卡才退回此）
-    const src=p._newNowSrc?p._newNowSrc+' · ':'';
+    const src=p._newNowSrc?tsrc(p._newNowSrc)+' · ':'';
     let txt;
-    if(p.new_price>0){const ch=((nn-p.new_price)/p.new_price*100).toFixed(0);txt=(ch>=0?'▲ +':'▼ ')+ch+'% vs 上市';}
-    else txt='現貨新品';
+    if(p.new_price>0){const ch=((nn-p.new_price)/p.new_price*100).toFixed(0);txt=(ch>=0?'▲ +':'▼ ')+ch+'% '+t('vsLaunch');}
+    else txt=t('spotNew');
     // 二手相對「目前全新」的折價：只在二手確實較便宜時顯示「二手省X%」。
-    if(p._diffNow!=null&&p._diffNow<0){txt+=' · 二手省'+(-p._diffNow).toFixed(0)+'%';}
+    if(p._diffNow!=null&&p._diffNow<0){txt+=' · '+t('usedSaves')+(-p._diffNow).toFixed(0)+'%';}
     sub.textContent=src+txt;
   }else{nnCard.style.display='none';}
   const d=getDiff(p);const de=document.getElementById('dp-df');
@@ -631,22 +729,22 @@ function renderSrc(p){const u=genUsed(p);
     // 模擬回退只放在地來源（eBay 等海外參考無模擬資料）
     rows=SRCS.filter(s=>!s.ref).map(s=>({name:s.name,c:s.c,bg:s.bg,s:s.s,n:3+Math.floor(Math.random()*6),sp:Math.round(u*(.91+Math.random()*.18))}));
   }
-  document.getElementById('src').innerHTML=rows.map(s=>`<div class="srcrow"><div style="display:flex;align-items:center;gap:8px"><div class="srcico" style="background:${s.bg};color:${s.c}">${s.s[0]}</div><div><div class="srcname">${s.name}${s.ref?'<span class="refb">🌍 海外參考</span>':''}</div><div class="srccnt">${s.n} 筆資料</div></div></div><div class="srcp" style="color:${s.c}">NT$${s.sp.toLocaleString()}</div></div>`).join('')}
-function renderLst(p){document.getElementById('lst').innerHTML=(p._ls||[]).slice(0,8).map(l=>`<div class="litem"><div><div class="lt">${l.title}${l.is_new?' <span class="nwb">全新</span>':''}</div><div class="lm" style="color:${l.c}">${l.source}</div><div class="lm">${l.date}</div></div><div class="lp">NT$${l.price.toLocaleString()}</div></div>`).join('')}
-function getCP(p,r){const m={'1w':7,'1m':30,'3m':90,'6m':180,'1y':365},days=m[r]||90,data=(p._h||[]).slice(-days),mn=(p._hmin||[]).slice(-days),mx=(p._hmax||[]).slice(-days),nn=(p._newHist||[]).slice(-days),step=Math.max(1,Math.floor(data.length/40)),pick=a=>a.filter((_,i)=>i%step===0),sam=pick(data);const lb=sam.map((_,i)=>{const ago=Math.round((sam.length-1-i)*days/sam.length);if(ago===0)return'今日';if(days<=30)return`-${ago}天`;const w=Math.round(ago/7);return w?`-${w}週`:'今日'});return{lb,data:sam,min:pick(mn),max:pick(mx),nn:pick(nn)}}
+  document.getElementById('src').innerHTML=rows.map(s=>`<div class="srcrow"><div style="display:flex;align-items:center;gap:8px"><div class="srcico" style="background:${s.bg};color:${s.c}">${s.s[0]}</div><div><div class="srcname">${tsrc(s.name)}${s.ref?`<span class="refb">${t('overseasRef')}</span>`:''}</div><div class="srccnt">${s.n} ${t('dataRows')}</div></div></div><div class="srcp" style="color:${s.c}">NT$${s.sp.toLocaleString()}</div></div>`).join('')}
+function renderLst(p){document.getElementById('lst').innerHTML=(p._ls||[]).slice(0,8).map(l=>`<div class="litem"><div><div class="lt">${l.title}${l.is_new?` <span class="nwb">${LANG==='en'?'New':'全新'}</span>`:''}</div><div class="lm" style="color:${l.c}">${tsrc(l.source)}</div><div class="lm">${l.date}</div></div><div class="lp">NT$${l.price.toLocaleString()}</div></div>`).join('')}
+function getCP(p,r){const m={'1w':7,'1m':30,'3m':90,'6m':180,'1y':365},days=m[r]||90,data=(p._h||[]).slice(-days),mn=(p._hmin||[]).slice(-days),mx=(p._hmax||[]).slice(-days),nn=(p._newHist||[]).slice(-days),step=Math.max(1,Math.floor(data.length/40)),pick=a=>a.filter((_,i)=>i%step===0),sam=pick(data);const lb=sam.map((_,i)=>{const ago=Math.round((sam.length-1-i)*days/sam.length);if(ago===0)return t('today');if(days<=30)return t('daysAgo',{n:ago});const w=Math.round(ago/7);return w?t('weeksAgo',{n:w}):t('today')});return{lb,data:sam,min:pick(mn),max:pick(mx),nn:pick(nn)}}
 function renderChart(p,r){const c=document.getElementById('pc');if(pChart){pChart.destroy();pChart=null}const{lb,data,min,max,nn}=getCP(p,r),np=p.new_price,hasBand=min&&max&&min.length===data.length&&max.length===data.length;const hasNN=nn&&nn.some(v=>v!=null);const ds=[];
   // 最高/最低價區間陰影：兩條透明線 + fill 之間填色（待辦 #11）
   if(hasBand){
-    ds.push({label:'最低價',data:min,borderColor:'transparent',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,borderWidth:0});
-    ds.push({label:'最高價',data:max,borderColor:'transparent',backgroundColor:'rgba(91,140,255,.13)',fill:'-1',tension:.4,pointRadius:0,borderWidth:0});
+    ds.push({label:'min',data:min,borderColor:'transparent',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,borderWidth:0});
+    ds.push({label:t('lgBand'),data:max,borderColor:'transparent',backgroundColor:'rgba(91,140,255,.13)',fill:'-1',tension:.4,pointRadius:0,borderWidth:0});
   }
-  ds.push({label:'二手均價',data,borderColor:'#5b8cff',backgroundColor:'rgba(91,140,255,.05)',fill:hasBand?false:true,tension:.4,pointRadius:0,borderWidth:2});
+  ds.push({label:t('lgUsed'),data,borderColor:'#5b8cff',backgroundColor:'rgba(91,140,255,.05)',fill:hasBand?false:true,tension:.4,pointRadius:0,borderWidth:2});
   // 目前全新行情曲線（原價屋/蝦皮每日新品價）：橘色實線，反映 AI 飆漲走勢。sparse 點以 spanGaps 連接
-  if(hasNN)ds.push({label:'目前全新行情',data:nn,borderColor:'#f5a623',backgroundColor:'transparent',fill:false,tension:.3,pointRadius:2,pointBackgroundColor:'#f5a623',borderWidth:2,spanGaps:true});
-  if(np>0)ds.push({label:'上市定價',data:data.map(()=>np),borderColor:'rgba(245,166,35,.4)',borderDash:[5,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5});
+  if(hasNN)ds.push({label:t('lgNew'),data:nn,borderColor:'#f5a623',backgroundColor:'transparent',fill:false,tension:.3,pointRadius:2,pointBackgroundColor:'#f5a623',borderWidth:2,spanGaps:true});
+  if(np>0)ds.push({label:t('lgLaunch'),data:data.map(()=>np),borderColor:'rgba(245,166,35,.4)',borderDash:[5,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5});
   // eBay 海外參考線：水平虛線（eBay 僅當前掛牌均價、無歷史序列），紫色與來源標示一致
   const er=p._ebayRef;
-  if(er>0)ds.push({label:'eBay 海外參考',data:data.map(()=>er),borderColor:'#a78bfa',borderDash:[2,3],fill:false,tension:0,pointRadius:0,borderWidth:1.5});
+  if(er>0)ds.push({label:t('lgEbay'),data:data.map(()=>er),borderColor:'#a78bfa',borderDash:[2,3],fill:false,tension:0,pointRadius:0,borderWidth:1.5});
   const lge=document.getElementById('lg-ebay');if(lge)lge.style.display=er>0?'flex':'none';
   const lgn=document.getElementById('lg-nn');if(lgn)lgn.style.display=hasNN?'flex':'none';
   pChart=new Chart(c,{type:'line',data:{labels:lb,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2230',borderColor:'#2e3347',borderWidth:1,titleColor:'#7e88a8',bodyColor:'#dde3f4',itemSort:(a,b)=>a.datasetIndex-b.datasetIndex,callbacks:{label:c=>` ${c.dataset.label} NT$${c.parsed.y.toLocaleString()}`}}},scales:{x:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},maxTicksLimit:8},border:{display:false}},y:{grid:{color:'rgba(37,40,54,.6)',drawTicks:false},ticks:{color:'#454e66',font:{size:10},callback:v=>'NT$'+Math.round(v/1000)+'K'},border:{display:false}}}}})}
@@ -723,7 +821,9 @@ function startCrawl(){if(crawling)return;crawling=true;const b=document.getEleme
 let tt=null;
 function showToast(m){const t=document.getElementById('toast');document.getElementById('tmsg').textContent=m;t.classList.add('show');if(tt)clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3200)}
 // 頁尾即時時鐘（每秒更新）
-function tick(){const el=document.getElementById('clock');if(!el)return;const d=new Date(),w='日一二三四五六'[d.getDay()],p=n=>String(n).padStart(2,'0');el.textContent=`🕒 ${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())}（週${w}）${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
+function tick(){const el=document.getElementById('clock');if(!el)return;const d=new Date(),p=n=>String(n).padStart(2,'0');
+  if(LANG==='en'){const w=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];el.textContent=`🕒 ${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${w} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
+  else{const w='日一二三四五六'[d.getDay()];el.textContent=`🕒 ${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())}（週${w}）${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}}
 tick();setInterval(tick,1000);
 // 意見回饋彈窗（透過 Web3Forms 直接寄到站長信箱；信箱不出現在原始碼）
 function openFeedback(){document.getElementById('fbg').classList.add('show')}
@@ -732,20 +832,20 @@ async function submitFeedback(e){
   e.preventDefault();
   const f=document.getElementById('fbForm'),btn=document.getElementById('fbSend'),msg=document.getElementById('fbMsg');
   const fd=new FormData(f);
-  if(fd.get('access_key')==='__WEB3FORMS_KEY__'){msg.className='fbmsg err';msg.textContent='⚠ 表單尚未設定完成（缺 access key）';return false}
+  if(fd.get('access_key')==='__WEB3FORMS_KEY__'){msg.className='fbmsg err';msg.textContent=t('fbNotReady');return false}
   fd.set('subject','【二手零件行情】'+((fd.get('topic')||'').slice(0,60)||'意見回饋'));
   fd.set('from_name','二手零件行情 訪客回饋');
-  btn.disabled=true;btn.textContent='送出中…';msg.textContent='';
+  btn.disabled=true;btn.textContent=t('sending');msg.textContent='';
   try{
     const r=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Accept':'application/json'},body:fd});
     const j=await r.json();
-    if(j.success){msg.className='fbmsg ok';msg.textContent='✅ 已送出，感謝你的回饋！';f.reset();setTimeout(closeFeedback,1600)}
-    else throw new Error(j.message||'送出失敗')
-  }catch(err){msg.className='fbmsg err';msg.textContent='⚠ 送出失敗，請稍後再試（'+err.message+'）'}
-  finally{btn.disabled=false;btn.textContent='送出'}
+    if(j.success){msg.className='fbmsg ok';msg.textContent=t('fbSent');f.reset();setTimeout(closeFeedback,1600)}
+    else throw new Error(j.message||'fail')
+  }catch(err){msg.className='fbmsg err';msg.textContent=t('fbFail')+err.message+'）'}
+  finally{btn.disabled=false;btn.textContent=t('send')}
   return false;
 }
-loadCustoms();updCounts();renderChips();renderList();applyMode();
+loadCustoms();updCounts();renderChips();renderList();applyMode();applyLang();
 loadLive();   // 載入時嘗試連後端真實資料（失敗則維持模擬）
 </script>
 <!-- Cloudflare Web Analytics（免 cookie、隱私友善流量統計） -->
