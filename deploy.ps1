@@ -34,6 +34,10 @@ if ($Domain) {
     Write-Host "    replaced domain placeholder with $Domain"
 }
 
+# Generate the English SEO page dist/en.html (served at /en) from dist/index.html.
+Write-Host "    build en.html (English SEO page)"
+python tools/make_en.py $dist
+
 if ($BuildOnly) {
     Write-Host "==> done (BuildOnly). Drag the dist\ folder into Cloudflare Pages Direct Upload."
     return
