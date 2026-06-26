@@ -63,11 +63,12 @@ pc_price_tracker/
 | `estUnknown(q)` | 向 `/api/estimate` 取估價，失敗回退本地 `estP` |
 | `selP(id)` | 點選零件列表列，展開詳情面板 |
 | `showDp(p)` | 渲染右側詳情面板（統計卡 + 圖表 + 來源 + 成交記錄）；含「目前全新行情」卡（`p._newNow`/`_newNowSrc`/`_diffNow`，標來源 + ▲% vs 上市 + 二手省%） |
-| `renderChart(p, range)` | 以 Chart.js 繪製特定時間區間折線圖 |
+| `renderChart(p, range)` | 以 Chart.js 繪製折線圖：二手均價線 + 最高/最低區間帶 + **目前全新行情橘線**（`_newHist`）+ 上市定價虛線 + eBay 參考線 |
 | `runDb()` | 呼叫 `/api/update_catalog` 偵測製造商官網新型號，於 Modal 顯示「目錄未收錄」的新品 |
 | `startCrawl()` | 模擬觸發爬蟲（目前為前端模擬，待串接後端） |
 | `loadLive()` | 向 `/api/report` 取真實資料存入 `RPT`，設定 `LIVE` 並重繪；失敗則維持模擬 |
-| `genUsed(p)` | 取二手均價：`RPT[p.id]` 有資料用真實（含 `_ls`/`_h`/`_src`/`_newNow`/`_newNowSrc`/`_diffNow`），否則模擬回退 |
+| `genUsed(p)` | 取二手均價：`RPT[p.id]` 有資料用真實（含 `_ls`/`_h`/`_hmin`/`_hmax`/`_newHist`/`_src`/`_newNow`/`_newNowSrc`/`_diffNow`），否則模擬回退 |
+| `toggleLang()` / `applyLang()` | 繁中/English 切換（`I18N`+`t()`；`tspec`/`ttag`/`tsrc` 譯規格/標籤/來源）；同步 `<html lang>`/title/meta |
 | `genHist(base)` | **【模擬回退】** 無真實資料時產生 365 天歷史 |
 | `genLs(p)` | **【模擬回退】** 無真實資料時產生成交列表 |
 | `applyMode()` | 依 `LIVE` 切換公開/本地：API 未連線（公開靜態站）時隱藏更新產品庫/自訂搜尋，精簡為單向查詢 |
@@ -123,7 +124,7 @@ pc_price_tracker/
 ### 後端（pc_scraper_backend.py）
 
 - **Python 3.11+**，使用 `asyncio` + `aiohttp` 非同步爬蟲
-- **資料庫**：SQLite（`pc_prices.db`），三張資料表：`listings`、`price_snapshots`、`crawl_log`
+- **資料庫**：SQLite（`pc_prices.db`），四張資料表：`listings`、`price_snapshots`（二手）、`new_snapshots`（目前全新行情每日快照）、`crawl_log`
 - **資料來源**（繼承自 `BaseScraper`）：
 
 | 類別 | 平台 | 方法 | 狀態 |
@@ -188,6 +189,35 @@ pc_price_tracker/
 > - **新增模組**：`tools/scrape_coolpc.py`、`tools/rebuild_snapshots.py`（一次性重算所有快照的遷移）。
 > - **誠實限制**：RAM 幾無真 C2C 二手 → 其「二手」是較便宜零售的代理值（顯示二手省%合理但非真二手）；
 >   蝦皮 RAM 為單次快照（半手動），原價屋與 PTT 才每日自動刷新。
+
+> **🆕 進度摘要（2026-06-26）：新品價歷史曲線 + 中英雙語**
+> - **① 新品價歷史曲線**：把「目前全新行情」從單一數字升級為走勢線（呈現 AI 飆漲）。
+>   新增 `new_snapshots` 表（part_id, date, new_price, src, cnt）；`compute_new_now()`（滾動值，
+>   原價屋優先退回蝦皮）、`new_price_on_date()`（某日新品價）、`rebuild_new_snapshots()`（掃 listings
+>   每日回填，已接 CrawlerScheduler / import_listings / scrape_coolpc / rebuild_snapshots）。
+>   `get_detail` 加 `new_history`（對齊二手 history 日期、carry-forward、末點固定為當前 new_now）。
+>   前端 `renderChart` 加橘色實線「目前全新行情」（`spanGaps` 連稀疏點）；MSRP 線改標「上市定價」。
+>   **現況**：剛接，多數零件 1-2 點，原價屋每日自動跑 → 約一週後成形。
+> - **② 中英雙語（i18n A 方案）**：右上 EN/中文 鈕，`I18N{zh,en}` + `t()` + `applyLang()`（記 localStorage）。
+>   靜態用 `data-i18n`*；動態走 `t()`；規格 `tspec()`（核→-core…）、tags `ttag()`、來源 `tsrc()`。
+>   切語言同步換 `<html lang>`/`document.title`/`meta description`。
+> - **③ 英文 SEO（B 方案）**：獨立 `/en`——`tools/make_en.py` build 時從 `index.html` 衍生 `dist/en.html`
+>   （英文 head + `window.__FORCE_LANG='en'`，Cloudflare 服務在 `/en`）；`index.html`/`sitemap.xml` 加
+>   hreflang(zh-Hant/en/x-default)。⚠️ Search Console 提交 sitemap 要填 `sitemap.xml`（非 `/en`，那是網頁）。
+
+### 🔵 後續可改善（2026-06-26 盤點，皆非阻斷、依價值排序）
+
+- **二手數字跳動**（低中）：當代/被炒卡在蝦皮匯入日 vs PTT 日數字差很多（「最新快照當值」特性，如 3060
+  蝦皮日 9366 / PTT 日 5000）→ 頭條數字改用近 N 天去極值中位數可平滑。
+- **CPU 跨型號漏網**（低）：`is_cross_model_gpu` 只擋顯卡；CPU 裸數字多型號清單（「13400F/14400F/…」）仍會漏收 → 比照做 CPU 版。
+- **單元測試**（中）：`classify_listing`/`ram_total_capacities`/`title_matches_part`/`parse_coolpc` 邏輯已複雜，加一組 pytest 防回歸。
+- **原價屋覆蓋率**（低中）：只命中當代品 23/111（停產件本就無新品價，屬正常）；**HDD 0 命中**（別名不合需修）；
+  只有原價屋資料、無二手快照的零件（如某 SSD）→ `get_detail` 回 None 而不顯示（可改成「有新品價也顯示」）。
+- **新品價曲線需養天數**：原價屋每日自動累積，約一週後曲線才完整（資料面，非開發面）。
+- **英文 SEO 後續**：分享圖 `og.png` 兩語共用（圖上中文）；想要英文分享卡可在 `make_og.py` 加英文版、`en.html` 指向它。
+- **robots/sitemap BOM**（極低）：`deploy.ps1` 用 PS5.1 `Set-Content -Encoding utf8` 會加 UTF-8 BOM；
+  Google 對 robots/sitemap 都會忽略 BOM、不影響，要乾淨可改 `[IO.File]::WriteAllText`（無 BOM）。
+- **蝦皮自動化缺口**：蝦皮有 captcha → 無法自動，RAM/蝦皮二手不會自刷新（平台限制，只有 PTT + 原價屋每日自動）。
 
 ### 🔴 高優先（核心功能缺失）
 
