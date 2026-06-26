@@ -29,6 +29,7 @@ pc_price_tracker/
 │   ├── validate_selectors.py  # 驗證爬蟲選擇器是否符合現行 DOM（待辦 #4）
 │   ├── import_listings.py     # 匯入式來源（蝦皮/FB）的成交資料匯入器
 │   ├── scrape_coolpc.py       # 原價屋報價單抓取：權威「目前全新行情」來源（#3）
+│   ├── make_en.py             # build 時從 index.html 衍生英文 SEO 頁 dist/en.html（/en）
 │   ├── rebuild_snapshots.py   # 一次性遷移：用現行分流邏輯重算所有快照
 │   └── clear_imports.py       # 一鍵清理 imports/ 累積的暫存檔（保留範本）
 ├── imports/                   # 匯入資料夾（範本已附；實際資料不提交）
@@ -383,8 +384,15 @@ CSV 欄位與範例見 `imports/README.md`、`imports/sample_listings.csv`。寫
 >   或設好金鑰後 `.\deploy.ps1`（CLI）。
 > - **每日自動部署**：`crawl_daily.ps1` 末端已接 `deploy.ps1`，只在設了 `CLOUDFLARE_API_TOKEN` 時執行
 >   （另需 `CLOUDFLARE_ACCOUNT_ID`、`SITE_DOMAIN`，見 `DEPLOY.md` D 段）。**未設則為手動部署。**
-> - **改網域時**要一起改：`robots.txt`、`sitemap.xml`、`index.html` 的 `og:url`/`og:image`/`canonical` → 重新部署 → Search Console 重新提交。
+> - **改網域時**要一起改：`robots.txt`、`sitemap.xml`、`index.html` 的 `og:url`/`og:image`/`canonical`/`hreflang`、
+>   `tools/make_en.py` 的 `DOMAIN` → 重新部署 → Search Console 重新提交。
 > - **重產分享圖**：`python tools/make_og.py`（改文案/配色在該檔）。
+>
+> **🌐 雙語（2026-06-26）**：前端 i18n（`I18N{zh,en}` + `t()` + `applyLang()`，右上 EN/中文 鈕，記 localStorage）＝
+> A 方案（client-side 切換）。**B 方案英文 SEO**：`tools/make_en.py` 於 build 時從 `dist/index.html` 衍生
+> `dist/en.html`（英文 head + `window.__FORCE_LANG='en'`，Cloudflare 服務在 `/en`）；`index.html`/`sitemap.xml`
+> 已加 hreflang(zh-Hant/en/x-default)。改 UI 字串時兩種語言都要在 `I18N` 補；新增零件規格中文詞需在
+> `SPEC_EN`/`TAG_KEY` 補對應（核→-core 等），否則英文模式殘留中文。
 > - ⚠️ 公開網址含自訂網域即可；workers.dev 預設網址含帳號代號，勿寫進會提交的檔。
 
 「讓別人在瀏覽器搜尋得到」拆成兩件事：**①上架（公開網址）** 與 **②被搜尋到（SEO）**。
