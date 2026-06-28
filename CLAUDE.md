@@ -212,7 +212,10 @@ pc_price_tracker/
 - ✅ **二手數字跳動**（2026-06-26 已修）：頭條二手改用近 14 快照中位數（`statistics.median`），
   蝦皮日↔PTT 日不再跳（3060 穩定 5000）；圖表仍畫每日真實序列。卡片標題改「二手均價」。
 - **CPU 跨型號漏網**（低）：`is_cross_model_gpu` 只擋顯卡；CPU 裸數字多型號清單（「13400F/14400F/…」）仍會漏收 → 比照做 CPU 版。
-- **單元測試**（中）：`classify_listing`/`ram_total_capacities`/`title_matches_part`/`parse_coolpc` 邏輯已複雜，加一組 pytest 防回歸。
+- ✅ **單元測試**（2026-06-26 已完成）：`tests/test_core.py`（27 項，pytest）涵蓋 `title_is_new`/
+  `classify_listing`(used/new/exclude+天花板+default_new)/`ram_total_capacities`(kit-aware)/
+  `title_matches_part`(RAM 規格帶+變體後綴)/`gpu_model_set`/`is_cross_model_gpu`/`parse_coolpc`/
+  `robust_price_stats`/`split_used_new`/`part_default_new`。執行：`python -m pytest tests/ -q`。
 - **原價屋覆蓋率**（低中）：只命中當代品 23/111（停產件本就無新品價，屬正常）；**HDD 0 命中**（別名不合需修）；
   只有原價屋資料、無二手快照的零件（如某 SSD）→ `get_detail` 回 None 而不顯示（可改成「有新品價也顯示」）。
 - **新品價曲線需養天數**：原價屋每日自動累積，約一週後曲線才完整（資料面，非開發面）。

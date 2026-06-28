@@ -7,5 +7,8 @@ beautifulsoup4>=4.12    # HTML 解析（bs4，目前使用內建 html.parser）
 flask>=3.0             # 本地 API server（api_server.py），前端橋接層
 python-dotenv>=1.0     # 從 .env 載入金鑰（EBAY_CLIENT_ID/SECRET、ANTHROPIC_API_KEY…）
 
+# --- 開發 / 測試 ---
+pytest>=8.0            # 核心邏輯回歸測試（tests/；執行：python -m pytest tests/ -q）
+
 # --- 未來功能預留（程式尚未啟用，需要時取消註解）---
 # lxml>=5.0             # 更快的 HTML 解析器；啟用後可將 BeautifulSoup(..., "lxml")
