@@ -1353,9 +1353,14 @@ class Reporter:
         mins   = [h["min"] for h in history]
         maxs   = [h["max"] for h in history]
         last = history[-1]
+        # 二手頭條數字平滑：取近 14 個快照的中位數，避免「蝦皮匯入日 vs PTT 日」單日跳動
+        # （PTT 每日、蝦皮偶爾匯入 → 頻繁的 PTT 值主導中位數，單一匯入日不會綁架頭條）。
+        # 圖表仍畫每日真實序列；只有頭條卡用平滑值。
+        recent = [h["avg"] for h in history[-14:]]
+        used_now = int(round(statistics.median(recent))) if recent else last["avg"]
         part = self._find_part(part_id)
         new_price = part["new_price"] if part else 0
-        diff_pct = round((last["avg"] - new_price) / new_price * 100, 1) if new_price > 0 else None
+        diff_pct = round((used_now - new_price) / new_price * 100, 1) if new_price > 0 else None
 
         # 抓較多筆（含跨型號雜訊），剔除顯卡跨型號/賣場清單後取前 12 筆呈現
         listings = [l for l in self.db.get_recent_listings(part_id, days=7, limit=40)
@@ -1409,13 +1414,13 @@ class Reporter:
 
         # 二手相對「目前全新行情」的折價（買二手比買現貨全新省多少 %）。
         # 與 diff_pct（相對上市價的折舊）不同：此項反映 AI 飆漲下「現在新品多貴」。
-        diff_now_pct = round((last["avg"] - new_now) / new_now * 100, 1) if new_now else None
+        diff_now_pct = round((used_now - new_now) / new_now * 100, 1) if new_now else None
 
         return {
             "id":         part_id,
             "name":       part["name"] if part else part_id,
             "new_price":  new_price,
-            "used":       last["avg"],
+            "used":       used_now,
             "ebay_ref":   ebay_ref,
             "new_now":    new_now,
             "new_count":  new_count,
