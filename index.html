@@ -273,7 +273,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     <div class="scard"><div class="slb" data-i18n="cLaunch">上市/參考價</div><div class="sv d" id="dp-np"></div><div class="ssub" data-i18n="cLaunchSub">建議/上市定價</div></div>
     <div class="scard" id="card-nn" style="display:none"><div class="slb" data-i18n="cNewNow">目前全新行情</div><div class="sv a" id="dp-nn"></div><div class="ssub" id="dp-nnsub">蝦皮全新賣場</div></div>
     <div class="scard"><div class="slb" data-i18n="cUsed">今日二手均價</div><div class="sv" id="dp-up"></div><div class="ssub" id="dp-ct">共 0 筆</div></div>
-    <div class="scard"><div class="slb" data-i18n="cDiff">折價幅度</div><div class="sv g" id="dp-df"></div><div class="ssub" data-i18n="cDiffSub">vs 全新定價</div></div>
+    <div class="scard"><div class="slb" data-i18n="cDiff">折價幅度</div><div class="sv g" id="dp-df"></div><div class="ssub" id="dp-dfsub" data-i18n="cDiffSub">vs 上市價</div></div>
     <div class="scard"><div class="slb" data-i18n="cTrend">近7日趨勢</div><div class="sv" id="dp-tr"></div><div class="ssub" data-i18n="cTrendSub">環比上週均價</div></div>
   </div>
   <div class="csec">
@@ -525,7 +525,7 @@ const I18N = {
     feedback:'📧 意見回饋', feedbackTip:'新品上市、缺漏零件回報、功能許願都歡迎',
     disclaimer:'資料來源：PTT 硬體交易・蝦皮購物・FB 社團・eBay（海外在售參考）　|　本站為個人研究、非商業用途；價格為公開掛牌／貼文之彙整估算，非保證成交價，亦不構成交易或投資建議。',
     cLaunch:'上市/參考價', cLaunchSub:'建議/上市定價', cNewNow:'目前全新行情', cNewNowSub:'蝦皮全新賣場',
-    cUsed:'今日二手均價', cDiff:'折價幅度', cDiffSub:'vs 全新定價', cTrend:'近7日趨勢', cTrendSub:'環比上週均價',
+    cUsed:'今日二手均價', cDiff:'折價幅度', cDiffSub:'vs 上市價', cDiffSubNew:'vs 目前全新', cTrend:'近7日趨勢', cTrendSub:'環比上週均價',
     chartTitle:'二手價格走勢 vs 全新定價', r1w:'1週', r1m:'1月', r3m:'3月', r6m:'6月', r1y:'1年',
     chartAria:'二手價格走勢折線圖',
     lgUsed:'二手均價', lgBand:'最高～最低區間', lgNew:'目前全新行情', lgLaunch:'上市定價', lgEbay:'eBay 海外參考',
@@ -560,7 +560,7 @@ const I18N = {
     feedback:'📧 Feedback', feedbackTip:'New launches, missing parts, feature requests all welcome',
     disclaimer:'Sources: PTT・Shopee・FB groups・eBay (overseas ref)　|　Personal research, non-commercial. Prices are aggregated estimates from public listings/posts — not guaranteed sale prices, and not trading or investment advice.',
     cLaunch:'Launch / Ref price', cLaunchSub:'MSRP / launch', cNewNow:'Current new price', cNewNowSub:'retail new',
-    cUsed:"Today's used avg", cDiff:'Discount', cDiffSub:'vs launch price', cTrend:'7-day trend', cTrendSub:'vs last week',
+    cUsed:"Today's used avg", cDiff:'Discount', cDiffSub:'vs launch', cDiffSubNew:'vs current new', cTrend:'7-day trend', cTrendSub:'vs last week',
     chartTitle:'Used price trend vs launch', r1w:'1W', r1m:'1M', r3m:'3M', r6m:'6M', r1y:'1Y',
     chartAria:'Used price trend line chart',
     lgUsed:'Used avg', lgBand:'High–low range', lgNew:'Current new', lgLaunch:'Launch price', lgEbay:'eBay (overseas)',
@@ -655,6 +655,8 @@ function setDataTime(){const dt=document.getElementById('dataT');if(!dt)return;
   dt.textContent = DATA_SRC==='static'&&g ? '　｜　'+t('updatedAt',{t:g})
                  : DATA_SRC==='api' ? '　｜　'+t('localData') : '';}
 function getDiff(p){if(!p.new_price)return null;return((genUsed(p)-p.new_price)/p.new_price*100).toFixed(1)}
+// 顯示用折價：有「目前全新行情」→ 用二手 vs 目前全新（真折價，basis='new'）；否則 vs 上市價（折舊，basis='launch'）
+function dispDiff(p){genUsed(p);if(p._diffNow!=null)return{pct:p._diffNow,basis:'new'};if(!p.new_price)return null;return{pct:(genUsed(p)-p.new_price)/p.new_price*100,basis:'launch'}}
 function genLs(p){
   const b=p.new_price>500?p.new_price:8000;
   const ar=['台北板橋','高雄左營','台中西屯','新北中和','桃園八德','台南永康','基隆信義'];
@@ -682,12 +684,12 @@ function renderList(){
   const pts=getVis(),el=document.getElementById('pl');
   if(!pts.length){el.innerHTML=`<div class="empty"><div class="ei">🔍</div><p>${t('noMatch')}<br><span style="font-size:12px;color:var(--text3)">${t('noMatchSub')}</span></p></div>`;return}
   el.innerHTML=pts.map(p=>{
-    const u=genUsed(p),d=getDiff(p),isN=(p.tags||[]).includes('NEW')||p.custom;
+    const u=genUsed(p),dd=dispDiff(p),isN=(p.tags||[]).includes('NEW')||p.custom;
     return `<div class="prow${selPart&&selPart.id===p.id?' sel':''}${p.custom?' cust':''}" onclick="selP('${p.id}')">
       <div><div class="pname">${isN?'<span class="badge nb">NEW</span>':''}${p.custom?`<span class="badge cb">${t('custom')}</span>`:''}${(p.tags||[]).includes('旗艦')?`<span class="badge hb">${ttag('旗艦')}</span>`:''}${p.name}${p.custom?`<span class="rmx" onclick="event.stopPropagation();removeCustom('${p.id}')" title="✕">✕</span>`:''}</div><div class="pspec">${tspec(p.spec)}</div></div>
       <div class="pnew">${p.new_price>0?'NT$'+p.new_price.toLocaleString():'—'}</div>
       <div class="pused">NT$${u.toLocaleString()}</div>
-      <div>${d!==null?`<span class="diff ${parseFloat(d)<0?'dn':'up'}">${parseFloat(d)<0?'▼':'▲'} ${Math.abs(d)}%</span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</div>
+      <div>${dd?`<span class="diff ${dd.pct<0?'dn':'up'}">${dd.pct<0?'▼':'▲'} ${Math.abs(dd.pct).toFixed(1)}%</span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</div>
       <div style="font-size:11px;color:var(--text3)">${(p._ls||[]).length}${LANG==='en'?'':' 筆'}</div>
       <div style="font-size:10.5px;color:${isN?'var(--teal)':'var(--text3)'}">${isN?t('today'):t('trend7')}</div>
     </div>`
@@ -712,13 +714,13 @@ function showDp(p){
     let txt;
     if(p.new_price>0){const ch=((nn-p.new_price)/p.new_price*100).toFixed(0);txt=(ch>=0?'▲ +':'▼ ')+ch+'% '+t('vsLaunch');}
     else txt=t('spotNew');
-    // 二手相對「目前全新」的折價：只在二手確實較便宜時顯示「二手省X%」。
-    if(p._diffNow!=null&&p._diffNow<0){txt+=' · '+t('usedSaves')+(-p._diffNow).toFixed(0)+'%';}
     sub.textContent=src+txt;
   }else{nnCard.style.display='none';}
-  const d=getDiff(p);const de=document.getElementById('dp-df');
-  if(d===null){de.textContent='—';de.className='sv';}
-  else{const dn=parseFloat(d)<0;de.textContent=(dn?'▼ ':'▲ ')+Math.abs(d)+'%';de.className='sv '+(dn?'g':'r');}
+  // 折價幅度：有「目前全新行情」時用「二手 vs 目前全新」(真折價)，否則用「二手 vs 上市價」(折舊)
+  const dd=dispDiff(p),de=document.getElementById('dp-df'),dfsub=document.getElementById('dp-dfsub');
+  if(!dd){de.textContent='—';de.className='sv';}
+  else{const dn=dd.pct<0;de.textContent=(dn?'▼ ':'▲ ')+Math.abs(dd.pct).toFixed(1)+'%';de.className='sv '+(dn?'g':'r');}
+  if(dfsub)dfsub.textContent=t(dd&&dd.basis==='new'?'cDiffSubNew':'cDiffSub');
   const h=p._h||[];const pr=h.slice(-21,-7),rc=h.slice(-7);const te=document.getElementById('dp-tr');
   const pa=pr.length?pr.reduce((a,b)=>a+b,0)/pr.length:0,ra=rc.length?rc.reduce((a,b)=>a+b,0)/rc.length:0;
   if(pr.length&&rc.length&&pa>0){const tr=((ra-pa)/pa*100).toFixed(1);const dn=parseFloat(tr)<0;te.textContent=(dn?'▼ ':'▲ ')+Math.abs(tr)+'%';te.className='sv '+(dn?'g':'r');}
