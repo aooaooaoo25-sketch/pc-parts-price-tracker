@@ -30,6 +30,7 @@ pc_price_tracker/
 │   ├── import_listings.py     # 匯入式來源（蝦皮/FB）的成交資料匯入器
 │   ├── scrape_coolpc.py       # 原價屋報價單抓取：權威「目前全新行情」來源（#3）
 │   ├── make_en.py             # build 時從 index.html 衍生英文 SEO 頁 dist/en.html（/en）
+│   ├── make_sitemap.py        # build 時產生 sitemap（首頁+/en+每零件 ?p= 深連結，附 hreflang）
 │   ├── rebuild_snapshots.py   # 一次性遷移：用現行分流邏輯重算所有快照
 │   └── clear_imports.py       # 一鍵清理 imports/ 累積的暫存檔（保留範本）
 ├── imports/                   # 匯入資料夾（範本已附；實際資料不提交）
@@ -420,7 +421,11 @@ CSV 欄位與範例見 `imports/README.md`、`imports/sample_listings.csv`。寫
 > - **每日自動部署**：`crawl_daily.ps1` 末端已接 `deploy.ps1`，只在設了 `CLOUDFLARE_API_TOKEN` 時執行
 >   （另需 `CLOUDFLARE_ACCOUNT_ID`、`SITE_DOMAIN`，見 `DEPLOY.md` D 段）。**未設則為手動部署。**
 > - **改網域時**要一起改：`robots.txt`、`sitemap.xml`、`index.html` 的 `og:url`/`og:image`/`canonical`/`hreflang`、
->   `tools/make_en.py` 的 `DOMAIN` → 重新部署 → Search Console 重新提交。
+>   `tools/make_en.py` 與 `tools/make_sitemap.py` 的 `DOMAIN` → 重新部署 → Search Console 重新提交。
+> - **零件深連結（長尾 SEO）**：`?p=<id>`（如 `/?p=gpu_rtx5090`）開啟即展開該零件並換零件專屬
+>   title/description/canonical/og（`setPartSeo`/`clearPartSeo`，中英各一套 `partTitle`/`partDesc`）；
+>   `selP`/`closeDp` 推 history、`popstate`/`openFromUrl` 支援。`make_sitemap.py` 把有資料的零件
+>   都放進 sitemap（附 hreflang）→ Google 可收錄「RTX 5090 二手價格」這類長尾查詢。
 > - **重產分享圖**：`python tools/make_og.py`（改文案/配色在該檔）。
 >
 > **🌐 雙語（2026-06-26）**：前端 i18n（`I18N{zh,en}` + `t()` + `applyLang()`，右上 EN/中文 鈕，記 localStorage）＝
