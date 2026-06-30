@@ -665,9 +665,9 @@ def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物"
     cand = []
     for item in data.get("items") or []:
         info = item.get("item_basic", item)
-        raw_price = info.get("price", 0) // 100000  # 蝦皮價格單位為分*1000
+        raw_price = (info.get("price") or 0) // 100000  # 蝦皮價格單位為分*1000（None 防呆）
         if raw_price < 500:
-            raw_price = info.get("price_min", 0) // 100000
+            raw_price = (info.get("price_min") or 0) // 100000
         if raw_price < 500 or raw_price > 200000:
             continue
         name = info.get("name", "")
@@ -698,7 +698,8 @@ def parse_shopee_items(data: dict, part: dict, source_name: str = "蝦皮購物"
             if ceil and raw_price > ceil:
                 continue
             url = f"https://shopee.tw/product/{info.get('shopid','')}/{info.get('itemid','')}"
-            sold = info.get("sold", 0) > 0 or info.get("historical_sold", 0) > 0
+            # 用 `or 0` 防呆：欄位存在但值為 None 時 .get 會回 None（非預設 0）→ None>0 會 TypeError
+            sold = (info.get("sold") or 0) > 0 or (info.get("historical_sold") or 0) > 0
             listings.append(Listing(
                 source    = source_name,
                 part_id   = part["id"],

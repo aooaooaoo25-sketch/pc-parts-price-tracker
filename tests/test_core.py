@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pc_scraper_backend import (
     title_is_new, classify_listing, ram_total_capacities, title_matches_part,
     gpu_model_set, is_cross_model_gpu, parse_coolpc, robust_price_stats,
-    split_used_new, part_default_new,
+    split_used_new, part_default_new, parse_shopee_items,
 )
 
 GPU3070 = {"id": "gpu_rtx3070", "aliases": ["RTX 3070", "3070"]}
@@ -167,6 +167,28 @@ class TestParseCoolpc:
         out = parse_coolpc(COOLPC_HTML)
         prices = dict((d, p) for d, p in out["ram"])
         assert prices["UMAX 單條32GB DDR5-5600/CL46"] == 11900
+
+
+# ── parse_shopee_items（防呆）────────────────────────────────
+class TestParseShopee:
+    def _items(self, sold_val):
+        # 模擬蝦皮 search_items：sold/historical_sold 欄位「存在但為 None」是常見情形
+        return {"items": [
+            {"item_basic": {"name": "巨蟒 DDR5 6000 32GB (16G*2)", "price": 1119900000,
+                            "historical_sold": sold_val, "sold": sold_val}}
+            for _ in range(5)]}
+
+    def test_none_sold_does_not_silently_drop_all(self):
+        # 回歸：historical_sold=None 時 info.get(...,0) 會回 None → None>0 曾 TypeError
+        # 被 try/except 吞掉 → 整批變 0。防呆後應正常解析。
+        part = {"id": "ram_ddr5_32gb", "aliases": ["DDR5 32G", "DDR5 32GB"], "new_price": 3400}
+        ls = parse_shopee_items(self._items(None), part)
+        assert len(ls) == 5
+        assert ls[0].price == 11199
+
+    def test_numeric_sold_ok(self):
+        part = {"id": "ram_ddr5_32gb", "aliases": ["DDR5 32G", "DDR5 32GB"], "new_price": 3400}
+        assert len(parse_shopee_items(self._items(12), part)) == 5
 
 
 # ── robust_price_stats ──────────────────────────────────────
