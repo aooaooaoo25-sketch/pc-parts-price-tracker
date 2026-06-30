@@ -547,6 +547,8 @@ const I18N = {
     fbSent:'✅ 已送出，感謝你的回饋！', fbFail:'⚠ 送出失敗，請稍後再試（', fbNotReady:'⚠ 表單尚未設定完成（缺 access key）',
     docTitle:'PC 二手行情追蹤｜台灣 GPU/CPU/SSD 二手價格走勢',
     metaDesc:'追蹤台灣二手市場（PTT、蝦皮等）顯示卡、處理器、記憶體、SSD、硬碟的二手成交行情，對比全新定價與 eBay 海外參考價，提供歷史價格走勢圖。',
+    partTitle:'{name} 二手價格與行情走勢｜PC 二手行情追蹤',
+    partDesc:'{name} 在台灣二手市場（PTT／蝦皮）的成交均價、折價幅度、目前全新行情與歷史價格走勢圖。',
   },
   en:{
     logo:'PC Used-Price Tracker', allCat:'All categories', allParts:'🗂 All parts', coreComp:'Core components',
@@ -582,6 +584,8 @@ const I18N = {
     fbSent:'✅ Sent — thanks for your feedback!', fbFail:'⚠ Failed, please try again (', fbNotReady:'⚠ Form not configured (missing access key)',
     docTitle:'Taiwan Used PC Parts Tracker | GPU/CPU/SSD used-price trends',
     metaDesc:'Track used-market prices (PTT, Shopee, etc.) for GPUs, CPUs, RAM, SSDs and HDDs in Taiwan, vs launch price and eBay overseas reference, with historical price-trend charts.',
+    partTitle:'{name} used price & trend | Taiwan Used PC Parts',
+    partDesc:'{name} used-market average price, discount %, current new price and historical trend in Taiwan (PTT / Shopee).',
   },
 };
 // 來源顯示名稱（後端送中文來源名）→ 依語言對應
@@ -603,9 +607,28 @@ function applyLang(){
   document.title=t('docTitle');
   const md=document.querySelector('meta[name="description"]');if(md)md.setAttribute('content',t('metaDesc'));
   setLiveBadge();updCounts();renderChips();renderList();
-  if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f)showDp(f)}
+  if(selPart){const f=allP().find(x=>x.id===selPart.id);if(f){showDp(f);setPartSeo(f)}}
 }
 function toggleLang(){LANG=LANG==='zh'?'en':'zh';localStorage.setItem('lang',LANG);applyLang()}
+// ── 零件深連結（?p=<id>）+ 每頁 SEO（title/description/canonical/og）────────────
+function partUrl(id){return location.pathname+'?p='+encodeURIComponent(id)}
+function setMeta(sel,attr,val){const e=document.querySelector(sel);if(e)e.setAttribute(attr,val)}
+function setPartSeo(p){document.title=t('partTitle',{name:p.name});
+  setMeta('meta[name="description"]','content',t('partDesc',{name:p.name}));
+  const u=location.origin+partUrl(p.id);
+  setMeta('link[rel="canonical"]','href',u);setMeta('meta[property="og:url"]','content',u);
+  setMeta('meta[property="og:title"]','content',t('partTitle',{name:p.name}));}
+function clearPartSeo(){document.title=t('docTitle');
+  setMeta('meta[name="description"]','content',t('metaDesc'));
+  const u=location.origin+location.pathname;
+  setMeta('link[rel="canonical"]','href',u);setMeta('meta[property="og:url"]','content',u);
+  setMeta('meta[property="og:title"]','content',t('docTitle'));}
+// 開啟某零件（不推歷史）；回傳是否成功
+function selectPart(id){const p=allP().find(x=>x.id===id);if(!p)return false;selPart=p;renderList();showDp(p);setPartSeo(p);return true}
+function openFromUrl(){const id=new URLSearchParams(location.search).get('p');if(id&&selectPart(id))history.replaceState({p:id},'',partUrl(id))}
+window.addEventListener('popstate',()=>{const id=new URLSearchParams(location.search).get('p');
+  if(id&&selectPart(id))return;
+  document.getElementById('dp').classList.add('closed');selPart=null;renderList();clearPartSeo();});
 function srcInfo(n){return SRCS.find(s=>n===s.name||n.includes(s.s))||{name:n,s:n.slice(0,2),c:'#7e88a8',bg:'rgba(126,136,168,.14)'}}
 function allP(){return [...Object.values(DB).flat(),...customs]}
 function genUsed(p){
@@ -696,7 +719,7 @@ function renderList(){
   }).join('')
 }
 // detail
-function selP(id){const p=allP().find(x=>x.id===id);if(!p)return;selPart=p;renderList();showDp(p)}
+function selP(id){if(selectPart(id))history.pushState({p:id},'',partUrl(id))}
 function showDp(p){
   document.getElementById('dp').classList.remove('closed');
   document.getElementById('dp-n').textContent=p.name;
@@ -727,7 +750,7 @@ function showDp(p){
   else{te.textContent='—';te.className='sv';}
   renderSrc(p);renderLst(p);renderChart(p,curRange)
 }
-function closeDp(){document.getElementById('dp').classList.add('closed');selPart=null;renderList()}
+function closeDp(){document.getElementById('dp').classList.add('closed');selPart=null;renderList();clearPartSeo();if(new URLSearchParams(location.search).get('p'))history.pushState({},'',location.pathname)}
 function renderSrc(p){const u=genUsed(p);
   let rows;
   if(p._live&&p._src&&p._src.length){
@@ -852,7 +875,7 @@ async function submitFeedback(e){
   finally{btn.disabled=false;btn.textContent=t('send')}
   return false;
 }
-loadCustoms();updCounts();renderChips();renderList();applyMode();applyLang();
+loadCustoms();updCounts();renderChips();renderList();applyMode();applyLang();openFromUrl();
 loadLive();   // 載入時嘗試連後端真實資料（失敗則維持模擬）
 </script>
 <!-- Cloudflare Web Analytics（免 cookie、隱私友善流量統計） -->

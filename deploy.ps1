@@ -38,6 +38,10 @@ if ($Domain) {
 Write-Host "    build en.html (English SEO page)"
 python tools/make_en.py $dist
 
+# Generate sitemap.xml (home + /en + per-part deep links ?p=<id>) from report.json.
+Write-Host "    build sitemap.xml (per-part deep links)"
+python tools/make_sitemap.py $dist
+
 if ($BuildOnly) {
     Write-Host "==> done (BuildOnly). Drag the dist\ folder into Cloudflare Pages Direct Upload."
     return
