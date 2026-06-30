@@ -1,0 +1,30 @@
+name: tests
+
+# 每次 push / PR 自動跑核心邏輯回歸測試（tests/）與前後端目錄同步檢查。
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Catalog sync check (frontend DB == backend PARTS_DB)
+        run: python tools/sync_parts.py --check
+
+      - name: Run unit tests
+        run: python -m pytest tests/ -q

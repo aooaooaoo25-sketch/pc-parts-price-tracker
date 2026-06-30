@@ -1,5 +1,7 @@
 # PC 零件二手行情追蹤
 
+[![tests](https://github.com/aooaooaoo25-sketch/pc-parts-price-tracker/actions/workflows/tests.yml/badge.svg)](https://github.com/aooaooaoo25-sketch/pc-parts-price-tracker/actions/workflows/tests.yml)
+
 > 追蹤台灣中文圈二手市場（PTT、蝦皮等）消費級 PC 零件的二手成交行情，與全新定價、eBay 海外參考價對比，並繪製歷史價格走勢。
 
 **🟢 線上版：<https://usedpcpartprice.com>**
