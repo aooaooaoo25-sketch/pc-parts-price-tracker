@@ -253,6 +253,11 @@ pc_price_tracker/
    - **蝦皮 GPU 首批（2026-06-21）**：`SHOPEE_NOISE` 改**分類感知**（`SHOPEE_GPU_COMBO` 只對非顯卡套用）後解鎖 GPU。
      抓 7 顆（4090/4070/3070/3060Ti/7800XT/3080/3060），並增補 GPU 雜訊（模型/手辦/擺飾/散熱模組/伺服器/晶片/配件）。
      **觀察**：蝦皮對**當代卡（4090/4070）多為全新現貨**（折價變正、非二手）；**老卡（3070/3060Ti/3080）才是乾淨二手**（折價 -40~-53%）；冷門卡（7800XT）量少。第 8 個請求觸發 captcha → 當日停手（3050/RX6000 待改天）。
+   - **蝦皮 RAM 刷新 + GPU 補檔（2026-07-01）**：RAM 5 組（DDR4 8GB 第 6 請求 captcha）＋ GPU 4 顆（4060Ti/4060/3050/3070Ti）。
+     **修掉一個靜默全失敗 bug**：蝦皮 `historical_sold`/`price` 欄位「存在但為 None」時 `info.get(k,0)` 回 None → `None>0`
+     TypeError 被 try/except 吞掉→整批歸 0。改 `(info.get(k) or 0)`，加回歸測試（`TestParseShopee`）。
+     **擷取技巧升級**：每顆抓完立刻寫 `localStorage.__shopdata`（captcha 中斷不丟已抓的）；剪貼簿改 `WriteAllText`（無 BOM）。
+     4080S 蝦皮多為魔改/擴容卡+工作站→無乾淨單卡（0 命中，正常）。蝦皮覆蓋 38→42 顆。
 7. ~~**搜尋未收錄零件的行情估算過於粗糙**~~ ✅ 已完成（2026-06-03）：新增 `estimator.py` + `/api/estimate`，以真實 166 項目錄與成交資料估價（目錄比對→相近型號→兜底），附 basis/confidence；前端 `searchUnknown/addCustom` 改呼叫後端、API 未連線回退 `estP`。順帶修好 `searchUnknown` 原本詳情面板不顯示的 bug
 8. ~~**`Reporter.export_json()` 與前端 DB 結構不匹配**~~ ✅ 已處理（2026-06-03）：新增 `Reporter.get_detail()` / `build_report()` 產生與前端一致的扁平 `{part_id: detail}` 結構，供 API 使用
 
